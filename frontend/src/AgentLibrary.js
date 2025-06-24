@@ -1588,9 +1588,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
   }, []);
 
-  // Don't render if not open
-  if (!isOpen) return null;
-
   // Aggressive preloading of all avatars on app startup
   useEffect(() => {
     // Register service worker immediately on app load
