@@ -619,6 +619,11 @@ metadata:
 test_plan:
   current_focus:
     - "Agent Library Endpoints"
+    - "Authentication for Agent Endpoints"
+    - "Agent Data Retrieval"
+    - "Agent Update Functionality"
+    - "Agent Deletion"
+    - "Invalid Agent ID Handling"
   stuck_tasks:
     - "DELETE /api/documents/bulk - Bulk Delete Documents"
   test_all: false
