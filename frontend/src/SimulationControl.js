@@ -415,6 +415,77 @@ const SimulationControl = () => {
     setLoading(false);
   };
 
+  const handleEditAgent = (agent) => {
+    setEditingAgent(agent);
+    setShowEditModal(true);
+  };
+
+  const handleSaveAgent = async (agentId, formData) => {
+    try {
+      await axios.put(`${API}/agents/${agentId}`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Refresh agents list
+      await fetchAgents();
+      alert('Agent updated successfully!');
+    } catch (error) {
+      console.error('Failed to update agent:', error);
+      throw error;
+    }
+  };
+
+  const handleRemoveAgent = async (agentId) => {
+    if (!confirm('Are you sure you want to remove this agent from the simulation?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await axios.delete(`${API}/agents/${agentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Refresh agents list
+      await fetchAgents();
+      alert('Agent removed successfully!');
+    } catch (error) {
+      console.error('Failed to remove agent:', error);
+      alert('Failed to remove agent. Please try again.');
+    }
+    setLoading(false);
+  };
+
+  const getArchetypeIcon = (archetype) => {
+    const icons = {
+      scientist: '🔬',
+      optimist: '😊',
+      skeptic: '🤔',
+      leader: '👑',
+      artist: '🎨',
+      engineer: '⚙️',
+      entrepreneur: '💼',
+      analyst: '📊',
+      visionary: '🔮'
+    };
+    return icons[archetype] || '🤖';
+  };
+
+  const getArchetypeColor = (archetype) => {
+    const colors = {
+      scientist: 'from-blue-500 to-cyan-500',
+      optimist: 'from-yellow-500 to-orange-500',
+      skeptic: 'from-gray-500 to-slate-500',
+      leader: 'from-purple-500 to-indigo-500',
+      artist: 'from-pink-500 to-rose-500',
+      engineer: 'from-green-500 to-emerald-500',
+      entrepreneur: 'from-orange-500 to-red-500',
+      analyst: 'from-indigo-500 to-blue-500',
+      visionary: 'from-violet-500 to-purple-500'
+    };
+    return colors[archetype] || 'from-gray-500 to-gray-600';
+  };
+
   const scenarios = [
     'Research Station',
     'Corporate Board Meeting', 
