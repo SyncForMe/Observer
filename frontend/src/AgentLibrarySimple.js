@@ -90,7 +90,13 @@ const quickTeams = {
 };
 
 const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
+  const { user, token } = useAuth();
+  const [selectedSector, setSelectedSector] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedAgentDetails, setSelectedAgentDetails] = useState(null);
+  const [selectedQuickTeam, setSelectedQuickTeam] = useState(null);
+  const [isSectorsExpanded, setIsSectorsExpanded] = useState(true);
+  const [isQuickTeamBuildersExpanded, setIsQuickTeamBuildersExpanded] = useState(false);
   
   return (
     <div className="space-y-6">
