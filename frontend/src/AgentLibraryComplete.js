@@ -1889,6 +1889,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const currentCategory = selectedCategory ? currentSector.categories[selectedCategory] : null;
 
   return (
+    <>
     <div className="space-y-6">
       {/* Agent Library Header */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
