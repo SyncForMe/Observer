@@ -1894,27 +1894,20 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const currentCategory = selectedCategory ? currentSector.categories[selectedCategory] : null;
 
   return (
-    <>
-      {/* Main Agent Library Modal */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden shadow-2xl">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">📚 Agent Library</h2>
-                <p className="text-purple-100 mt-1">Choose from professionally crafted agent profiles</p>
-              </div>
-              <button
-                onClick={onClose}
-                className="text-white hover:text-purple-200 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-purple-700 transition-colors"
-              >
-                ×
-              </button>
-            </div>
+    <div className="space-y-6">
+      {/* Agent Library Header */}
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+        <div className="flex justify-between items-center mb-2">
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2">📚 Agent Library</h2>
+            <p className="text-white/80">Choose from professionally crafted agent profiles</p>
           </div>
+        </div>
+      </div>
 
-          <div className="flex h-[600px]">
+      {/* Main Agent Library Content */}
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden">
+        <div className="flex h-[600px]">
             {/* Sidebar */}
             <div className="w-64 bg-gray-50 border-r p-4">
               {/* MY AGENTS section */}
