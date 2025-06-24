@@ -1,60 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './App';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
 
-// Add styles for line clamping and image optimization
-const styles = `
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  /* Avatar optimization */
-  .avatar-optimized {
-    will-change: transform;
-    backface-visibility: hidden;
-    perspective: 1000px;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-    transition: opacity 0.2s ease-in-out;
-  }
-  
-  /* Preload critical images */
-  .agent-avatar {
-    content-visibility: auto;
-    contain-intrinsic-size: 48px 48px;
-  }
-  
-  .agent-avatar-large {
-    content-visibility: auto;
-    contain-intrinsic-size: 64px 64px;
-  }
-  
-  /* Improve scrolling performance */
-  .agent-grid {
-    contain: layout style paint;
-  }
-`;
-
-// Inject styles
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement("style");
-  styleSheet.type = "text/css";
-  styleSheet.innerText = styles;
-  document.head.appendChild(styleSheet);
-}
-
-// Healthcare Categories with comprehensive agent data
 const healthcareCategories = {
   medical: {
     name: "Medical",
@@ -456,7 +405,6 @@ const healthcareCategories = {
   }
 };
 
-// Finance & Business Categories with comprehensive agent data
 const financeCategories = {
   investmentBanking: {
     name: "Investment Banking",
@@ -857,7 +805,6 @@ const financeCategories = {
   }
 };
 
-// Technology & Engineering Categories with comprehensive agent data
 const technologyCategories = {
   softwareEngineering: {
     name: "Software Engineering",
@@ -1446,7 +1393,7 @@ const technologyCategories = {
   }
 };
 
-// Sectors configuration
+// Define sectors
 const sectors = {
   healthcare: {
     name: "Healthcare & Life Sciences",
@@ -1465,270 +1412,74 @@ const sectors = {
   }
 };
 
+// Quick Teams with real agents
+const quickTeams = {
+  research: {
+    name: "Research Team",
+    icon: "🔬",
+    description: "Scientist, Optimist, Leader",
+    agents: [
+      healthcareCategories.medical.agents[0], // Dr. Sarah Chen - Scientist
+      healthcareCategories.pharmaceutical.agents[1], // Dr. Amanda Wilson - Optimist
+      healthcareCategories.medical.agents[1] // Dr. Marcus Rodriguez - Leader
+    ]
+  },
+  business: {
+    name: "Business Team", 
+    icon: "💼",
+    description: "Strategist, Consultant, Innovator",
+    agents: [
+      technologyCategories.softwareEngineering.agents[0], // Tech leader
+      financeCategories.investmentBanking.agents[0], // Business strategist
+      technologyCategories.aiMachineLearning.agents[0] // Innovation researcher
+    ]
+  },
+  crypto: {
+    name: "Crypto Team",
+    icon: "₿", 
+    description: "Blockchain Expert, DeFi Specialist, Crypto Analyst",
+    agents: [
+      financeCategories.investmentBanking.agents[1], // Finance expert
+      technologyCategories.blockchain.agents[0], // Blockchain expert
+      financeCategories.riskManagement.agents[0] // Risk expert
+    ]
+  }
+};
+
 const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const { user, token } = useAuth();
-  const [selectedSector, setSelectedSector] = useState(null); // Changed to null to show nothing by default
+  const [selectedSector, setSelectedSector] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedAgentDetails, setSelectedAgentDetails] = useState(null);
+  const [selectedQuickTeam, setSelectedQuickTeam] = useState(null);
   const [addingAgents, setAddingAgents] = useState(new Set());
   const [addedAgents, setAddedAgents] = useState(new Set());
-  const [loadedImages, setLoadedImages] = useState(new Set());
-  const [imageLoadingStates, setImageLoadingStates] = useState(new Map());
   const [isSectorsExpanded, setIsSectorsExpanded] = useState(true);
+  const [isMyAgentsExpanded, setIsMyAgentsExpanded] = useState(false);
   const [isQuickTeamBuildersExpanded, setIsQuickTeamBuildersExpanded] = useState(false);
-  const [isMyAgentsExpanded, setIsMyAgentsExpanded] = useState(true); // My Agents expanded by default
-  const [selectedQuickTeam, setSelectedQuickTeam] = useState(null); // New state for quick team selection
   const [savedAgents, setSavedAgents] = useState([]);
   const [loadingSavedAgents, setLoadingSavedAgents] = useState(false);
-  const [selectedMyAgent, setSelectedMyAgent] = useState(null);
-  const [quickTeams, setQuickTeams] = useState({
-    research: {
-      name: "Research Team",
-      icon: "🔬",
-      description: "Scientist, Optimist, Leader",
-      agents: [
-        healthcareCategories.medical.agents[0], // Dr. Sarah Chen - Scientist
-        healthcareCategories.pharmaceutical.agents[1], // Dr. Amanda Wilson - Optimist
-        healthcareCategories.medical.agents[1] // Dr. Marcus Rodriguez - Leader
-      ]
-    },
-    business: {
-      name: "Business Team", 
-      icon: "💼",
-      description: "Strategist, Consultant, Innovator",
-      agents: [
-        technologyCategories.softwareEngineering.agents[0], // Tech leader
-        financeCategories.investmentBanking.agents[0], // Business strategist
-        technologyCategories.aiMachineLearning.agents[1] // Innovation optimist
-      ]
-    },
-    crypto: {
-      name: "Crypto Team",
-      icon: "₿", 
-      description: "Blockchain Expert, DeFi Specialist, Crypto Analyst",
-      agents: [
-        financeCategories.investmentBanking.agents[1], // Marcus Goldman - Finance expert who can handle crypto
-        technologyCategories.softwareEngineering.agents[1], // Tech expert for blockchain
-        financeCategories.riskManagement.agents[1] // Risk expert for crypto analysis
-      ]
-    }
-  });
-  const timeoutRefs = useRef(new Map());
 
-  // Fetch saved agents
-  const fetchSavedAgents = async () => {
-    if (!token) return;
-    
-    setLoadingSavedAgents(true);
-    try {
-      const response = await axios.get(`${API}/saved-agents`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSavedAgents(response.data);
-    } catch (error) {
-      console.error('Error fetching saved agents:', error);
-    }
-    setLoadingSavedAgents(false);
-  };
-
-  // Fetch saved agents when component mounts
+  // Fetch saved agents on mount
   useEffect(() => {
     if (token) {
       fetchSavedAgents();
     }
   }, [token]);
 
-  // Handle using a saved agent
-  const handleUseSavedAgent = async (agent) => {
+  const fetchSavedAgents = async () => {
+    if (!token) return;
+    setLoadingSavedAgents(true);
     try {
-      const agentData = {
-        name: agent.name,
-        archetype: agent.archetype,
-        personality: agent.personality,
-        goal: agent.goal,
-        expertise: agent.expertise,
-        background: agent.background,
-        avatar_url: agent.avatar_url,
-        avatar_prompt: agent.avatar_prompt
-      };
-      
-      if (onAddAgent) {
-        await onAddAgent(agentData);
-        alert(`${agent.name} has been added to your simulation!`);
-      }
-    } catch (error) {
-      console.error('Error using saved agent:', error);
-      alert('Failed to add agent to simulation.');
-    }
-  };
-
-  // Handle deleting a saved agent
-  const handleDeleteSavedAgent = async (agentId) => {
-    if (!window.confirm('Are you sure you want to delete this saved agent?')) return;
-    
-    try {
-      await axios.delete(`${API}/saved-agents/${agentId}`, {
+      const response = await axios.get(`${API}/saved-agents`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setSavedAgents(savedAgents.filter(agent => agent.id !== agentId));
-      alert('Saved agent deleted successfully!');
+      setSavedAgents(response.data || []);
     } catch (error) {
-      console.error('Error deleting saved agent:', error);
-      alert('Failed to delete saved agent.');
+      console.error('Failed to fetch saved agents:', error);
+      setSavedAgents([]);
     }
-  };
-
-  // Simple service worker registration for caching
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .catch((error) => {
-          console.warn('SW registration failed:', error);
-        });
-    }
-  }, []);
-
-  // Aggressive preloading of all avatars on app startup
-  useEffect(() => {
-    // Register service worker immediately on app load
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('Service Worker registered successfully');
-          
-          // Wait for service worker to be ready, then preload
-          navigator.serviceWorker.ready.then((swRegistration) => {
-            // Preload ALL avatars immediately when component mounts
-            const preloadAllAvatars = () => {
-              const allAvatars = [];
-              
-              // Collect ALL avatar URLs from all sectors
-              Object.values(sectors).forEach(sector => {
-                Object.values(sector.categories).forEach(category => {
-                  category.agents.forEach(agent => {
-                    if (agent.avatar) {
-                      allAvatars.push(agent.avatar);
-                    }
-                  });
-                });
-              });
-
-              console.log(`🚀 Preloading ${allAvatars.length} agent avatars...`);
-
-              // Send URLs to service worker for aggressive caching
-              if (swRegistration.active) {
-                swRegistration.active.postMessage({
-                  type: 'PRELOAD_AVATARS',
-                  urls: allAvatars
-                });
-              }
-
-              // Also preload in main thread for immediate display
-              allAvatars.forEach((avatarUrl, index) => {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                
-                // Set loading state
-                setImageLoadingStates(prev => new Map(prev).set(avatarUrl, 'loading'));
-                
-                img.onload = () => {
-                  setLoadedImages(prev => new Set(prev).add(avatarUrl));
-                  setImageLoadingStates(prev => new Map(prev).set(avatarUrl, 'loaded'));
-                  if (index < 5) console.log(`✅ Preloaded avatar ${index + 1}`);
-                };
-                
-                img.onerror = () => {
-                  setImageLoadingStates(prev => new Map(prev).set(avatarUrl, 'error'));
-                };
-                
-                // Start loading immediately with high priority
-                img.fetchPriority = 'high';
-                img.src = avatarUrl;
-              });
-            };
-
-            // Start preloading immediately
-            preloadAllAvatars();
-          });
-        })
-        .catch((error) => {
-          console.warn('SW registration failed:', error);
-        });
-    }
-  }, []); // Run once on mount
-
-  // Additional preloading when component mounts
-  useEffect(() => {
-    // Force reload any failed images
-    const retryFailedImages = () => {
-      imageLoadingStates.forEach((state, url) => {
-        if (state === 'error' && !loadedImages.has(url)) {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            setLoadedImages(prev => new Set(prev).add(url));
-            setImageLoadingStates(prev => new Map(prev).set(url, 'loaded'));
-          };
-          img.src = url;
-        }
-      });
-    };
-
-    setTimeout(retryFailedImages, 100);
-  }, [imageLoadingStates, loadedImages]);
-
-  // Optimized Avatar Component with instant loading
-  const OptimizedAvatar = ({ src, alt, className, size = 48 }) => {
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
-    
-    // Check if this image is already loaded from preloading
-    useEffect(() => {
-      if (loadedImages.has(src)) {
-        setImageLoaded(true);
-      }
-    }, [src, loadedImages]);
-
-    // Base64 placeholder for instant display
-    const placeholder = `data:image/svg+xml;base64,${btoa(`
-      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="${size/2}" cy="${size/2}" r="${size/2}" fill="#F3F4F6"/>
-        <circle cx="${size/2}" cy="${size/2*0.8}" r="${size/4}" fill="#D1D5DB"/>
-        <path d="M${size*0.2} ${size*0.9}c0-${size*0.3} ${size*0.15}-${size*0.4} ${size*0.3}-${size*0.4}s${size*0.3} ${size*0.1} ${size*0.3} ${size*0.4}" fill="#D1D5DB"/>
-      </svg>
-    `)}`;
-
-    return (
-      <div className={`relative flex-shrink-0`} style={{ width: size, height: size }}>
-        {/* Always show placeholder first */}
-        <img
-          src={placeholder}
-          alt=""
-          className={`${className} absolute inset-0 ${imageLoaded && !imageError ? 'opacity-30' : 'opacity-100'} transition-opacity duration-200`}
-        />
-        
-        {/* Real image */}
-        <img
-          src={src}
-          alt={alt}
-          className={`${className} absolute inset-0 ${imageLoaded && !imageError ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}
-          loading="eager"
-          decoding="async"
-          style={{
-            imageRendering: 'crisp-edges',
-            transform: 'translateZ(0)',
-          }}
-          onLoad={() => {
-            setImageLoaded(true);
-            setLoadedImages(prev => new Set(prev).add(src));
-          }}
-          onError={() => {
-            setImageError(true);
-            console.warn(`Failed to load avatar: ${src}`);
-          }}
-        />
-      </div>
-    );
+    setLoadingSavedAgents(false);
   };
 
   const handleAddAgent = async (agent) => {
@@ -1737,7 +1488,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     setAddingAgents(prev => new Set(prev).add(agent.id));
     
     try {
-      // Transform agent data to match backend expectations exactly as App.js expects
       const agentData = {
         name: agent.name,
         archetype: agent.archetype,
@@ -1745,7 +1495,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
         background: agent.background,
         expertise: agent.expertise,
         memory_summary: `${agent.memories} Knowledge Sources: ${agent.knowledge}`,
-        avatar_url: agent.avatar, // Use existing avatar from library
+        avatar_url: agent.avatar,
       };
       
       const result = await onAddAgent(agentData);
@@ -1768,128 +1518,19 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     });
   };
 
-  const handleRemoveAgent = async (agent) => {
-    if (!onRemoveAgent) return;
-    
-    try {
-      const result = await onRemoveAgent(agent); // Pass full agent object
-      if (result && result.success) {
-        setAddedAgents(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(agent.id);
-          return newSet;
-        });
-        console.log('Agent removed successfully');
-      }
-    } catch (error) {
-      console.error('Error removing agent:', error);
+  const handleQuickTeamAdd = async (teamKey) => {
+    const team = quickTeams[teamKey];
+    if (!team || !team.agents) return;
+
+    for (const agent of team.agents) {
+      await handleAddAgent(agent);
     }
-  };
-
-  // Function to generate new quick teams with random agents
-  const generateNewQuickTeam = (teamType) => {
-    const allAgents = [
-      ...Object.values(healthcareCategories).flatMap(cat => cat.agents),
-      ...Object.values(financeCategories).flatMap(cat => cat.agents),
-      ...Object.values(technologyCategories).flatMap(cat => cat.agents)
-    ];
-
-    let newTeam = [];
-    if (teamType === 'research') {
-      // Research team: 1 scientist, 1 optimist, 1 leader
-      const scientists = allAgents.filter(agent => agent.archetype === 'scientist');
-      const optimists = allAgents.filter(agent => agent.archetype === 'optimist');
-      const leaders = allAgents.filter(agent => agent.archetype === 'leader');
-      
-      newTeam = [
-        scientists[Math.floor(Math.random() * scientists.length)],
-        optimists[Math.floor(Math.random() * optimists.length)],
-        leaders[Math.floor(Math.random() * leaders.length)]
-      ].filter(Boolean);
-    } else if (teamType === 'business') {
-      // Business team: varied business-oriented agents
-      const businessAgents = allAgents.filter(agent => 
-        agent.expertise?.toLowerCase().includes('business') ||
-        agent.expertise?.toLowerCase().includes('finance') ||
-        agent.expertise?.toLowerCase().includes('strategy') ||
-        agent.archetype === 'leader'
-      );
-      
-      newTeam = [
-        businessAgents[Math.floor(Math.random() * businessAgents.length)],
-        businessAgents[Math.floor(Math.random() * businessAgents.length)],
-        businessAgents[Math.floor(Math.random() * businessAgents.length)]
-      ].filter(Boolean);
-    } else if (teamType === 'crypto') {
-      // Crypto team: blockchain, DeFi, and crypto-focused agents
-      const cryptoKeywords = ['blockchain', 'crypto', 'defi', 'bitcoin', 'ethereum', 'trading', 'fintech', 'investment', 'financial', 'technology'];
-      const cryptoAgents = allAgents.filter(agent => 
-        cryptoKeywords.some(keyword => 
-          agent.expertise?.toLowerCase().includes(keyword) ||
-          agent.background?.toLowerCase().includes(keyword) ||
-          agent.goal?.toLowerCase().includes(keyword) ||
-          (agent.expertise?.toLowerCase().includes('finance') && agent.expertise?.toLowerCase().includes('technology')) ||
-          (agent.archetype === 'leader' && agent.expertise?.toLowerCase().includes('finance'))
-        )
-      );
-      
-      // If we have crypto-specific agents, use them. Otherwise, use finance and tech agents
-      if (cryptoAgents.length >= 3) {
-        newTeam = [
-          cryptoAgents[Math.floor(Math.random() * cryptoAgents.length)],
-          cryptoAgents[Math.floor(Math.random() * cryptoAgents.length)],
-          cryptoAgents[Math.floor(Math.random() * cryptoAgents.length)]
-        ];
-      } else {
-        // Fallback: get finance and technology agents
-        const financeAgents = allAgents.filter(agent => 
-          agent.expertise?.toLowerCase().includes('finance') ||
-          agent.expertise?.toLowerCase().includes('investment') ||
-          agent.expertise?.toLowerCase().includes('trading')
-        );
-        const techAgents = allAgents.filter(agent => 
-          agent.expertise?.toLowerCase().includes('technology') ||
-          agent.expertise?.toLowerCase().includes('software') ||
-          agent.expertise?.toLowerCase().includes('engineering')
-        );
-        
-        newTeam = [
-          financeAgents.length > 0 ? financeAgents[Math.floor(Math.random() * financeAgents.length)] : allAgents[Math.floor(Math.random() * allAgents.length)],
-          techAgents.length > 0 ? techAgents[Math.floor(Math.random() * techAgents.length)] : allAgents[Math.floor(Math.random() * allAgents.length)],
-          cryptoAgents.length > 0 ? cryptoAgents[Math.floor(Math.random() * cryptoAgents.length)] : 
-            financeAgents.length > 0 ? financeAgents[Math.floor(Math.random() * financeAgents.length)] : allAgents[Math.floor(Math.random() * allAgents.length)]
-        ];
-      }
-      
-      // Remove duplicates
-      newTeam = newTeam.filter((agent, index, self) => 
-        index === self.findIndex(a => a.id === agent.id)
-      );
-    }
-
-    // Fill up to 3 agents if we don't have enough
-    while (newTeam.length < 3) {
-      const randomAgent = allAgents[Math.floor(Math.random() * allAgents.length)];
-      if (!newTeam.find(agent => agent.id === randomAgent.id)) {
-        newTeam.push(randomAgent);
-      }
-    }
-
-    // Update the quick team with new agents
-    setQuickTeams(prev => ({
-      ...prev,
-      [teamType]: {
-        ...prev[teamType],
-        agents: newTeam
-      }
-    }));
   };
 
   const currentSector = sectors[selectedSector];
-  const currentCategory = selectedCategory ? currentSector.categories[selectedCategory] : null;
+  const currentCategory = selectedCategory ? currentSector?.categories[selectedCategory] : null;
 
   return (
-    <>
     <div className="space-y-6">
       {/* Agent Library Header */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
@@ -1904,349 +1545,287 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
       {/* Main Agent Library Content */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden">
         <div className="flex h-[600px]">
-            {/* Sidebar */}
-            <div className="w-64 bg-gray-50 border-r p-4">
-              {/* MY AGENTS section */}
-              <div 
-                className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
-                onClick={() => {
-                  setIsMyAgentsExpanded(!isMyAgentsExpanded);
-                  setSelectedSector(null); // Clear sector selection
-                  setSelectedCategory(null); // Clear category selection  
-                  setSelectedQuickTeam(null); // Clear quick team selection
-                  setSelectedMyAgent(null); // Clear selected agent
-                }}
+          {/* Sidebar */}
+          <div className="w-64 bg-gray-50 border-r p-4">
+            {/* MY AGENTS header with expandable button */}
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+              onClick={() => setIsMyAgentsExpanded(!isMyAgentsExpanded)}
+            >
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">MY AGENTS</h3>
+              <button
+                type="button"
+                className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                style={{ transform: isMyAgentsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
               >
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">MY AGENTS</h3>
-                <button
-                  type="button"
-                  className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
-                  style={{ transform: isMyAgentsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* My Agents list - conditionally rendered */}
-              {isMyAgentsExpanded && (
-                <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
-                  {loadingSavedAgents ? (
-                    <div className="text-center py-4 text-gray-500">Loading your agents...</div>
-                  ) : savedAgents.length === 0 ? (
-                    <div className="text-center py-4 text-gray-500 text-sm">
-                      No saved agents yet.<br/>
-                      Create and save agents to see them here.
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* My Agents list - conditionally rendered */}
+            {isMyAgentsExpanded && (
+              <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
+                {loadingSavedAgents ? (
+                  <div className="text-center py-4 text-gray-500">Loading your agents...</div>
+                ) : savedAgents.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    No saved agents yet.<br/>
+                    Create and save agents to see them here.
+                  </div>
+                ) : (
+                  savedAgents.map((agent) => (
+                    <div
+                      key={agent.id}
+                      className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100 border cursor-pointer"
+                    >
+                      <div className="font-medium">{agent.name}</div>
+                      <div className="text-xs text-gray-500 capitalize">{agent.archetype}</div>
                     </div>
-                  ) : (
-                    savedAgents.map((agent) => (
-                      <div
-                        key={agent.id}
-                        className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100 border cursor-pointer"
-                        onClick={() => {
-                          setSelectedMyAgent(agent);
-                          setSelectedQuickTeam(null);
-                          setSelectedSector(null);
-                          setSelectedCategory(null);
-                        }}
-                      >
-                        <div className="flex items-center space-x-2">
-                          {agent.avatar_url ? (
-                            <img 
-                              src={agent.avatar_url} 
-                              alt={agent.name}
-                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                              <span className="text-purple-600 text-sm font-bold">
-                                {agent.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm truncate">{agent.name}</div>
-                            <div className="text-xs text-gray-500 truncate">{agent.archetype}</div>
-                          </div>
+                  ))
+                )}
+              </div>
+            )}
+            
+            {/* QUICK TEAM BUILDERS header with expandable button */}
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+              onClick={() => setIsQuickTeamBuildersExpanded(!isQuickTeamBuildersExpanded)}
+            >
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">QUICK TEAM BUILDERS</h3>
+              <button
+                type="button"
+                className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                style={{ transform: isQuickTeamBuildersExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Team Builders list - conditionally rendered */}
+            {isQuickTeamBuildersExpanded && (
+              <div className="space-y-2 mb-6">
+                {Object.entries(quickTeams).map(([key, team]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSelectedQuickTeam(key);
+                      setSelectedSector(null);
+                      setSelectedCategory(null);
+                    }}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      selectedQuickTeam === key
+                        ? 'bg-purple-100 text-purple-800 border-l-4 border-purple-600'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">{team.icon}</span>
+                      <div>
+                        <div className="font-medium text-sm">{team.name}</div>
+                        <div className="text-xs text-gray-500">{team.description}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* SECTORS header with expandable button */}
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+              onClick={() => setIsSectorsExpanded(!isSectorsExpanded)}
+            >
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">SECTORS</h3>
+              <button
+                type="button"
+                className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                style={{ transform: isSectorsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Sectors list - conditionally rendered */}
+            {isSectorsExpanded && (
+              <div className="space-y-2">
+                {Object.entries(sectors).map(([key, sector]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSelectedSector(key);
+                      setSelectedCategory(null);
+                      setSelectedQuickTeam(null);
+                    }}
+                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      selectedSector === key
+                        ? 'bg-purple-100 text-purple-800 border-l-4 border-purple-600'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">{sector.icon}</span>
+                      <div>
+                        <div className="font-medium text-sm">{sector.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {Object.keys(sector.categories).length} categories
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* QUICK TEAM BUILDERS header with expandable button */}
-              <div 
-                className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
-                onClick={() => {
-                  setIsQuickTeamBuildersExpanded(!isQuickTeamBuildersExpanded);
-                  setSelectedSector(null); // Clear sector selection
-                  setSelectedCategory(null); // Clear category selection
-                  setSelectedMyAgent(null); // Clear My Agent selection
-                }}
-              >
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">QUICK TEAM BUILDERS</h3>
-                <button
-                  type="button"
-                  className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
-                  style={{ transform: isQuickTeamBuildersExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                    </div>
+                  </button>
+                ))}
               </div>
-              
-              {/* Quick Team Builders list - conditionally rendered */}
-              {isQuickTeamBuildersExpanded && (
-                <div className="space-y-2 mb-6">
+            )}
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 p-6 overflow-y-auto">
+            {selectedQuickTeam ? (
+              // Quick Team View
+              <div>
+                {/* Back Button */}
+                <div className="flex items-center mb-6">
                   <button
-                    onClick={() => {
-                      setSelectedQuickTeam('research');
-                      setSelectedSector(null);
-                      setSelectedCategory(null);
-                      setSelectedMyAgent(null); // Clear My Agent selection
-                    }}
-                    className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                    onClick={() => setSelectedQuickTeam(null)}
+                    className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
                   >
-                    <span className="text-lg mr-2">🔬</span>
-                    Research Team
+                    ← Back to Teams
                   </button>
-                  
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {quickTeams[selectedQuickTeam].icon} {quickTeams[selectedQuickTeam].name}
+                  </h3>
+                </div>
+
+                <div className="mb-6">
                   <button
-                    onClick={() => {
-                      setSelectedQuickTeam('business');
-                      setSelectedSector(null);
-                      setSelectedCategory(null);
-                      setSelectedMyAgent(null); // Clear My Agent selection
-                    }}
-                    className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
+                    onClick={() => handleQuickTeamAdd(selectedQuickTeam)}
+                    className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium"
                   >
-                    <span className="text-lg mr-2">💼</span>
-                    Business Team
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setSelectedQuickTeam('crypto');
-                      setSelectedSector(null);
-                      setSelectedCategory(null);
-                      setSelectedMyAgent(null); // Clear My Agent selection
-                    }}
-                    className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
-                  >
-                    <span className="text-lg mr-2">₿</span>
-                    Crypto Team
+                    Add Entire Team
                   </button>
                 </div>
-              )}
 
-              {/* SECTORS header with expandable button */}
-              <div 
-                className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
-                onClick={() => {
-                  setIsSectorsExpanded(!isSectorsExpanded);
-                  setSelectedQuickTeam(null); // Clear quick team selection
-                  setSelectedMyAgent(null); // Clear My Agent selection
-                }}
-              >
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">SECTORS</h3>
-                <button
-                  type="button"
-                  className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
-                  style={{ transform: isSectorsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {quickTeams[selectedQuickTeam].agents.map((agent) => (
+                    <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                      <div className="p-4">
+                        <div className="flex items-start space-x-3">
+                          <img
+                            src={agent.avatar}
+                            alt={agent.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
+                                  <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
+                                  <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
+                                </svg>
+                              `)}`;
+                            }}
+                          />
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-800">{agent.name}</h4>
+                            <p className="text-sm text-gray-600">{agent.title}</p>
+                            <p className="text-xs text-purple-600 mt-1">{agent.archetypeDisplay}</p>
+                          </div>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          <button
+                            onClick={() => setSelectedAgentDetails(agent)}
+                            className="w-full bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200 transition-colors"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={() => handleAddAgent(agent)}
+                            disabled={addingAgents.has(agent.id)}
+                            className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+                              addedAgents.has(agent.id)
+                                ? 'bg-green-100 text-green-800'
+                                : addingAgents.has(agent.id)
+                                ? 'bg-gray-300 text-gray-500'
+                                : 'bg-purple-600 text-white hover:bg-purple-700'
+                            }`}
+                          >
+                            {addedAgents.has(agent.id) 
+                              ? '✅ Added' 
+                              : addingAgents.has(agent.id) 
+                              ? 'Adding...' 
+                              : 'Add Agent'
+                            }
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              
-              {/* Sectors list - conditionally rendered */}
-              {isSectorsExpanded && (
-                <div className="space-y-2">
-                  {Object.entries(sectors).map(([key, sector]) => (
+            ) : selectedSector && !selectedCategory ? (
+              // Sector Categories View  
+              <div>
+                {/* Back Button */}
+                <div className="flex items-center mb-6">
+                  <button
+                    onClick={() => setSelectedSector(null)}
+                    className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
+                  >
+                    ← Back to Sectors
+                  </button>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {sectors[selectedSector].icon} {sectors[selectedSector].name}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {Object.entries(sectors[selectedSector].categories).map(([key, category]) => (
                     <button
                       key={key}
-                      onClick={() => {
-                        setSelectedSector(key);
-                        setSelectedCategory(null);
-                        setSelectedQuickTeam(null); // Clear quick team selection
-                        setSelectedMyAgent(null); // Clear My Agent selection
-                      }}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        selectedSector === key
-                          ? 'bg-purple-100 text-purple-800 border-l-4 border-purple-600'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
+                      onClick={() => setSelectedCategory(key)}
+                      className="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 hover:shadow-md transition-all text-center group"
                     >
-                      <span className="text-lg mr-2">{sector.icon}</span>
-                      {sector.name}
+                      <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">
+                        {category.icon}
+                      </div>
+                      <div className="text-sm font-medium text-gray-800">
+                        {category.name}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {category.agents.length} agents
+                      </div>
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
-              {selectedMyAgent ? (
-                // My Agent Detail View
-                <div>
-                  {/* Back Button */}
-                  <div className="mb-4">
-                    <button
-                      onClick={() => {
-                        setSelectedMyAgent(null);
-                        setIsMyAgentsExpanded(true);
-                      }}
-                      className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                      <span>Back to My Agents</span>
-                    </button>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-gray-800 mb-6">
-                    👤 {selectedMyAgent.name}
+              </div>
+            ) : selectedCategory ? (
+              // Agents View
+              <div>
+                <div className="flex items-center mb-6">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
+                  >
+                    ← Back
+                  </button>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {sectors[selectedSector].categories[selectedCategory].icon} {sectors[selectedSector].categories[selectedCategory].name}
                   </h3>
-                  <p className="text-gray-600 mb-6">Your saved agent - {selectedMyAgent.archetype}</p>
-                  
-                  <div className="mb-6 flex space-x-3">
-                    <button
-                      onClick={() => handleUseSavedAgent(selectedMyAgent)}
-                      className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium"
-                    >
-                      Add to Simulation
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSavedAgent(selectedMyAgent.id)}
-                      className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium"
-                    >
-                      Delete Agent
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="bg-white border border-gray-200 rounded-lg p-6">
-                      <div className="flex items-start space-x-4">
-                        {selectedMyAgent.avatar_url ? (
-                          <img 
-                            src={selectedMyAgent.avatar_url} 
-                            alt={selectedMyAgent.name}
-                            className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-purple-600 text-xl font-bold">
-                              {selectedMyAgent.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex-1">
-                          <h4 className="text-lg font-semibold text-gray-800 mb-2">{selectedMyAgent.name}</h4>
-                          <div className="space-y-2 text-sm">
-                            <p><span className="font-medium text-gray-600">Archetype:</span> {selectedMyAgent.archetype}</p>
-                            <p><span className="font-medium text-gray-600">Goal:</span> {selectedMyAgent.goal}</p>
-                            {selectedMyAgent.expertise && (
-                              <p><span className="font-medium text-gray-600">Expertise:</span> {selectedMyAgent.expertise}</p>
-                            )}
-                            {selectedMyAgent.background && (
-                              <p><span className="font-medium text-gray-600">Background:</span> {selectedMyAgent.background}</p>
-                            )}
-                            {selectedMyAgent.personality && (
-                              <div>
-                                <span className="font-medium text-gray-600">Personality Traits:</span>
-                                <div className="mt-1 grid grid-cols-2 gap-2 text-xs">
-                                  <div>Extroversion: {selectedMyAgent.personality.extroversion}/10</div>
-                                  <div>Optimism: {selectedMyAgent.personality.optimism}/10</div>
-                                  <div>Curiosity: {selectedMyAgent.personality.curiosity}/10</div>
-                                  <div>Cooperativeness: {selectedMyAgent.personality.cooperativeness}/10</div>
-                                  <div>Energy: {selectedMyAgent.personality.energy}/10</div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
-              ) : selectedQuickTeam ? (
-                // Quick Team View
-                <div>
-                  {/* Back Button */}
-                  <div className="mb-4">
-                    <button
-                      onClick={() => {
-                        setSelectedQuickTeam(null);
-                      }}
-                      className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                      <span>Back to Quick Teams</span>
-                    </button>
-                  </div>
-                  
-                  <h3 className="text-xl font-bold text-gray-800 mb-6">
-                    {quickTeams[selectedQuickTeam].icon} {quickTeams[selectedQuickTeam].name}
-                  </h3>
-                  <p className="text-gray-600 mb-6">{quickTeams[selectedQuickTeam].description}</p>
-                  
-                  <div className="mb-6 flex space-x-3">
-                    <button
-                      onClick={() => {
-                        quickTeams[selectedQuickTeam].agents.forEach(agent => handleAddAgent(agent));
-                      }}
-                      className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
-                    >
-                      Add Team
-                    </button>
-                    <button
-                      onClick={() => generateNewQuickTeam(selectedQuickTeam)}
-                      className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium flex items-center space-x-2"
-                    >
-                      <span>🎲</span>
-                      <span>Roll the Dice</span>
-                    </button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 agent-grid">
-                    {quickTeams[selectedQuickTeam].agents.map((agent, index) => (
-                      <div key={`${selectedQuickTeam}-${index}`} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow relative">
-                        {/* Green "added" badge and red X in top right */}
-                        {addedAgents.has(agent.id) && (
-                          <div className="absolute top-2 right-2 z-10 flex items-center space-x-1">
-                            <div className="bg-transparent border border-green-500 text-green-600 text-xs font-medium px-2 py-1 rounded-full">
-                              added
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveAgent(agent);
-                              }}
-                              className="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                              title="Remove agent"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        )}
+
+                {sectors[selectedSector].categories[selectedCategory].agents.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {sectors[selectedSector].categories[selectedCategory].agents.map((agent) => (
+                      <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                         <div className="p-4">
                           <div className="flex items-start space-x-3">
                             <img
                               src={agent.avatar}
                               alt={agent.name}
                               className="w-12 h-12 rounded-full object-cover"
-                              loading="eager"
-                              style={{
-                                imageRendering: 'crisp-edges',
-                              }}
                               onError={(e) => {
                                 e.target.src = `data:image/svg+xml,${encodeURIComponent(`
                                   <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2257,236 +1836,74 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                                 `)}`;
                               }}
                             />
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-gray-900 text-sm">{agent.name}</h4>
-                              <p className="text-xs text-gray-600 mt-1">{agent.archetypeDisplay || agent.archetype}</p>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-800">{agent.name}</h4>
+                              <p className="text-sm text-gray-600">{agent.title}</p>
+                              <p className="text-xs text-purple-600 mt-1">{agent.archetypeDisplay}</p>
                             </div>
                           </div>
-                          
-                          <div className="mt-3">
-                            <div className="mb-2">
-                              <span className="text-xs font-medium text-gray-700 uppercase tracking-wide">ARCHETYPE</span>
-                              <p className="text-xs text-gray-600 mt-1">{agent.archetypeDisplay || agent.archetype}</p>
-                            </div>
-                            
-                            <div className="mb-2">
-                              <span className="text-xs font-medium text-gray-700 uppercase tracking-wide">GOAL</span>
-                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{agent.goal}</p>
-                            </div>
-                            
-                            <div className="mb-3">
-                              <span className="text-xs font-medium text-gray-700 uppercase tracking-wide">EXPERTISE</span>
-                              <p className="text-xs text-gray-600 mt-1 line-clamp-2">{agent.expertise}</p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="px-4 pb-4 space-y-2">
-                          <button
-                            onClick={() => setSelectedAgentDetails(agent)}
-                            className="w-full border border-blue-500 text-blue-600 py-2 px-3 rounded text-xs font-medium hover:bg-blue-50 transition-colors"
-                          >
-                            🔍 View Full Details
-                          </button>
-                          <button
-                            onClick={() => handleAddAgent(agent)}
-                            disabled={addingAgents.has(agent.id)}
-                            className={`w-full py-2 px-3 rounded text-xs font-medium transition-colors ${
-                              addingAgents.has(agent.id)
-                                ? 'bg-gray-300 text-gray-500'
-                                : 'bg-purple-600 text-white hover:bg-purple-700'
-                            }`}
-                          >
-                            {addingAgents.has(agent.id) 
-                              ? 'Adding...'
-                              : addedAgents.has(agent.id) 
-                              ? 'Add Again' 
-                              : 'Add Agent'
-                            }
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : selectedSector && !selectedCategory ? (
-                // Sector Categories View  
-                <div>
-                  {/* Back Button */}
-                  <div className="flex items-center mb-6">
-                    <button
-                      onClick={() => {
-                        setSelectedSector(null);
-                      }}
-                      className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
-                    >
-                      ← Back to Sectors
-                    </button>
-                    <h3 className="text-xl font-bold text-gray-800">
-                      {sectors[selectedSector].icon} {sectors[selectedSector].name}
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {Object.entries(sectors[selectedSector].categories).map(([key, category]) => (
-                      <button
-                        key={key}
-                        onClick={() => setSelectedCategory(key)}
-                        className="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 hover:shadow-md transition-all text-center group"
-                      >
-                        <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">
-                          {category.icon}
-                        </div>
-                        <div className="text-sm font-medium text-gray-800">
-                          {category.name}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {category.agents.length} agents
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : selectedCategory ? (
-                // Agents View
-                <div>
-                  <div className="flex items-center mb-6">
-                    <button
-                      onClick={() => setSelectedCategory(null)}
-                      className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
-                    >
-                      ← Back
-                    </button>
-                    <h3 className="text-xl font-bold text-gray-800">
-                      {sectors[selectedSector].categories[selectedCategory].icon} {sectors[selectedSector].categories[selectedCategory].name}
-                    </h3>
-                  </div>
-
-                  {sectors[selectedSector].categories[selectedCategory].agents.length > 0 ? (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 agent-grid">
-                      {sectors[selectedSector].categories[selectedCategory].agents.map((agent) => (
-                        <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow relative">
-                          {/* Green "added" badge and red X in top right */}
-                          {addedAgents.has(agent.id) && (
-                            <div className="absolute top-2 right-2 z-10 flex items-center space-x-1">
-                              <div className="bg-transparent border border-green-500 text-green-600 text-xs font-medium px-2 py-1 rounded-full">
-                                added
-                              </div>
-                              <button
-                                onClick={() => handleRemoveAgent(agent)}
-                                className="bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                                title="Remove agent"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          )}
-                          <div className="p-4">
-                            <div className="flex items-start space-x-3">
-                              <img
-                                src={agent.avatar}
-                                alt={agent.name}
-                                className="w-12 h-12 rounded-full object-cover"
-                                loading="eager"
-                                style={{
-                                  imageRendering: 'crisp-edges',
-                                }}
-                                onError={(e) => {
-                                  e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                      <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                      <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                    </svg>
-                                  `)}`;
-                                }}
-                              />
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-gray-900 text-sm">{agent.name}</h4>
-                                <p className="text-xs text-gray-600 mt-1">{agent.archetypeDisplay || agent.archetype}</p>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-3">
-                              <div className="mb-2">
-                                <span className="text-xs font-medium text-gray-700 uppercase tracking-wide">ARCHETYPE</span>
-                                <p className="text-xs text-gray-600 mt-1">{agent.archetypeDisplay || agent.archetype}</p>
-                              </div>
-                              
-                              <div className="mb-2">
-                                <span className="text-xs font-medium text-gray-700 uppercase tracking-wide">GOAL</span>
-                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{agent.goal}</p>
-                              </div>
-                              
-                              <div className="mb-3">
-                                <span className="text-xs font-medium text-gray-700 uppercase tracking-wide">EXPERTISE</span>
-                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">{agent.expertise}</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="px-4 pb-4 space-y-2">
+                          <div className="mt-3 space-y-2">
                             <button
                               onClick={() => setSelectedAgentDetails(agent)}
-                              className="w-full border border-blue-500 text-blue-600 py-2 px-3 rounded text-xs font-medium hover:bg-blue-50 transition-colors"
+                              className="w-full bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200 transition-colors"
                             >
-                              🔍 View Full Details
+                              View Details
                             </button>
                             <button
                               onClick={() => handleAddAgent(agent)}
                               disabled={addingAgents.has(agent.id)}
-                              className={`w-full py-2 px-3 rounded text-xs font-medium transition-colors ${
-                                addingAgents.has(agent.id)
+                              className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+                                addedAgents.has(agent.id)
+                                  ? 'bg-green-100 text-green-800'
+                                  : addingAgents.has(agent.id)
                                   ? 'bg-gray-300 text-gray-500'
                                   : 'bg-purple-600 text-white hover:bg-purple-700'
                               }`}
                             >
-                              {addingAgents.has(agent.id) 
-                                ? 'Adding...'
-                                : addedAgents.has(agent.id) 
-                                ? 'Add Again' 
+                              {addedAgents.has(agent.id) 
+                                ? '✅ Added' 
+                                : addingAgents.has(agent.id) 
+                                ? 'Adding...' 
                                 : 'Add Agent'
                               }
                             </button>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="text-6xl mb-4">{sectors[selectedSector].categories[selectedCategory].icon}</div>
-                      <h4 className="text-xl font-bold text-gray-800 mb-2">Agents Coming Soon</h4>
-                      <p className="text-gray-600 max-w-md mx-auto">
-                        We're working on adding professional agents for {sectors[selectedSector].categories[selectedCategory].name}. 
-                        Check back soon for expertly crafted profiles in this category.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Default Empty State
-                <div className="text-center py-20">
-                  <div className="text-6xl mb-6">🏛️</div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Agent Library</h3>
-                  <p className="text-gray-600 max-w-lg mx-auto mb-6">
-                    Select a team from <strong>Quick Team Builders</strong> to see pre-configured agent teams, 
-                    or choose a sector from <strong>Sectors</strong> to browse agents by industry.
-                  </p>
-                  <div className="space-y-2 text-sm text-gray-500">
-                    <p>🔬 Quick Team Builders: Pre-made teams for instant setup</p>
-                    <p>🏭 Sectors: Browse agents by healthcare, finance, and technology</p>
+                      </div>
+                    ))}
                   </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4">🔍</div>
+                    <h4 className="text-lg font-semibold text-gray-800 mb-2">No agents found</h4>
+                    <p className="text-gray-600">This category is currently empty.</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Default Empty State
+              <div className="text-center py-20">
+                <div className="text-6xl mb-6">🏛️</div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Agent Library</h3>
+                <p className="text-gray-600 max-w-lg mx-auto mb-6">
+                  Select a team from <strong>Quick Team Builders</strong> to see pre-configured agent teams, 
+                  or choose a sector from <strong>Sectors</strong> to browse agents by industry.
+                </p>
+                <div className="space-y-2 text-sm text-gray-500">
+                  <p>🔬 Quick Team Builders: Pre-made teams for instant setup</p>
+                  <p>🏭 Sectors: Browse agents by healthcare, finance, and technology</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-      
+
       {/* Agent Details Modal */}
       {selectedAgentDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
-            {/* Blue Header with Agent Info */}
+            {/* Header */}
             <div className="bg-blue-500 text-white p-6 rounded-t-lg relative">
               <button
                 onClick={() => setSelectedAgentDetails(null)}
@@ -2494,30 +1911,16 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               >
                 ×
               </button>
-              
-              <div className="flex items-center space-x-4">
+              <div className="flex items-start space-x-4">
                 <img
                   src={selectedAgentDetails.avatar}
                   alt={selectedAgentDetails.name}
                   className="w-16 h-16 rounded-full object-cover border-2 border-white"
-                  loading="eager"
-                  style={{
-                    imageRendering: 'crisp-edges',
-                  }}
-                  onError={(e) => {
-                    e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="32" cy="32" r="32" fill="#E5E7EB"/>
-                        <circle cx="32" cy="26" r="10" fill="#9CA3AF"/>
-                        <path d="M10 56c0-12.15 9.85-22 22-22s22 9.85 22 22" fill="#9CA3AF"/>
-                      </svg>
-                    `)}`;
-                  }}
                 />
                 <div>
                   <h3 className="text-xl font-bold">{selectedAgentDetails.name}</h3>
-                  <p className="text-blue-100">{selectedAgentDetails.title || "Medical Professional"}</p>
-                  <p className="text-blue-200 text-sm mt-1">{selectedAgentDetails.archetypeDisplay || selectedAgentDetails.archetype}</p>
+                  <p className="text-blue-100">{selectedAgentDetails.title}</p>
+                  <p className="text-blue-200 text-sm">{selectedAgentDetails.archetypeDisplay}</p>
                 </div>
               </div>
             </div>
@@ -2534,7 +1937,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
               <div>
                 <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-                  <span className="mr-2">🧠</span>
+                  <span className="mr-2">🏆</span>
                   Expertise
                 </h4>
                 <p className="text-gray-700 leading-relaxed">{selectedAgentDetails.expertise}</p>
@@ -2542,7 +1945,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
               <div>
                 <h4 className="font-bold text-gray-800 mb-3 flex items-center">
-                  <span className="mr-2">📋</span>
+                  <span className="mr-2">📚</span>
                   Background
                 </h4>
                 <p className="text-gray-700 leading-relaxed">{selectedAgentDetails.background}</p>
