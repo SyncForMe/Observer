@@ -517,7 +517,7 @@ const SimulationControl = () => {
         </div>
 
         {/* Control Buttons */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <button
             onClick={isRunning ? (isPaused ? resumeSimulation : pauseSimulation) : startSimulation}
             disabled={loading}
@@ -562,6 +562,14 @@ const SimulationControl = () => {
             className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
           >
             📋 Summary
+          </button>
+
+          <button
+            onClick={() => setShowWeeklyReport(true)}
+            disabled={loading}
+            className="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
+          >
+            📅 Weekly Report
           </button>
         </div>
 
