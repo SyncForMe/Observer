@@ -1531,12 +1531,12 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     setLoadingSavedAgents(false);
   };
 
-  // Fetch saved agents when component opens
+  // Fetch saved agents when component mounts
   useEffect(() => {
-    if (isOpen && token) {
+    if (token) {
       fetchSavedAgents();
     }
-  }, [isOpen, token]);
+  }, [token]);
 
   // Handle using a saved agent
   const handleUseSavedAgent = async (agent) => {
