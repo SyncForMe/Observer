@@ -3118,10 +3118,24 @@ def test_agent_database():
     # Test 3: Analyze agent archetypes/categories
     print("\nTest 3: Analyze agent archetypes/categories")
     
+    # Get archetypes from the archetypes endpoint
+    archetypes_test, archetypes_response = run_test(
+        "Get Agent Archetypes",
+        "/archetypes",
+        method="GET",
+        auth=True
+    )
+    
+    if archetypes_test and archetypes_response:
+        print(f"\nFound {len(archetypes_response)} archetypes from the archetypes endpoint:")
+        for archetype, details in archetypes_response.items():
+            print(f"- {archetype}: {details.get('description', 'No description')}")
+    
+    # Count archetypes in the agents response
     archetypes = [agent.get("archetype", "unknown") for agent in agents_response]
     archetype_counts = Counter(archetypes)
     
-    print("\nArchetype distribution:")
+    print("\nArchetype distribution in agents:")
     for archetype, count in sorted(archetype_counts.items()):
         print(f"- {archetype}: {count} agents")
     
