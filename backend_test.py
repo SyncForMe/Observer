@@ -3051,5 +3051,250 @@ def test_admin_functionality():
         print("❌ Failed to login as admin")
         print("❌ Cannot test admin functionality without admin access")
         return False, "Failed to login as admin"
+def test_agent_database():
+    """Test the agent database structure and content"""
+    print("\n" + "="*80)
+    print("TESTING AGENT DATABASE")
+    print("="*80)
+    
+    # Login first to get auth token
+    if not auth_token:
+        if not test_login():
+            print("❌ Cannot test agent database without authentication")
+            return False, "Authentication failed"
+    
+    # Test 1: Get all agents
+    print("\nTest 1: Get all agents")
+    
+    agents_test, agents_response = run_test(
+        "Get All Agents",
+        "/agents",
+        method="GET",
+        auth=True,
+        measure_time=True
+    )
+    
+    if not agents_test or not agents_response:
+        print("❌ Failed to get agents")
+        return False, "Failed to get agents"
+    
+    # Count total number of agents
+    agent_count = len(agents_response)
+    print(f"\nTotal agents: {agent_count}")
+    
+    # Test 2: Analyze agent structure
+    print("\nTest 2: Analyze agent structure")
+    
+    if agent_count > 0:
+        # Get a sample agent
+        sample_agent = agents_response[0]
+        print("\nSample agent structure:")
+        for key in sample_agent.keys():
+            print(f"- {key}")
+        
+        # Check for required fields
+        required_fields = ["id", "name", "archetype", "personality", "goal", "expertise", "background"]
+        missing_fields = [field for field in required_fields if field not in sample_agent]
+        if missing_fields:
+            print(f"❌ Missing required fields: {', '.join(missing_fields)}")
+        else:
+            print("✅ All required fields present")
+        
+        # Check personality structure if present
+        if "personality" in sample_agent:
+            personality = sample_agent["personality"]
+            print("\nPersonality structure:")
+            for key in personality.keys():
+                print(f"- {key}")
+            
+            # Check for required personality traits
+            required_traits = ["extroversion", "optimism", "curiosity", "cooperativeness", "energy"]
+            missing_traits = [trait for trait in required_traits if trait not in personality]
+            if missing_traits:
+                print(f"❌ Missing required personality traits: {', '.join(missing_traits)}")
+            else:
+                print("✅ All required personality traits present")
+    
+    # Test 3: Analyze agent archetypes/categories
+    print("\nTest 3: Analyze agent archetypes/categories")
+    
+    archetypes = [agent.get("archetype", "unknown") for agent in agents_response]
+    archetype_counts = Counter(archetypes)
+    
+    print("\nArchetype distribution:")
+    for archetype, count in sorted(archetype_counts.items()):
+        print(f"- {archetype}: {count} agents")
+    
+    # Check if there are ~90 agents per category as mentioned
+    has_90_per_category = any(count >= 90 for count in archetype_counts.values())
+    if has_90_per_category:
+        print("✅ At least one category has ~90 agents as mentioned")
+    else:
+        print("❌ No category has ~90 agents as mentioned")
+    
+    # Test 4: Check for sector/industry classification
+    print("\nTest 4: Check for sector/industry classification")
+    
+    # Look for sector/industry fields or values
+    sector_fields = ["sector", "industry", "category", "domain"]
+    found_sector_field = False
+    
+    for field in sector_fields:
+        if any(field in agent for agent in agents_response):
+            found_sector_field = True
+            print(f"✅ Found sector classification field: {field}")
+            
+            # Count values in this field
+            sector_values = [agent.get(field) for agent in agents_response if field in agent]
+            sector_counts = Counter(sector_values)
+            
+            print(f"\n{field.capitalize()} distribution:")
+            for sector, count in sector_counts.items():
+                print(f"- {sector}: {count} agents")
+            
+            break
+    
+    # If no explicit sector field, check for sector keywords in expertise or background
+    if not found_sector_field:
+        print("❌ No explicit sector/industry classification field found")
+        
+        # Check for sector keywords in expertise or background
+        sector_keywords = {
+            "healthcare": ["health", "medical", "doctor", "nurse", "patient", "hospital", "clinic", "pharma"],
+            "finance": ["finance", "banking", "investment", "stock", "market", "trading", "financial", "economy"],
+            "technology": ["tech", "software", "hardware", "IT", "computer", "digital", "cyber", "AI", "data"],
+            "education": ["education", "teaching", "learning", "school", "university", "academic", "student"],
+            "manufacturing": ["manufacturing", "factory", "production", "industrial", "assembly", "supply chain"],
+            "retail": ["retail", "commerce", "store", "shop", "customer", "consumer", "sales", "e-commerce"]
+        }
+        
+        # Count agents by inferred sector
+        inferred_sectors = defaultdict(int)
+        
+        for agent in agents_response:
+            expertise = agent.get("expertise", "").lower()
+            background = agent.get("background", "").lower()
+            text_to_check = expertise + " " + background
+            
+            for sector, keywords in sector_keywords.items():
+                if any(keyword.lower() in text_to_check for keyword in keywords):
+                    inferred_sectors[sector] += 1
+        
+        print("\nInferred sector distribution (based on expertise/background):")
+        for sector, count in sorted(inferred_sectors.items()):
+            print(f"- {sector}: {count} agents")
+    
+    # Test 5: Check for pre-built team configurations
+    print("\nTest 5: Check for pre-built team configurations")
+    
+    # Try to find team-related endpoints
+    teams_test, teams_response = run_test(
+        "Check for Teams Endpoint",
+        "/teams",
+        method="GET",
+        auth=True,
+        expected_status=200  # We'll accept any status code here
+    )
+    
+    if teams_test:
+        print("✅ Teams endpoint exists")
+        
+        # Analyze team structure
+        if isinstance(teams_response, list) and len(teams_response) > 0:
+            print(f"\nFound {len(teams_response)} pre-built teams")
+            
+            # Sample team structure
+            sample_team = teams_response[0]
+            print("\nSample team structure:")
+            for key in sample_team.keys():
+                print(f"- {key}")
+            
+            # Check if teams have agent references
+            if "agents" in sample_team or "agent_ids" in sample_team or "members" in sample_team:
+                print("✅ Teams contain agent references")
+            else:
+                print("❌ Teams do not contain agent references")
+        else:
+            print("❌ No pre-built teams found")
+    else:
+        print("❌ Teams endpoint does not exist or requires different path")
+        
+        # Try alternative endpoints
+        quick_teams_test, quick_teams_response = run_test(
+            "Check for Quick Teams Endpoint",
+            "/quick-teams",
+            method="GET",
+            auth=True,
+            expected_status=200  # We'll accept any status code here
+        )
+        
+        if quick_teams_test:
+            print("✅ Quick Teams endpoint exists")
+            
+            if isinstance(quick_teams_response, list) and len(quick_teams_response) > 0:
+                print(f"\nFound {len(quick_teams_response)} quick teams")
+            else:
+                print("❌ No quick teams found")
+        else:
+            print("❌ Quick Teams endpoint does not exist or requires different path")
+            
+            # Check for team templates in agent data
+            template_agents = [agent for agent in agents_response if agent.get("is_template", False)]
+            if template_agents:
+                print(f"✅ Found {len(template_agents)} template agents that could be used for teams")
+            else:
+                print("❌ No template agents found")
+    
+    # Test 6: Sample agents from different sectors/archetypes
+    print("\nTest 6: Sample agents from different sectors/archetypes")
+    
+    # Get sample agents from each archetype
+    samples_by_archetype = {}
+    for archetype in archetype_counts.keys():
+        archetype_agents = [agent for agent in agents_response if agent.get("archetype") == archetype]
+        if archetype_agents:
+            samples_by_archetype[archetype] = archetype_agents[0]
+    
+    print(f"\nSample agents from {len(samples_by_archetype)} different archetypes:")
+    for archetype, agent in samples_by_archetype.items():
+        print(f"\n- Archetype: {archetype}")
+        print(f"  Name: {agent.get('name', 'Unknown')}")
+        print(f"  Expertise: {agent.get('expertise', 'Unknown')}")
+        print(f"  Goal: {agent.get('goal', 'Unknown')}")
+    
+    # Print summary
+    print("\nAGENT DATABASE SUMMARY:")
+    print(f"✅ Found {agent_count} total agents")
+    print(f"✅ Found {len(archetype_counts)} unique archetypes/categories")
+    
+    # List all archetypes
+    print("\nAll archetypes:")
+    for archetype in sorted(archetype_counts.keys()):
+        print(f"- {archetype}")
+    
+    # Check if there are healthcare, finance, technology categories
+    key_sectors = ["healthcare", "finance", "technology"]
+    if found_sector_field:
+        for sector in key_sectors:
+            if any(sector.lower() in s.lower() for s in sector_counts.keys()):
+                print(f"✅ Found {sector} sector classification")
+            else:
+                print(f"❌ No {sector} sector classification found")
+    else:
+        # Check inferred sectors
+        for sector in key_sectors:
+            if sector in inferred_sectors:
+                print(f"✅ Found {inferred_sectors[sector]} agents in {sector} sector (inferred)")
+            else:
+                print(f"❌ No agents in {sector} sector (inferred)")
+    
+    return True, {
+        "agent_count": agent_count,
+        "archetypes": list(archetype_counts.keys()),
+        "archetype_counts": dict(archetype_counts),
+        "has_sector_classification": found_sector_field,
+        "has_teams": teams_test if 'teams_test' in locals() else False
+    }
+
 if __name__ == "__main__":
     main()
