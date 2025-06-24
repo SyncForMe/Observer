@@ -3,7 +3,7 @@ import axios from 'axios';
 import { motion, useAnimationControls, AnimatePresence } from 'framer-motion';
 import './App.css';
 import HomePage from './HomePage';
-import AgentLibrary from './AgentLibraryNew';
+import AgentLibrary from './AgentLibrarySimple';
 import SimulationControl from './SimulationControl';
 import ConversationViewer from './ConversationViewer';
 import DocumentCenter from './DocumentCenter';
