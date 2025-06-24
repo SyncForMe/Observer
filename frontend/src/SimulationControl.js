@@ -5,7 +5,194 @@ import { useAuth } from './App';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
 
-// Simulation Control Panel Component
+// Agent Edit Modal Component
+const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    archetype: 'scientist',
+    expertise: '',
+    background: '',
+    goal: '',
+    personality: {
+      extroversion: 5,
+      optimism: 5,
+      curiosity: 5,
+      cooperativeness: 5,
+      energy: 5
+    }
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (agent && isOpen) {
+      setFormData({
+        name: agent.name || '',
+        archetype: agent.archetype || 'scientist',
+        expertise: agent.expertise || '',
+        background: agent.background || '',
+        goal: agent.goal || '',
+        personality: agent.personality || {
+          extroversion: 5,
+          optimism: 5,
+          curiosity: 5,
+          cooperativeness: 5,
+          energy: 5
+        }
+      });
+    }
+  }, [agent, isOpen]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave(agent.id, formData);
+      onClose();
+    } catch (error) {
+      console.error('Failed to save agent:', error);
+      alert('Failed to save agent changes');
+    }
+    setSaving(false);
+  };
+
+  const archetypes = [
+    'scientist', 'optimist', 'skeptic', 'leader', 'artist', 
+    'engineer', 'entrepreneur', 'analyst', 'visionary'
+  ];
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">✏️ Edit Agent</h2>
+              <p className="text-white/80 mt-1">Modify agent details and personality</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Archetype</label>
+                <select
+                  value={formData.archetype}
+                  onChange={(e) => setFormData({...formData, archetype: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {archetypes.map(type => (
+                    <option key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Expertise</label>
+              <input
+                type="text"
+                value={formData.expertise}
+                onChange={(e) => setFormData({...formData, expertise: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g. Quantum Physics, Project Management"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Goal</label>
+              <input
+                type="text"
+                value={formData.goal}
+                onChange={(e) => setFormData({...formData, goal: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="What drives this agent?"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Background</label>
+              <textarea
+                value={formData.background}
+                onChange={(e) => setFormData({...formData, background: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows="3"
+                placeholder="Agent's professional background and experience"
+              />
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold text-gray-800 mb-3">Personality Traits</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(formData.personality).map(([trait, value]) => (
+                  <div key={trait}>
+                    <label className="block text-sm font-medium text-gray-700 mb-2 capitalize">
+                      {trait}: {value}/10
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={value}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        personality: {
+                          ...formData.personality,
+                          [trait]: parseInt(e.target.value)
+                        }
+                      })}
+                      className="w-full"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Observatory Control Panel Component
 const SimulationControl = () => {
   const [simulationState, setSimulationState] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
@@ -16,6 +203,10 @@ const SimulationControl = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [fastForwardMode, setFastForwardMode] = useState(false);
+  const [agents, setAgents] = useState([]);
+  const [agentsLoading, setAgentsLoading] = useState(false);
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
   const messagesEndRef = useRef(null);
   const { user, token } = useAuth();
 
