@@ -168,14 +168,14 @@ def test_login():
     """Login with test endpoint to get auth token"""
     global auth_token, test_user_id
     
-    # Try using the email/password login first
+    # Try using the email/password login first with admin credentials
     login_data = {
-        "email": test_user_email,
-        "password": test_user_password
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
     }
     
     login_test, login_response = run_test(
-        "Login with credentials",
+        "Login with admin credentials",
         "/auth/login",
         method="POST",
         data=login_data,
