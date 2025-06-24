@@ -1894,7 +1894,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
         <div className="flex justify-between items-center mb-2">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">📚 Agent Library</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">🤖 Agent Library</h2>
             <p className="text-white/80">Choose from professionally crafted agent profiles</p>
           </div>
         </div>
