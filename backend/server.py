@@ -3784,7 +3784,25 @@ async def update_agent(agent_id: str, agent_update: AgentUpdate, current_user: U
         if not updated_agent:
             raise HTTPException(status_code=404, detail="Agent not found after update")
         
-        return Agent(**updated_agent)
+        # Convert MongoDB document to Agent model
+        agent_model = Agent(
+            id=updated_agent["id"],
+            name=updated_agent["name"],
+            archetype=updated_agent["archetype"],
+            personality=AgentPersonality(**updated_agent["personality"]),
+            goal=updated_agent["goal"],
+            expertise=updated_agent.get("expertise", ""),
+            background=updated_agent.get("background", ""),
+            current_mood=updated_agent.get("current_mood", "neutral"),
+            current_activity=updated_agent.get("current_activity", "idle"),
+            memory_summary=updated_agent.get("memory_summary", ""),
+            avatar_url=updated_agent.get("avatar_url", ""),
+            avatar_prompt=updated_agent.get("avatar_prompt", ""),
+            user_id=updated_agent.get("user_id", ""),
+            created_at=updated_agent.get("created_at", datetime.utcnow())
+        )
+        
+        return agent_model
     except HTTPException as e:
         # Re-raise HTTP exceptions with their original status code
         raise e
