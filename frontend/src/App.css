@@ -1,0 +1,389 @@
+/* Observer Input Styles */
+.observer-input {
+  border: 2px solid #7c3aed;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+}
+
+.observer-input textarea {
+  border: 1px solid #c084fc;
+  background: white;
+}
+
+.observer-input textarea:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.observer-input .text-purple-700 {
+  color: #6d28d9;
+}
+
+.observer-input .bg-purple-100 {
+  background-color: #f3e8ff;
+}
+
+.observer-input .text-purple-600 {
+  color: #7c3aed;
+}
+
+.observer-input .bg-purple-50 {
+  background-color: #faf5ff;
+}
+
+.observer-input .border-purple-200 {
+  border-color: #e9d5ff;
+}
+
+.observer-input .border-purple-500 {
+  border-color: #8b5cf6;
+}
+
+.observer-input .bg-purple-600 {
+  background-color: #7c3aed;
+}
+
+.observer-input .bg-purple-600:hover {
+  background-color: #6d28d9;
+}
+
+/* Avatar Animation Styles */
+.avatar-animation {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.avatar-animation:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+    transform: scale(1.02);
+  }
+}
+
+.avatar-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Agent Management Styles */
+.agent-card {
+  transition: all 0.3s ease;
+}
+
+.agent-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Action Buttons Styles */
+.action-buttons button {
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.action-buttons button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Delete Button Animation */
+.agent-card button[title="Delete Agent"] {
+  transition: all 0.2s ease;
+}
+
+.agent-card button[title="Delete Agent"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+/* Expandable Agent Cards */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Pulse animation for buttons */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Tooltip Styles */
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+.tooltip {
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+/* Info icon hover effects */
+.info-icon {
+  transition: all 0.2s ease;
+}
+
+.info-icon:hover {
+  color: #4f46e5;
+  transform: scale(1.1);
+}
+
+/* Copy functionality styles */
+.copy-button {
+  transition: all 0.2s ease-in-out;
+}
+
+.copy-button:hover {
+  transform: scale(1.05);
+}
+
+.copy-status {
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  20%, 80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Weekly Summary - Optimized for wider layout */
+.weekly-summary {
+  border: 1px solid #e5e7eb;
+  max-width: none; /* Remove width restrictions for better use of space */
+}
+
+/* Weekly Summary Structured Layout */
+.structured-summary {
+  max-height: none;
+}
+
+.key-events-section {
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 24px; /* Increased padding for wider layout */
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  margin-bottom: 24px; /* Increased margin */
+}
+
+.key-events-section h3 {
+  font-size: 1.5rem; /* Larger font for better hierarchy */
+  font-weight: 700;
+  color: #1d4ed8;
+  margin-bottom: 20px;
+}
+
+.collapsible-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two columns for better space usage */
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .collapsible-sections {
+    grid-template-columns: 1fr; /* Single column on smaller screens */
+  }
+}
+
+.collapsible-section {
+  transition: all 0.3s ease-in-out;
+}
+
+.collapsible-section button {
+  font-weight: 600;
+  transition: all 0.2s ease-in-out;
+  font-size: 0.95rem; /* Slightly larger text for better readability */
+}
+
+.collapsible-section button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Expanded content styling */
+.collapsible-section .mt-2 {
+  font-size: 0.9rem;
+  line-height: 1.6; /* Better line spacing for readability */
+}
+
+/* Color variants for different sections */
+.bg-green-100 { background-color: #dcfce7; }
+.bg-green-200 { background-color: #bbf7d0; }
+.bg-green-50 { background-color: #f0fdf4; }
+.border-green-200 { border-color: #bbf7d0; }
+.border-green-400 { border-color: #4ade80; }
+
+.bg-purple-100 { background-color: #f3e8ff; }
+.bg-purple-200 { background-color: #e9d5ff; }
+.bg-purple-50 { background-color: #faf5ff; }
+.border-purple-200 { border-color: #e9d5ff; }
+.border-purple-400 { border-color: #a855f7; }
+
+.bg-yellow-100 { background-color: #fef3c7; }
+.bg-yellow-200 { background-color: #fde68a; }
+.bg-yellow-50 { background-color: #fffbeb; }
+.border-yellow-200 { border-color: #fde68a; }
+.border-yellow-400 { border-color: #facc15; }
+
+.bg-red-100 { background-color: #fee2e2; }
+.bg-red-200 { background-color: #fecaca; }
+.bg-red-50 { background-color: #fef2f2; }
+.border-red-200 { border-color: #fecaca; }
+.border-red-400 { border-color: #f87171; }
+
+.bg-indigo-100 { background-color: #e0e7ff; }
+.bg-indigo-200 { background-color: #c7d2fe; }
+.bg-indigo-50 { background-color: #eef2ff; }
+.border-indigo-200 { border-color: #c7d2fe; }
+.border-indigo-400 { border-color: #818cf8; }
+
+.auto-report-status {
+  animation: pulse-green 3s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
+  0%, 100% { background-color: #f0fdf4; }
+  50% { background-color: #dcfce7; }
+}
+
+/* Agent relationship indicators */
+.relationships {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #22c55e;
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+/* Personality trait colors */
+
+/* Legacy summary styles */
+.legacy-summary {
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+/* Simulation Status Bar */
+.simulation-status {
+  transition: all 0.3s ease-in-out;
+  overflow: hidden; /* Prevent content from overflowing */
+}
+
+.simulation-status:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure proper flex wrapping and spacing */
+.simulation-status .flex-wrap {
+  flex-wrap: wrap;
+}
+
+.simulation-status .whitespace-nowrap {
+  white-space: nowrap;
+}
+
+.simulation-status .min-w-0 {
+  min-width: 0;
+}
+
+.simulation-status .flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsive adjustments for simulation status */
+@media (max-width: 640px) {
+  .simulation-status .flex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .simulation-status .ml-4 {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}
