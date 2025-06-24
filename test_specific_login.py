@@ -43,17 +43,14 @@ test_results = {
 TEST_EMAIL = "dino@cytonic.com"
 TEST_PASSWORD = "Observerinho8"
 
-def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, auth=False, headers=None, params=None, measure_time=False):
+def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, headers=None, params=None, measure_time=False):
     """Run a test against the specified endpoint"""
     url = f"{API_URL}{endpoint}"
     print(f"\n{'='*80}\nTesting: {test_name} ({method} {url})")
     
-    # Set up headers with auth token if needed
+    # Set up headers if needed
     if headers is None:
         headers = {}
-    
-    if auth and 'auth_token' in globals() and auth_token:
-        headers["Authorization"] = f"Bearer {auth_token}"
     
     try:
         start_time = time.time()
