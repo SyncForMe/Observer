@@ -2589,7 +2589,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
         </div>
       )}
     </div>
-    </>
   );
 };
 
