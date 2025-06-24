@@ -549,7 +549,7 @@ const AppContent = () => {
               </button>
               <button
                 onClick={() => {
-                  console.log('🔍 AppContent: Simulation tab clicked');
+                  console.log('🔍 AppContent: Observatory tab clicked');
                   setActiveTab('simulation');
                 }}
                 className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
@@ -558,7 +558,7 @@ const AppContent = () => {
                     : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
-                🎮 Simulation
+                🔭 Observatory
               </button>
               <button
                 onClick={() => {
