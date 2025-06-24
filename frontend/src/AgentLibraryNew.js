@@ -91,6 +91,8 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const [addingAgents, setAddingAgents] = useState(new Set());
   const [addedAgents, setAddedAgents] = useState(new Set());
   const [isSectorsExpanded, setIsSectorsExpanded] = useState(true);
+  const [isMyAgentsExpanded, setIsMyAgentsExpanded] = useState(false);
+  const [isTeamBuildersExpanded, setIsTeamBuildersExpanded] = useState(false);
 
   const handleAddAgent = async (agent) => {
     if (!onAddAgent) return;
