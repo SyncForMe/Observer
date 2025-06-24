@@ -1660,27 +1660,25 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
   }, []); // Run once on mount
 
-  // Additional preloading when library opens
+  // Additional preloading when component mounts
   useEffect(() => {
-    if (isOpen) {
-      // Force reload any failed images
-      const retryFailedImages = () => {
-        imageLoadingStates.forEach((state, url) => {
-          if (state === 'error' && !loadedImages.has(url)) {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-              setLoadedImages(prev => new Set(prev).add(url));
-              setImageLoadingStates(prev => new Map(prev).set(url, 'loaded'));
-            };
-            img.src = url;
-          }
-        });
-      };
+    // Force reload any failed images
+    const retryFailedImages = () => {
+      imageLoadingStates.forEach((state, url) => {
+        if (state === 'error' && !loadedImages.has(url)) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            setLoadedImages(prev => new Set(prev).add(url));
+            setImageLoadingStates(prev => new Map(prev).set(url, 'loaded'));
+          };
+          img.src = url;
+        }
+      });
+    };
 
-      setTimeout(retryFailedImages, 100);
-    }
-  }, [isOpen, imageLoadingStates, loadedImages]);
+    setTimeout(retryFailedImages, 100);
+  }, [imageLoadingStates, loadedImages]);
 
   // Optimized Avatar Component with instant loading
   const OptimizedAvatar = ({ src, alt, className, size = 48 }) => {
