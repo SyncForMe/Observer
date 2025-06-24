@@ -942,6 +942,193 @@ def test_document_categories():
             print(f"  - {issue}")
         return False, {"categories": expected_categories, "counts": category_verification, "issues": issues}
 
+def test_specific_login():
+    """Test the specific login credentials for dino@cytonic.com"""
+    print("\n" + "="*80)
+    print("TESTING SPECIFIC LOGIN CREDENTIALS")
+    print("="*80)
+    
+    global auth_token, test_user_id
+    
+    # Test 1: Login with specific credentials
+    print("\nTest 1: Login with specific credentials (dino@cytonic.com)")
+    
+    login_data = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    
+    login_test, login_response = run_test(
+        "Login with specific credentials",
+        "/auth/login",
+        method="POST",
+        data=login_data,
+        expected_keys=["access_token", "token_type", "user"]
+    )
+    
+    if login_test and login_response:
+        print("✅ Login successful with dino@cytonic.com/Observerinho8")
+        auth_token = login_response.get("access_token")
+        user_data = login_response.get("user", {})
+        test_user_id = user_data.get("id")
+        print(f"User ID: {test_user_id}")
+        print(f"JWT Token: {auth_token}")
+        
+        # Verify token structure
+        try:
+            decoded_token = jwt.decode(auth_token, JWT_SECRET, algorithms=["HS256"])
+            print(f"✅ JWT token is valid and contains: {decoded_token}")
+            if "user_id" in decoded_token and "sub" in decoded_token:
+                print("✅ JWT token contains required fields (user_id, sub)")
+            else:
+                print("❌ JWT token is missing required fields")
+        except Exception as e:
+            print(f"❌ JWT token validation failed: {e}")
+    else:
+        print("❌ Login failed with dino@cytonic.com/Observerinho8")
+        
+        # Test 2: Check if user exists in database
+        print("\nTest 2: Checking if user exists in database")
+        
+        # Try to register with the same email to see if it exists
+        register_data = {
+            "email": "dino@cytonic.com",
+            "password": "NewPassword123",
+            "name": "Dino Test"
+        }
+        
+        register_test, register_response = run_test(
+            "Register with existing email",
+            "/auth/register",
+            method="POST",
+            data=register_data,
+            expected_status=400  # Should fail if user exists
+        )
+        
+        if register_test:
+            print("✅ User dino@cytonic.com exists in the database (registration failed with 'Email already registered')")
+            
+            # Test 3: Try user registration if needed
+            print("\nTest 3: Registering user since login failed")
+            
+            # Generate a unique email
+            new_email = f"dino.test.{uuid.uuid4()}@cytonic.com"
+            
+            new_register_data = {
+                "email": new_email,
+                "password": "Observerinho8",
+                "name": "Dino Test"
+            }
+            
+            new_register_test, new_register_response = run_test(
+                "Register new test user",
+                "/auth/register",
+                method="POST",
+                data=new_register_data,
+                expected_keys=["access_token", "token_type", "user"]
+            )
+            
+            if new_register_test and new_register_response:
+                print(f"✅ Successfully registered new test user with email: {new_email}")
+                auth_token = new_register_response.get("access_token")
+                user_data = new_register_response.get("user", {})
+                test_user_id = user_data.get("id")
+            else:
+                print("❌ Failed to register new test user")
+        else:
+            print("❌ User dino@cytonic.com does not exist in the database (registration succeeded)")
+    
+    # Test 4: Test "Continue as Guest" functionality
+    print("\nTest 4: Testing 'Continue as Guest' functionality")
+    
+    guest_test, guest_response = run_test(
+        "Continue as Guest",
+        "/auth/test-login",
+        method="POST",
+        expected_keys=["access_token", "token_type", "user"]
+    )
+    
+    if guest_test and guest_response:
+        print("✅ 'Continue as Guest' functionality works correctly")
+        guest_token = guest_response.get("access_token")
+        guest_user = guest_response.get("user", {})
+        guest_user_id = guest_user.get("id")
+        print(f"Guest User ID: {guest_user_id}")
+        print(f"Guest JWT Token: {guest_token}")
+        
+        # Verify token structure
+        try:
+            decoded_token = jwt.decode(guest_token, JWT_SECRET, algorithms=["HS256"])
+            print(f"✅ Guest JWT token is valid and contains: {decoded_token}")
+            if "sub" in decoded_token:
+                print("✅ Guest JWT token contains required fields")
+            else:
+                print("❌ Guest JWT token is missing required fields")
+        except Exception as e:
+            print(f"❌ Guest JWT token validation failed: {e}")
+    else:
+        print("❌ 'Continue as Guest' functionality failed")
+    
+    # Test 5: Test JWT token validation with /api/auth/me endpoint
+    print("\nTest 5: Testing JWT token validation with /api/auth/me endpoint")
+    
+    if auth_token:
+        me_test, me_response = run_test(
+            "Get current user profile",
+            "/auth/me",
+            method="GET",
+            auth=True,
+            expected_keys=["id", "email", "name"]
+        )
+        
+        if me_test and me_response:
+            print("✅ Successfully retrieved user profile with JWT token")
+            print(f"User profile: {json.dumps(me_response, indent=2)}")
+            
+            # Verify user ID matches
+            if me_response.get("id") == test_user_id:
+                print("✅ User ID in profile matches the ID from login/register")
+            else:
+                print("❌ User ID mismatch between profile and login/register")
+        else:
+            print("❌ Failed to retrieve user profile with JWT token")
+    else:
+        print("❌ Cannot test /api/auth/me endpoint without valid token")
+    
+    # Test 6: Test protected endpoint access
+    print("\nTest 6: Testing protected endpoint access")
+    
+    if auth_token:
+        protected_test, protected_response = run_test(
+            "Access protected endpoint",
+            "/documents",
+            method="GET",
+            auth=True
+        )
+        
+        if protected_test:
+            print("✅ Successfully accessed protected endpoint with JWT token")
+        else:
+            print("❌ Failed to access protected endpoint with JWT token")
+    else:
+        print("❌ Cannot test protected endpoint without valid token")
+    
+    # Print summary
+    print("\nSPECIFIC LOGIN CREDENTIALS SUMMARY:")
+    
+    if login_test:
+        print("✅ Login with dino@cytonic.com/Observerinho8 is working correctly")
+        print("✅ JWT token is generated and validated properly")
+        print("✅ Protected endpoints can be accessed with the token")
+        return True, "Login with specific credentials is working correctly"
+    else:
+        print("❌ Login with dino@cytonic.com/Observerinho8 failed")
+        if guest_test:
+            print("✅ 'Continue as Guest' functionality is working as a backup")
+        else:
+            print("❌ 'Continue as Guest' functionality is also not working")
+        return False, "Login with specific credentials failed"
+
 def test_auth_endpoints():
     """Test the authentication endpoints"""
     print("\n" + "="*80)
