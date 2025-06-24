@@ -3739,8 +3739,8 @@ async def get_agents(current_user: User = Depends(get_current_user)):
     return [Agent(**agent) for agent in agents]
 
 @api_router.put("/agents/{agent_id}")
-async def update_agent(agent_id: str, agent_update: AgentUpdate):
-    """Update an existing agent"""
+async def update_agent(agent_id: str, agent_update: AgentUpdate, current_user: User = Depends(get_current_user)):
+    """Update an existing agent (requires authentication)"""
     # Find the agent
     agent = await db.agents.find_one({"id": agent_id})
     if not agent:
@@ -3770,13 +3770,19 @@ async def update_agent(agent_id: str, agent_update: AgentUpdate):
         update_data["avatar_url"] = agent_update.avatar_url
     
     # Update the agent
-    await db.agents.update_one(
+    result = await db.agents.update_one(
         {"id": agent_id},
         {"$set": update_data}
     )
     
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
     # Return updated agent
     updated_agent = await db.agents.find_one({"id": agent_id})
+    if not updated_agent:
+        raise HTTPException(status_code=404, detail="Agent not found after update")
+    
     return Agent(**updated_agent)
 
 @api_router.post("/simulation/fast-forward")
