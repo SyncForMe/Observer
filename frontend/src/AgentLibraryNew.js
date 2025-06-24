@@ -148,6 +148,58 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
         <div className="flex h-[600px]">
           {/* Sidebar */}
           <div className="w-64 bg-gray-50 border-r p-4">
+            {/* MY AGENTS header with expandable button */}
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+              onClick={() => setIsMyAgentsExpanded(!isMyAgentsExpanded)}
+            >
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">MY AGENTS</h3>
+              <button
+                type="button"
+                className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                style={{ transform: isMyAgentsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* My Agents list - conditionally rendered */}
+            {isMyAgentsExpanded && (
+              <div className="space-y-2 mb-6">
+                <div className="text-center py-4 text-sm text-gray-500">
+                  No saved agents yet
+                </div>
+              </div>
+            )}
+            
+            {/* QUICK TEAM BUILDERS header with expandable button */}
+            <div 
+              className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+              onClick={() => setIsTeamBuildersExpanded(!isTeamBuildersExpanded)}
+            >
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">QUICK TEAM BUILDERS</h3>
+              <button
+                type="button"
+                className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                style={{ transform: isTeamBuildersExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Team Builders list - conditionally rendered */}
+            {isTeamBuildersExpanded && (
+              <div className="space-y-2 mb-6">
+                <div className="text-center py-4 text-sm text-gray-500">
+                  No team templates available
+                </div>
+              </div>
+            )}
+            
             {/* SECTORS header with expandable button */}
             <div 
               className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
