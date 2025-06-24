@@ -342,11 +342,23 @@ def test_update_agent_invalid_id():
         response = requests.put(url, json=update_data, headers=headers)
         print(f"Status code: {response.status_code}")
         
-        if response.status_code == 404:
-            print(f"✅ Correctly returned 404 for invalid agent ID")
+        # Test the expertise endpoint with invalid ID as well
+        expertise_url = f"{API_URL}/agents/{invalid_id}/expertise"
+        expertise_data = {
+            "expertise": "This update should fail"
+        }
+        print(f"\nTesting expertise endpoint with invalid ID:")
+        print(f"PUT {expertise_url}")
+        print(f"Request data: {json.dumps(expertise_data, indent=2)}")
+        
+        expertise_response = requests.put(expertise_url, json=expertise_data, headers=headers)
+        print(f"Status code: {expertise_response.status_code}")
+        
+        if expertise_response.status_code == 404:
+            print(f"✅ Expertise endpoint correctly returned 404 for invalid agent ID")
             return True, None
         else:
-            print(f"❌ Expected 404, got {response.status_code}: {response.text}")
+            print(f"❌ Expected 404 from expertise endpoint, got {expertise_response.status_code}: {expertise_response.text}")
             return False, None
     except Exception as e:
         print(f"❌ Error during test: {e}")
