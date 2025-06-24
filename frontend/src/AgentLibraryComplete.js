@@ -2480,7 +2480,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
           </div>
         </div>
       </div>
-
+      
       {/* Agent Details Modal */}
       {selectedAgentDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
