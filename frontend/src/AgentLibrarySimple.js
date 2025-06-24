@@ -1,6 +1,94 @@
 import React, { useState } from 'react';
 import { useAuth } from './App';
 
+// Healthcare Categories
+const healthcareCategories = {
+  medical: { name: "Medical", icon: "🩺", agents: Array(4).fill({}) },
+  pharmaceutical: { name: "Pharmaceutical", icon: "💊", agents: Array(3).fill({}) },
+  biotechnology: { name: "Biotechnology", icon: "🧬", agents: Array(3).fill({}) },
+  nursing: { name: "Nursing", icon: "👩‍⚕️", agents: Array(3).fill({}) },
+  publicHealth: { name: "Public Health", icon: "🏥", agents: Array(3).fill({}) },
+  nutrition: { name: "Nutrition & Dietetics", icon: "🥗", agents: Array(2).fill({}) },
+  physicalTherapy: { name: "Physical Therapy", icon: "🏃‍♂️", agents: Array(2).fill({}) },
+  veterinary: { name: "Veterinary", icon: "🐕", agents: Array(2).fill({}) },
+  medicalResearch: { name: "Medical Research", icon: "🔬", agents: Array(2).fill({}) },
+  epidemiology: { name: "Epidemiology", icon: "📊", agents: Array(2).fill({}) }
+};
+
+// Finance Categories
+const financeCategories = {
+  investmentBanking: { name: "Investment Banking", icon: "🏦", agents: Array(3).fill({}) },
+  ventureCapital: { name: "Venture Capital", icon: "🚀", agents: Array(2).fill({}) },
+  privateEquity: { name: "Private Equity", icon: "💼", agents: Array(2).fill({}) },
+  insurance: { name: "Insurance", icon: "🛡️", agents: Array(2).fill({}) },
+  accounting: { name: "Accounting", icon: "📊", agents: Array(2).fill({}) },
+  auditing: { name: "Auditing", icon: "🔍", agents: Array(2).fill({}) },
+  taxAdvisory: { name: "Tax Advisory", icon: "📋", agents: Array(2).fill({}) },
+  realEstate: { name: "Real Estate", icon: "🏢", agents: Array(2).fill({}) },
+  banking: { name: "Banking", icon: "🏛️", agents: Array(2).fill({}) },
+  trading: { name: "Trading", icon: "📈", agents: Array(2).fill({}) },
+  riskManagement: { name: "Risk Management", icon: "⚖️", agents: Array(2).fill({}) },
+  actuarialScience: { name: "Actuarial Science", icon: "📐", agents: Array(2).fill({}) }
+};
+
+// Technology Categories
+const technologyCategories = {
+  softwareEngineering: { name: "Software Engineering", icon: "💻", agents: Array(3).fill({}) },
+  dataScience: { name: "Data Science", icon: "📊", agents: Array(3).fill({}) },
+  cybersecurity: { name: "Cybersecurity", icon: "🔒", agents: Array(3).fill({}) },
+  aiMachineLearning: { name: "AI & Machine Learning", icon: "🧠", agents: Array(3).fill({}) },
+  devOps: { name: "DevOps", icon: "⚙️", agents: Array(3).fill({}) },
+  cloudArchitecture: { name: "Cloud Architecture", icon: "☁️", agents: Array(3).fill({}) },
+  blockchain: { name: "Blockchain", icon: "🔗", agents: Array(3).fill({}) },
+  civilEngineering: { name: "Civil Engineering", icon: "🏗️", agents: Array(3).fill({}) },
+  mechanicalEngineering: { name: "Mechanical Engineering", icon: "⚙️", agents: Array(3).fill({}) },
+  electricalEngineering: { name: "Electrical Engineering", icon: "⚡", agents: Array(3).fill({}) },
+  chemicalEngineering: { name: "Chemical Engineering", icon: "🧪", agents: Array(3).fill({}) },
+  aerospaceEngineering: { name: "Aerospace Engineering", icon: "🚀", agents: Array(3).fill({}) },
+  biomedicalEngineering: { name: "Biomedical Engineering", icon: "🩺", agents: Array(3).fill({}) }
+};
+
+// Define sectors
+const sectors = {
+  healthcare: {
+    name: "Healthcare & Life Sciences",
+    icon: "🏥",
+    categories: healthcareCategories
+  },
+  finance: {
+    name: "Finance & Business",
+    icon: "💰",
+    categories: financeCategories
+  },
+  technology: {
+    name: "Technology & Engineering",
+    icon: "🔧",
+    categories: technologyCategories
+  }
+};
+
+// Quick Teams
+const quickTeams = {
+  research: {
+    name: "Research Team",
+    icon: "🔬",
+    description: "Scientist, Optimist, Leader",
+    agents: Array(3).fill({})
+  },
+  business: {
+    name: "Business Team", 
+    icon: "💼",
+    description: "Strategist, Consultant, Innovator",
+    agents: Array(3).fill({})
+  },
+  crypto: {
+    name: "Crypto Team",
+    icon: "₿", 
+    description: "Blockchain Expert, DeFi Specialist, Crypto Analyst",
+    agents: Array(3).fill({})
+  }
+};
+
 const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const [selectedAgentDetails, setSelectedAgentDetails] = useState(null);
   
