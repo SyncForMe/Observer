@@ -209,6 +209,7 @@ const SimulationControl = () => {
   const [editingAgent, setEditingAgent] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+  const [showObserverChat, setShowObserverChat] = useState(false);
   const messagesEndRef = useRef(null);
   const { user, token } = useAuth();
 
