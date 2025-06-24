@@ -753,7 +753,40 @@ const AppContent = () => {
             <div>
               {console.log('🔍 AppContent: Rendering agents content')}
               <AgentLibrary 
-                onAddAgent={(agent) => console.log('Agent added:', agent)}
+                onAddAgent={async (agent) => {
+                  try {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                      alert('Please log in to add agents');
+                      return { success: false, message: 'Not authenticated' };
+                    }
+
+                    const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
+                    const response = await fetch(`${API}/agents`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify(agent)
+                    });
+
+                    const result = await response.json();
+                    if (response.ok) {
+                      console.log('✅ Agent added successfully:', result);
+                      alert(`Agent "${agent.name}" added successfully!`);
+                      return { success: true, message: 'Agent added successfully' };
+                    } else {
+                      console.error('❌ Failed to add agent:', result);
+                      alert(`Failed to add agent: ${result.detail || 'Unknown error'}`);
+                      return { success: false, message: result.detail || 'Unknown error' };
+                    }
+                  } catch (error) {
+                    console.error('❌ Error adding agent:', error);
+                    alert(`Error adding agent: ${error.message}`);
+                    return { success: false, message: error.message };
+                  }
+                }}
                 onRemoveAgent={(agent) => console.log('Agent removed:', agent)}
               />
             </div>
