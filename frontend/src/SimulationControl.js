@@ -796,6 +796,12 @@ const SimulationControl = () => {
         agent={editingAgent}
         onSave={handleSaveAgent}
       />
+
+      {/* Weekly Report Modal */}
+      <WeeklySummary
+        isOpen={showWeeklyReport}
+        onClose={() => setShowWeeklyReport(false)}
+      />
     </div>
   );
 };
