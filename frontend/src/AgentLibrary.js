@@ -1465,10 +1465,7 @@ const sectors = {
   }
 };
 
-const AgentLibrary = ({ isOpen, onClose, onAddAgent, onRemoveAgent }) => {
-  // Don't render if not open
-  if (!isOpen) return null;
-
+const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const { user, token } = useAuth();
   const [selectedSector, setSelectedSector] = useState(null); // Changed to null to show nothing by default
   const [selectedCategory, setSelectedCategory] = useState(null);
