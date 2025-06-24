@@ -1,0 +1,19 @@
+# Environment variables - NEVER commit these!
+.env
+backend/.env
+frontend/.env
+
+# Dependencies
+node_modules/
+__pycache__/
+
+# Build files
+build/
+dist/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
