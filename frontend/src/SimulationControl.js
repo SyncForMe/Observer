@@ -724,68 +724,150 @@ const SimulationControl = () => {
         )}
       </div>
 
-      {/* Observer Chat */}
+      {/* Simulation Control Buttons - Underneath Agents */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-        <h3 className="text-xl font-bold text-white mb-4">💬 Observer Chat</h3>
+        <h3 className="text-xl font-bold text-white mb-4">🎮 Simulation Controls</h3>
         
-        {/* Messages Display */}
-        <div className="bg-white/5 rounded-lg p-4 h-64 overflow-y-auto mb-4">
-          {observerMessages.length === 0 ? (
-            <div className="text-center text-white/60 mt-8">
-              <div className="text-4xl mb-2">👁️</div>
-              <p>No messages yet. Start observing the simulation!</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {observerMessages.map((msg, index) => (
-                <div key={index} className="flex space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                    msg.type === 'observer' 
-                      ? 'bg-blue-600' 
-                      : msg.type === 'system' 
-                        ? 'bg-gray-600' 
-                        : 'bg-green-600'
-                  }`}>
-                    {msg.type === 'observer' ? '👁️' : msg.type === 'system' ? '⚙️' : '🤖'}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-white font-medium">
-                        {msg.agent_name || msg.type || 'Observer'}
-                      </span>
-                      <span className="text-white/40 text-xs">
-                        {new Date(msg.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <div className="text-white/80 text-sm">{msg.message}</div>
-                  </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
-
-        {/* Message Input */}
-        <div className="flex space-x-3">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendObserverMessage()}
-            placeholder="Type your observer message..."
-            disabled={loading || !isRunning}
-            className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Play/Pause Button */}
           <button
-            onClick={sendObserverMessage}
-            disabled={loading || !newMessage.trim() || !isRunning}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
+            onClick={isRunning ? (isPaused ? resumeSimulation : pauseSimulation) : startSimulation}
+            disabled={loading}
+            className={`px-6 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+              isRunning 
+                ? (isPaused 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : 'bg-yellow-600 hover:bg-yellow-700 text-white')
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            } disabled:opacity-50`}
           >
-            Send
+            <span className="text-2xl">
+              {loading ? '⏳' : isRunning ? (isPaused ? '▶️' : '⏸️') : '▶️'}
+            </span>
+            <span>
+              {loading ? 'Loading...' : isRunning ? (isPaused ? 'Resume' : 'Pause') : 'Play'}
+            </span>
+          </button>
+
+          {/* Observer Input Button */}
+          <button
+            onClick={() => setShowObserverChat(!showObserverChat)}
+            className={`px-6 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+              showObserverChat 
+                ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                : 'bg-gray-600 hover:bg-gray-700 text-white'
+            }`}
+          >
+            <span className="text-2xl">👁️</span>
+            <span>Observer Input</span>
+          </button>
+
+          {/* Fast Forward Button */}
+          <button
+            onClick={toggleFastForward}
+            disabled={loading || !isRunning}
+            className={`px-6 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+              fastForwardMode 
+                ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                : 'bg-gray-600 hover:bg-gray-700 text-white'
+            } disabled:opacity-50`}
+          >
+            <span className="text-2xl">⚡</span>
+            <span>Fast Forward</span>
           </button>
         </div>
+
+        {/* Status Indicator */}
+        <div className="mt-4 text-center">
+          <div className="flex items-center justify-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="text-white text-sm">
+                {isRunning ? (isPaused ? 'Paused' : 'Running') : 'Stopped'}
+              </span>
+            </div>
+            {fastForwardMode && (
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-orange-400 animate-pulse"></div>
+                <span className="text-orange-300 text-sm">Fast Forward Active</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Observer Chat - Only show when observer input button is clicked */}
+      {showObserverChat && (
+        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-white">💬 Observer Chat</h3>
+            <button
+              onClick={() => setShowObserverChat(false)}
+              className="text-white/70 hover:text-white text-xl p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* Messages Display */}
+          <div className="bg-white/5 rounded-lg p-4 h-64 overflow-y-auto mb-4">
+            {observerMessages.length === 0 ? (
+              <div className="text-center text-white/60 mt-8">
+                <div className="text-4xl mb-2">👁️</div>
+                <p>No messages yet. Start observing the simulation!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {observerMessages.map((msg, index) => (
+                  <div key={index} className="flex space-x-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                      msg.type === 'observer' 
+                        ? 'bg-blue-600' 
+                        : msg.type === 'system' 
+                          ? 'bg-gray-600' 
+                          : 'bg-green-600'
+                    }`}>
+                      {msg.type === 'observer' ? '👁️' : msg.type === 'system' ? '⚙️' : '🤖'}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-white font-medium">
+                          {msg.agent_name || msg.type || 'Observer'}
+                        </span>
+                        <span className="text-white/40 text-xs">
+                          {new Date(msg.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div className="text-white/80 text-sm">{msg.message}</div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Message Input */}
+          <div className="flex space-x-3">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && sendObserverMessage()}
+              placeholder="Type your observer message..."
+              disabled={loading || !isRunning}
+              className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            />
+            <button
+              onClick={sendObserverMessage}
+              disabled={loading || !newMessage.trim() || !isRunning}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Agent Edit Modal */}
       <AgentEditModal
