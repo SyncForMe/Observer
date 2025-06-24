@@ -1,300 +1,248 @@
 # 🤖 AI Agent Simulation Platform
 
-A sophisticated AI Agent Simulation Platform that allows users to create, manage, and run simulations with multiple AI agents that interact with each other in real-time conversations.
+A sophisticated web application that allows users to create, manage, and run simulations with multiple AI agents that interact in real-time conversations. Perfect for testing scenarios, research, and understanding AI agent dynamics.
 
-## 🎯 **Overview**
+![Platform Screenshot](docs/images/platform-overview.png)
 
-This platform enables users to:
-- Create custom AI agents with unique personalities and expertise
-- Run real-time simulations with multiple agents
-- Generate documents from agent conversations
-- Analyze simulation results with comprehensive analytics
-- Manage agent libraries and conversation history
+## ✨ Features
 
-## 🏗️ **Architecture**
+### 🔭 Observatory Tab (Simulation Control)
+- **Real-time Agent Monitoring**: Visual display of active agents with profiles
+- **Simulation Controls**: Play/Pause/Resume, Fast Forward, Observer Input
+- **Agent Management**: Add, edit, remove agents directly from simulation
+- **Observer Chat**: Real-time interaction with running simulations (hidden until activated)
+- **Weekly Reports**: Generate comprehensive analytics and insights
 
-- **Frontend**: React.js with Tailwind CSS
-- **Backend**: FastAPI with Python
-- **Database**: MongoDB
-- **AI Integrations**: Gemini, OpenAI, fal.ai
-- **Authentication**: JWT with Google OAuth support
+### 🤖 Agent Library  
+- **90+ Professional Agents**: Across Healthcare, Finance, and Technology sectors
+- **38 Categories**: Detailed specializations in each industry
+- **Quick Team Builders**: Pre-configured teams (Research, Business, Crypto)
+- **Agent Profiles**: Complete backgrounds, expertise, goals, and personalities
+- **Add Agents**: One-click agent addition to simulations
 
-## 🚀 **Features**
+### 💬 Real-time Simulations
+- **Multi-agent Conversations**: Agents interact naturally in scenarios
+- **8 Scenario Types**: Business meetings, research discussions, brainstorming
+- **Auto-progression**: Conversations continue with configurable intervals
+- **Observer Intervention**: Guide simulations in real-time
 
-### Core Functionality
-- ✅ **Agent Management** - Create, edit, and save custom AI agents
-- ✅ **Real-time Simulations** - Multi-agent conversations with observer mode
-- ✅ **Document Generation** - AI-powered document creation from conversations
-- ✅ **Analytics Dashboard** - Comprehensive usage insights and metrics
-- ✅ **User Authentication** - Email/password and Google OAuth
-- ✅ **Conversation History** - Complete conversation tracking and management
+### 📊 Analytics & Insights
+- **Weekly Analytics**: Comprehensive usage metrics and trends
+- **Agent Rankings**: Top performers and usage statistics
+- **Document Generation**: AI-powered reports from conversations
+- **Export Options**: Multiple formats for data analysis
 
-### Advanced Features
-- 🎮 **Simulation Control** - Start/stop/pause/resume with fast-forward
-- 💬 **Observer Chat** - Real-time interaction during simulations
-- 📊 **Weekly Reports** - Automated insights and recommendations
-- 🌍 **Multi-language Support** - Real-time translation capabilities
-- 🎭 **Custom Scenarios** - Professional scenario creation and templates
-- 📄 **Document Center** - Bulk operations and organization
+### 👤 User Management
+- **Authentication**: Email/password and Google OAuth
+- **Profile Management**: Personal settings and preferences
+- **My Agents**: Save and reuse custom agent configurations
+- **Help System**: Comprehensive documentation and support
 
-## 📋 **Prerequisites**
+## 🚀 Quick Start
 
-- Node.js (v16+ recommended)
-- Python (v3.8+ required)
-- MongoDB (v4.4+ recommended)
-- Yarn package manager
+### Prerequisites
+- **Node.js** 18+ and npm/yarn
+- **Python** 3.8+
+- **MongoDB** 4.4+
+- **Git**
 
-## ⚙️ **Installation**
-
-### 1. Clone the Repository
+### 1. Clone Repository
 ```bash
-git clone https://github.com/YourUsername/ai-agent-simulation.git
+git clone https://github.com/yourusername/ai-agent-simulation.git
 cd ai-agent-simulation
 ```
 
-### 2. Set Up Environment Variables
-
-**Backend Configuration:**
-```bash
-cd backend
-cp .env.example .env
-```
-
-Edit `backend/.env` and add your actual API keys:
-```env
-MONGO_URL="mongodb://localhost:27017"
-DB_NAME="ai_simulation"
-GEMINI_API_KEY="your_actual_gemini_api_key"
-FAL_KEY="your_actual_fal_ai_api_key"
-OPENAI_API_KEY="your_actual_openai_api_key"
-GOOGLE_CLIENT_ID="your_google_oauth_client_id"
-GOOGLE_CLIENT_SECRET="your_google_oauth_client_secret"
-JWT_SECRET="your_super_secure_jwt_secret"
-```
-
-**Frontend Configuration:**
-```bash
-cd ../frontend
-cp .env.example .env
-```
-
-Edit `frontend/.env`:
-```env
-WDS_SOCKET_PORT=443
-REACT_APP_BACKEND_URL=http://localhost:8001
-```
-
-### 3. Install Dependencies
-
-**Backend:**
+### 2. Backend Setup
 ```bash
 cd backend
 pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your configuration
+python -m uvicorn server:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-**Frontend:**
-```bash
-cd ../frontend
-yarn install
-```
-
-### 4. Start MongoDB
-```bash
-# Using Docker (recommended)
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-
-# Or start your local MongoDB service
-sudo systemctl start mongod
-```
-
-### 5. Run the Application
-
-**Start Backend (Terminal 1):**
-```bash
-cd backend
-python server.py
-```
-
-**Start Frontend (Terminal 2):**
+### 3. Frontend Setup
 ```bash
 cd frontend
+yarn install
+cp .env.example .env
+# Edit .env with your configuration
 yarn start
 ```
 
-The application will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8001
+### 4. Access Application
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8001
+- **API Docs**: http://localhost:8001/docs
 
-## 🔑 **API Keys Setup**
+## 📁 Project Structure
 
-### Required API Keys
-
-1. **Gemini API Key**
-   - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Create a new API key
-   - Add to `GEMINI_API_KEY` in `.env`
-
-2. **OpenAI API Key**
-   - Go to [OpenAI Platform](https://platform.openai.com/api-keys)
-   - Create a new secret key
-   - Add to `OPENAI_API_KEY` in `.env`
-
-3. **fal.ai API Key**
-   - Go to [fal.ai](https://fal.ai/)
-   - Create an account and get your API key
-   - Add to `FAL_KEY` in `.env`
-
-4. **Google OAuth (Optional)**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create OAuth 2.0 credentials
-   - Add client ID and secret to `.env`
-
-## 🐳 **Docker Deployment**
-
-### Using Docker Compose
-```bash
-# Build and start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-### Individual Docker Builds
-```bash
-# Backend
-cd backend
-docker build -t ai-simulation-backend .
-
-# Frontend
-cd frontend
-docker build -t ai-simulation-frontend .
-```
-
-## 📊 **Usage**
-
-### Creating Agents
-1. Navigate to **Agent Library** tab
-2. Click **Create New Agent**
-3. Define personality traits, expertise, and goals
-4. Generate AI avatar (optional)
-5. Save to your personal library
-
-### Running Simulations
-1. Go to **Simulation** tab
-2. Add agents from your library
-3. Select or create a scenario
-4. Click **Start Simulation**
-5. Use **Observer Chat** to interact in real-time
-
-### Generating Documents
-1. Simulations automatically generate relevant documents
-2. Access via **Documents** tab
-3. Create custom documents manually
-4. Export in multiple formats
-
-### Analytics
-1. View comprehensive metrics in **Analytics** dashboard
-2. Track agent performance and usage
-3. Generate weekly reports
-4. Export data for analysis
-
-## 🛠️ **Development**
-
-### Project Structure
 ```
 ai-agent-simulation/
+├── README.md                 # This file
+├── DEPLOYMENT.md            # Deployment instructions
+├── API.md                   # API documentation
+├── FEATURES.md              # Detailed feature documentation
 ├── backend/
-│   ├── server.py              # Main FastAPI application
-│   ├── smart_conversation.py  # Conversation generation logic
-│   ├── enhanced_document_system.py  # Document creation system
-│   └── requirements.txt       # Python dependencies
+│   ├── README.md            # Backend-specific setup
+│   ├── server.py            # FastAPI application
+│   ├── requirements.txt     # Python dependencies
+│   └── .env.example         # Environment template
 ├── frontend/
-│   ├── src/
-│   │   ├── App.js            # Main React component
-│   │   ├── SimulationControl.js  # Simulation management
-│   │   ├── AgentLibrary.js   # Agent management
-│   │   ├── DocumentCenter.js # Document management
-│   │   └── AnalyticsDashboard.js  # Analytics display
-│   └── package.json          # Node.js dependencies
-└── README.md
+│   ├── README.md            # Frontend-specific setup
+│   ├── package.json         # Node.js dependencies
+│   ├── .env.example         # Environment template
+│   └── src/
+│       ├── App.js           # Main React component
+│       ├── SimulationControl.js  # Observatory tab
+│       ├── AgentLibraryComplete.js  # Agent Library
+│       └── ...              # Other components
+├── docs/
+│   ├── setup/               # Setup guides
+│   ├── features/            # Feature documentation
+│   └── api/                 # API examples
+└── scripts/
+    ├── setup.sh             # Automated setup script
+    └── deploy.sh            # Deployment script
 ```
 
-### Adding New Features
-1. Backend endpoints go in `server.py`
-2. Frontend components go in `src/`
-3. Follow existing patterns for consistency
-4. Test thoroughly before committing
+## 🛠 Technology Stack
 
-### API Documentation
-Once running, visit: http://localhost:8001/docs
+### Frontend
+- **React** 19.0.0 - Modern UI library
+- **Tailwind CSS** - Utility-first styling
+- **Framer Motion** 12.18.1 - Smooth animations
+- **Axios** 1.8.4 - HTTP client
+- **JWT Decode** 4.0.0 - Authentication
 
-## 🧪 **Testing**
+### Backend  
+- **FastAPI** 0.115.6 - High-performance API framework
+- **MongoDB** with Motor 3.3.2 - Async database driver
+- **PyJWT** 2.8.0 - JWT authentication
+- **OpenAI** 1.54.5 - AI integrations
+- **Emergent Integrations** - Platform-specific tools
 
-### Backend Testing
+### Infrastructure
+- **Docker** - Containerization
+- **Nginx** - Reverse proxy
+- **Kubernetes** - Orchestration (production)
+
+## 🔧 Environment Variables
+
+### Backend (.env)
+```env
+# Database
+MONGO_URL=mongodb://localhost:27017/ai_simulation
+
+# Security
+JWT_SECRET_KEY=your_super_secure_jwt_secret_key_here
+JWT_ALGORITHM=HS256
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# AI Services
+OPENAI_API_KEY=your_openai_api_key_here
+FAL_KEY=your_fal_ai_key_here
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+```
+
+### Frontend (.env)
+```env
+# Backend URL
+REACT_APP_BACKEND_URL=http://localhost:8001
+
+# Development
+WDS_SOCKET_PORT=443
+```
+
+## 📚 Documentation
+
+- [**DEPLOYMENT.md**](DEPLOYMENT.md) - Production deployment guide
+- [**API.md**](API.md) - Complete API reference
+- [**FEATURES.md**](FEATURES.md) - Detailed feature documentation
+- [**backend/README.md**](backend/README.md) - Backend setup and development
+- [**frontend/README.md**](frontend/README.md) - Frontend setup and development
+
+## 🧪 Development
+
+### Running Tests
 ```bash
-cd backend
-python -m pytest tests/
+# Backend tests
+cd backend && python -m pytest
+
+# Frontend tests  
+cd frontend && yarn test
 ```
 
-### Frontend Testing
+### Development Mode
 ```bash
-cd frontend
-yarn test
+# Start both services in development
+./scripts/dev.sh
+
+# Or start individually
+cd backend && python -m uvicorn server:app --reload
+cd frontend && yarn start
 ```
 
-### Integration Testing
+## 🚀 Deployment
+
+### Production Build
 ```bash
-# Run full test suite
-yarn test:integration
+# Build frontend
+cd frontend && yarn build
+
+# Production deployment
+./scripts/deploy.sh
 ```
 
-## 🚀 **Deployment**
+### Docker Deployment
+```bash
+docker-compose up -d
+```
 
-### Environment Setup
-1. Set up production MongoDB instance
-2. Configure environment variables for production
-3. Build frontend for production
-4. Deploy backend with proper CORS settings
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
-### Production Considerations
-- Use environment variables for all secrets
-- Enable HTTPS in production
-- Set up proper monitoring and logging
-- Configure backup strategies for MongoDB
-- Implement rate limiting for API endpoints
+## 📈 Key Metrics
 
-## 🤝 **Contributing**
+- **90+ AI Agents** across 3 sectors (Healthcare, Finance, Technology)
+- **38 Categories** with specialized agent types
+- **8 Simulation Scenarios** for different use cases
+- **Real-time Performance** with sub-500ms API responses
+- **Enterprise Security** with JWT and user isolation
+
+## 🎯 Use Cases
+
+1. **Business Strategy**: Test team dynamics and decision-making
+2. **Research & Development**: Simulate expert consultations
+3. **Training & Education**: Practice scenarios with AI role-playing
+4. **Creative Projects**: Brainstorm with diverse AI personalities
+5. **Process Optimization**: Test workflow improvements
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 **License**
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 **Support**
+## 🆘 Support
 
-- Create an issue for bug reports
-- Join our community discussions
-- Check the documentation at `/docs`
+- **Documentation**: Check docs/ folder
+- **Issues**: GitHub Issues
+- **Email**: support@yourdomain.com
+- **Discord**: [Community Server](https://discord.gg/your-server)
 
-## 🔄 **Changelog**
+## 🏆 Credits
 
-### v1.0.0 (Current)
-- Initial release with full simulation platform
-- Agent creation and management
-- Real-time conversation system
-- Document generation
-- Analytics dashboard
-- User authentication
+Built with ❤️ using modern web technologies and AI integrations.
 
 ---
 
-**Built with ❤️ for AI researchers, developers, and enthusiasts**
+**Ready to explore AI agent simulations?** Follow the setup guide and start creating your first simulation!
