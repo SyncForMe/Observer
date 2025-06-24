@@ -678,6 +678,8 @@ agent_communication:
 6. PUT /api/saved-agents/{agent_id} - This endpoint is working correctly and updates saved agent details. It also requires all fields to be provided.
 
 7. DELETE /api/agents/{agent_id} - This endpoint is working correctly and deletes agents.
+    -agent: "testing"
+    -message: "I've completed testing of the Observatory tab (renamed from Simulation) and the Agent Profiles functionality. Both features are implemented correctly and working as expected. The Observatory tab is visible and clickable, and correctly labeled as '🔭 Observatory'. The Observatory Control header is correctly labeled as '🔭 Observatory Control'. All control buttons (Start/Pause/Resume, Fast Forward, Auto Mode, Summary) are visible and properly implemented. The scenario selection dropdown is also present. The Active Agents section is implemented with all the required functionality: agent avatars/icons with archetype colors, agent names and archetypes, expertise areas, personality trait indicators (Energy, Optimism), and Edit and Remove buttons on each card. The Agent Edit Modal has all the required fields: name and archetype fields, expertise field, goal field, background field, and personality sliders. Overall, both features are well-implemented and working correctly."
 
 8. DELETE /api/saved-agents/{agent_id} - This endpoint is working correctly and deletes saved agents.
 
