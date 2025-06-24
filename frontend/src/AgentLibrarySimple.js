@@ -224,17 +224,177 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
           {/* Main Content */}
           <div className="flex-1 p-6 overflow-y-auto">
-            {/* Default Empty State */}
-            <div className="text-center py-20">
-              <div className="text-6xl mb-6">🏛️</div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Agent Library</h3>
-              <p className="text-gray-600 max-w-lg mx-auto mb-6">
-                Choose a sector from <strong>Sectors</strong> to browse agents by industry.
-              </p>
-              <div className="space-y-2 text-sm text-gray-500">
-                <p>🏭 Sectors: Browse agents by healthcare, finance, and technology</p>
+            {selectedQuickTeam ? (
+              // Quick Team View
+              <div>
+                {/* Back Button */}
+                <div className="mb-4">
+                  <button
+                    onClick={() => {
+                      setSelectedQuickTeam(null);
+                      setIsQuickTeamBuildersExpanded(true);
+                    }}
+                    className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Back to Quick Teams</span>
+                  </button>
+                </div>
+                
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {quickTeams[selectedQuickTeam].icon} {quickTeams[selectedQuickTeam].name}
+                  </h3>
+                  <button
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 font-medium"
+                  >
+                    Add Entire Team
+                  </button>
+                </div>
+                
+                <p className="text-gray-600 mb-6">{quickTeams[selectedQuickTeam].description}</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 agent-grid">
+                  {Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                      <div className="p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                            <span className="text-purple-600 text-lg font-bold">A</span>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-800">Agent Name</h4>
+                            <p className="text-sm text-gray-500">Archetype</p>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3">
+                          <p className="text-sm text-gray-600">Agent Title</p>
+                        </div>
+                        
+                        <div className="mt-4 flex space-x-2">
+                          <button
+                            onClick={() => setSelectedAgentDetails({})}
+                            className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 text-sm"
+                          >
+                            Add Agent
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : selectedSector && !selectedCategory ? (
+              // Sector Categories View  
+              <div>
+                {/* Back Button */}
+                <div className="flex items-center mb-6">
+                  <button
+                    onClick={() => {
+                      setSelectedSector(null);
+                    }}
+                    className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
+                  >
+                    ← Back to Sectors
+                  </button>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {sectors[selectedSector].icon} {sectors[selectedSector].name}
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {Object.entries(sectors[selectedSector].categories).map(([key, category]) => (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedCategory(key)}
+                      className="bg-white border-2 border-gray-200 rounded-lg p-4 hover:border-purple-300 hover:shadow-md transition-all text-center group"
+                    >
+                      <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">
+                        {category.icon}
+                      </div>
+                      <div className="text-sm font-medium text-gray-800">
+                        {category.name}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {category.agents.length} agents
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : selectedCategory ? (
+              // Agents View
+              <div>
+                <div className="flex items-center mb-6">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
+                  >
+                    ← Back
+                  </button>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {sectors[selectedSector].categories[selectedCategory].icon} {sectors[selectedSector].categories[selectedCategory].name}
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 agent-grid">
+                  {Array(sectors[selectedSector].categories[selectedCategory].agents.length).fill(0).map((_, index) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                      <div className="p-4">
+                        <div className="flex items-start space-x-3">
+                          <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                            <span className="text-purple-600 text-lg font-bold">A</span>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-gray-800">Agent Name</h4>
+                            <p className="text-sm text-gray-500">Archetype</p>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-3">
+                          <p className="text-sm text-gray-600">Agent Title</p>
+                        </div>
+                        
+                        <div className="mt-4 flex space-x-2">
+                          <button
+                            onClick={() => setSelectedAgentDetails({})}
+                            className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            className="bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 text-sm"
+                          >
+                            Add Agent
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // Welcome View (Default)
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">👋</div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Welcome to the Agent Library</h3>
+                <p className="text-gray-600 max-w-lg mx-auto mb-8">
+                  Select a team from <strong>Quick Team Builders</strong> to see pre-configured agent teams, 
+                  or choose a sector from <strong>Sectors</strong> to browse agents by industry.
+                </p>
+                <div className="space-y-2 text-sm text-gray-500">
+                  <p>🔬 Quick Team Builders: Pre-made teams for instant setup</p>
+                  <p>🏭 Sectors: Browse agents by healthcare, finance, and technology</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
