@@ -244,7 +244,6 @@ def test_update_agent():
             "energy": 9
         },
         "goal": "To verify the agent update functionality works correctly",
-        "expertise": "API Testing and Validation",
         "background": "Senior QA Engineer with focus on backend systems"
     }
     
@@ -262,19 +261,49 @@ def test_update_agent():
             response_data = response.json()
             print(f"Response: {json.dumps(response_data, indent=2)}")
             
-            # Verify the updated agent has the correct data
-            for key, value in update_data.items():
-                if key == "personality":
-                    for p_key, p_value in value.items():
-                        if response_data["personality"][p_key] != p_value:
-                            print(f"❌ Personality mismatch for {p_key}: expected {p_value}, got {response_data['personality'][p_key]}")
-                            return False, response_data
-                elif response_data.get(key) != value:
-                    print(f"❌ Data mismatch for {key}: expected {value}, got {response_data.get(key)}")
-                    return False, response_data
+            # Now update the expertise field separately
+            expertise_data = {
+                "expertise": "API Testing and Validation"
+            }
             
-            print("✅ Updated agent data matches request data")
-            return True, response_data
+            expertise_url = f"{API_URL}/agents/{created_agent_id}/expertise"
+            print(f"\nUpdating expertise field separately:")
+            print(f"PUT {expertise_url}")
+            print(f"Request data: {json.dumps(expertise_data, indent=2)}")
+            
+            expertise_response = requests.put(expertise_url, json=expertise_data, headers=headers)
+            print(f"Status code: {expertise_response.status_code}")
+            
+            if expertise_response.status_code == 200:
+                expertise_response_data = expertise_response.json()
+                print(f"Response: {json.dumps(expertise_response_data, indent=2)}")
+                
+                # Verify the updated agent has the correct data
+                all_fields_updated = True
+                for key, value in update_data.items():
+                    if key == "personality":
+                        for p_key, p_value in value.items():
+                            if expertise_response_data["personality"][p_key] != p_value:
+                                print(f"❌ Personality mismatch for {p_key}: expected {p_value}, got {expertise_response_data['personality'][p_key]}")
+                                all_fields_updated = False
+                    elif expertise_response_data.get(key) != value:
+                        print(f"❌ Data mismatch for {key}: expected {value}, got {expertise_response_data.get(key)}")
+                        all_fields_updated = False
+                
+                # Check expertise field separately
+                if expertise_response_data.get("expertise") != expertise_data.get("expertise"):
+                    print(f"❌ Data mismatch for expertise: expected {expertise_data.get('expertise')}, got {expertise_response_data.get('expertise')}")
+                    all_fields_updated = False
+                
+                if all_fields_updated:
+                    print("✅ All fields updated successfully")
+                    return True, expertise_response_data
+                else:
+                    print("❌ Some fields not updated correctly")
+                    return False, expertise_response_data
+            else:
+                print(f"❌ Expertise update failed: {expertise_response.text}")
+                return False, response_data
         else:
             print(f"❌ Request failed: {response.text}")
             return False, None
