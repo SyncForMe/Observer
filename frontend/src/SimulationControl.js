@@ -499,11 +499,11 @@ const SimulationControl = () => {
 
   return (
     <div className="space-y-6">
-      {/* Simulation Control Header */}
+      {/* Observatory Control Header */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">🎮 Simulation Control</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">🔭 Observatory Control</h2>
             <p className="text-white/80">Manage and monitor your AI agent simulations</p>
           </div>
           <div className="flex items-center space-x-2">
@@ -590,13 +590,125 @@ const SimulationControl = () => {
               </div>
               <div>
                 <span className="text-white/60">Agents:</span>
-                <div className="text-white">{simulationState.agent_count || 0}</div>
+                <div className="text-white">{agents.length || 0}</div>
               </div>
               <div>
                 <span className="text-white/60">Messages:</span>
                 <div className="text-white">{simulationState.message_count || 0}</div>
               </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Active Agents Section */}
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-white">🤖 Active Agents</h3>
+          <div className="flex items-center space-x-3">
+            <span className="text-white/60 text-sm">{agents.length} agents</span>
+            <button
+              onClick={fetchAgents}
+              disabled={agentsLoading}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+            >
+              {agentsLoading ? '⏳' : '🔄 Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {agentsLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+            <p className="text-white/60">Loading agents...</p>
+          </div>
+        ) : agents.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-4">🎭</div>
+            <h4 className="text-white font-semibold mb-2">No Active Agents</h4>
+            <p className="text-white/60">Add agents from the Agent Library to start your simulation</p>
+            <button 
+              onClick={() => window.location.href = '/agents'}
+              className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              Browse Agent Library
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {agents.map((agent) => (
+              <motion.div
+                key={agent.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all duration-200"
+              >
+                {/* Agent Avatar and Basic Info */}
+                <div className="flex items-start space-x-3 mb-3">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${getArchetypeColor(agent.archetype)} flex items-center justify-center text-white text-lg font-semibold shadow-lg`}>
+                    {agent.avatar_url ? (
+                      <img 
+                        src={agent.avatar_url} 
+                        alt={agent.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      getArchetypeIcon(agent.archetype)
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-white font-semibold truncate">{agent.name}</h4>
+                    <p className="text-white/60 text-sm capitalize">{agent.archetype}</p>
+                    {agent.expertise && (
+                      <p className="text-white/50 text-xs truncate mt-1">{agent.expertise}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Agent Goal */}
+                {agent.goal && (
+                  <div className="mb-3">
+                    <p className="text-white/70 text-sm line-clamp-2">{agent.goal}</p>
+                  </div>
+                )}
+
+                {/* Personality Indicators */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-xs text-white/50 mb-1">
+                    <span>Personality Traits</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Energy:</span>
+                      <span className="text-white">{agent.personality?.energy || 5}/10</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-white/60">Optimism:</span>
+                      <span className="text-white">{agent.personality?.optimism || 5}/10</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleEditAgent(agent)}
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center space-x-1"
+                  >
+                    <span>✏️</span>
+                    <span>Edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleRemoveAgent(agent.id)}
+                    disabled={loading}
+                    className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+                  >
+                    <span>🗑️</span>
+                    <span>Remove</span>
+                  </button>
+                </div>
+              </motion.div>
+            ))}
           </div>
         )}
       </div>
@@ -663,6 +775,17 @@ const SimulationControl = () => {
           </button>
         </div>
       </div>
+
+      {/* Agent Edit Modal */}
+      <AgentEditModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingAgent(null);
+        }}
+        agent={editingAgent}
+        onSave={handleSaveAgent}
+      />
     </div>
   );
 };
