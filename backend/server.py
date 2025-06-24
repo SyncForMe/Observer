@@ -3813,6 +3813,63 @@ async def update_agent(agent_id: str, agent_update: AgentUpdate, current_user: U
         # Otherwise, return a 500 error
         raise HTTPException(status_code=500, detail=f"Failed to update agent: {str(e)}")
 
+@api_router.put("/agents/{agent_id}/expertise")
+async def update_agent_expertise(agent_id: str, expertise_data: dict, current_user: User = Depends(get_current_user)):
+    """Update an agent's expertise field (requires authentication)"""
+    try:
+        # Find the agent
+        agent = await db.agents.find_one({"id": agent_id})
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Get the expertise value from the request
+        expertise = expertise_data.get("expertise")
+        if expertise is None:
+            raise HTTPException(status_code=400, detail="Expertise field is required")
+        
+        # Update the agent's expertise
+        result = await db.agents.update_one(
+            {"id": agent_id},
+            {"$set": {"expertise": expertise}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Return updated agent
+        updated_agent = await db.agents.find_one({"id": agent_id})
+        if not updated_agent:
+            raise HTTPException(status_code=404, detail="Agent not found after update")
+        
+        # Convert MongoDB document to Agent model
+        agent_model = Agent(
+            id=updated_agent["id"],
+            name=updated_agent["name"],
+            archetype=updated_agent["archetype"],
+            personality=AgentPersonality(**updated_agent["personality"]),
+            goal=updated_agent["goal"],
+            expertise=updated_agent.get("expertise", ""),
+            background=updated_agent.get("background", ""),
+            current_mood=updated_agent.get("current_mood", "neutral"),
+            current_activity=updated_agent.get("current_activity", "idle"),
+            memory_summary=updated_agent.get("memory_summary", ""),
+            avatar_url=updated_agent.get("avatar_url", ""),
+            avatar_prompt=updated_agent.get("avatar_prompt", ""),
+            user_id=updated_agent.get("user_id", ""),
+            created_at=updated_agent.get("created_at", datetime.utcnow())
+        )
+        
+        return agent_model
+    except HTTPException as e:
+        # Re-raise HTTP exceptions with their original status code
+        raise e
+    except Exception as e:
+        # For any other exception, check if it's a "not found" error
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=f"Agent not found: {str(e)}")
+        # Otherwise, return a 500 error
+        raise HTTPException(status_code=500, detail=f"Failed to update agent expertise: {str(e)}")
+
 @api_router.post("/simulation/fast-forward")
 async def fast_forward_simulation(request: FastForwardRequest):
     """Fast forward the simulation by generating multiple days of conversations"""
