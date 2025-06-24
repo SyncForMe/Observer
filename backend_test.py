@@ -3219,31 +3219,67 @@ def test_agent_database():
     else:
         print("❌ Teams endpoint does not exist or requires different path")
         
-        # Try alternative endpoints
-        quick_teams_test, quick_teams_response = run_test(
-            "Check for Quick Teams Endpoint",
-            "/quick-teams",
+        # Try saved-agents endpoint
+        saved_agents_test, saved_agents_response = run_test(
+            "Check for Saved Agents Endpoint",
+            "/saved-agents",
             method="GET",
             auth=True,
             expected_status=200  # We'll accept any status code here
         )
         
-        if quick_teams_test:
-            print("✅ Quick Teams endpoint exists")
+        if saved_agents_test:
+            print("✅ Saved Agents endpoint exists")
             
-            if isinstance(quick_teams_response, list) and len(quick_teams_response) > 0:
-                print(f"\nFound {len(quick_teams_response)} quick teams")
+            if isinstance(saved_agents_response, list):
+                print(f"\nFound {len(saved_agents_response)} saved agents")
+                
+                if len(saved_agents_response) > 0:
+                    # Sample saved agent structure
+                    sample_saved_agent = saved_agents_response[0]
+                    print("\nSample saved agent structure:")
+                    for key in sample_saved_agent.keys():
+                        print(f"- {key}")
+                    
+                    # Check for template flag
+                    if "is_template" in sample_saved_agent:
+                        template_agents = [agent for agent in saved_agents_response if agent.get("is_template", False)]
+                        if template_agents:
+                            print(f"✅ Found {len(template_agents)} template agents that could be used for teams")
+                        else:
+                            print("❌ No template agents found in saved agents")
+                else:
+                    print("❌ No saved agents found")
             else:
-                print("❌ No quick teams found")
+                print("❌ Saved agents response is not a list")
         else:
-            print("❌ Quick Teams endpoint does not exist or requires different path")
+            print("❌ Saved Agents endpoint does not exist or requires different path")
             
-            # Check for team templates in agent data
-            template_agents = [agent for agent in agents_response if agent.get("is_template", False)]
-            if template_agents:
-                print(f"✅ Found {len(template_agents)} template agents that could be used for teams")
+            # Try alternative endpoints
+            quick_teams_test, quick_teams_response = run_test(
+                "Check for Quick Teams Endpoint",
+                "/quick-teams",
+                method="GET",
+                auth=True,
+                expected_status=200  # We'll accept any status code here
+            )
+            
+            if quick_teams_test:
+                print("✅ Quick Teams endpoint exists")
+                
+                if isinstance(quick_teams_response, list) and len(quick_teams_response) > 0:
+                    print(f"\nFound {len(quick_teams_response)} quick teams")
+                else:
+                    print("❌ No quick teams found")
             else:
-                print("❌ No template agents found")
+                print("❌ Quick Teams endpoint does not exist or requires different path")
+                
+                # Check for team templates in agent data
+                template_agents = [agent for agent in agents_response if agent.get("is_template", False)]
+                if template_agents:
+                    print(f"✅ Found {len(template_agents)} template agents that could be used for teams")
+                else:
+                    print("❌ No template agents found")
     
     # Test 6: Sample agents from different sectors/archetypes
     print("\nTest 6: Sample agents from different sectors/archetypes")
