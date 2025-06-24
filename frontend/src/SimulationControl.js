@@ -639,10 +639,10 @@ const SimulationControl = () => {
             <h4 className="text-white font-semibold mb-2">No Active Agents</h4>
             <p className="text-white/60">Add agents from the Agent Library to start your simulation</p>
             <button 
-              onClick={() => window.location.href = '/agents'}
+              onClick={() => setActiveTab('agents')}
               className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             >
-              Browse Agent Library
+              Add Agents
             </button>
           </div>
         ) : (
