@@ -2133,8 +2133,12 @@ def main():
     print("RUNNING API TESTS")
     print("="*80)
     
-    # Test login first to get auth token
-    test_login()
+    # Test specific login credentials first
+    specific_login_result, specific_login_message = test_specific_login()
+    
+    # Test login first to get auth token if specific login failed
+    if not specific_login_result:
+        test_login()
     
     # Run basic API health check
     basic_api_health_result, basic_api_health_message = test_basic_api_health()
@@ -2165,6 +2169,7 @@ def main():
     print("TEST SUMMARY")
     print("="*80)
     
+    print(f"Specific Login Credentials: {'✅ PASSED' if specific_login_result else '❌ FAILED'}")
     print(f"Basic API Health Check: {'✅ PASSED' if basic_api_health_result else '❌ FAILED'}")
     print(f"Simulation Features: {'✅ PASSED' if simulation_features_result else '❌ FAILED'}")
     print(f"Translation Features: {'✅ PASSED' if translation_features_result else '❌ FAILED'}")
@@ -2176,6 +2181,7 @@ def main():
     
     print("="*80)
     overall_result = all([
+        specific_login_result,
         basic_api_health_result,
         simulation_features_result,
         translation_features_result,
