@@ -3297,4 +3297,7 @@ def test_agent_database():
     }
 
 if __name__ == "__main__":
-    main()
+    # Run the tests
+    test_login()
+    test_agent_database()
+    print_summary()
