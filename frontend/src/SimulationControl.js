@@ -210,15 +210,17 @@ const SimulationControl = () => {
   const messagesEndRef = useRef(null);
   const { user, token } = useAuth();
 
-  // Fetch simulation state on mount
+  // Fetch simulation state and agents on mount
   useEffect(() => {
     fetchSimulationState();
     fetchObserverMessages();
+    fetchAgents();
     // Set up polling for real-time updates
     const interval = setInterval(() => {
       if (isRunning) {
         fetchObserverMessages();
         fetchSimulationState();
+        fetchAgents();
       }
     }, 2000);
     return () => clearInterval(interval);
@@ -228,6 +230,21 @@ const SimulationControl = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [observerMessages]);
+
+  const fetchAgents = async () => {
+    if (!token) return;
+    setAgentsLoading(true);
+    try {
+      const response = await axios.get(`${API}/agents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAgents(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch agents:', error);
+      setAgents([]);
+    }
+    setAgentsLoading(false);
+  };
 
   const fetchSimulationState = async () => {
     try {
