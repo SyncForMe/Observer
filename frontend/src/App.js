@@ -753,11 +753,6 @@ const AppContent = () => {
             <div>
               {console.log('🔍 AppContent: Rendering agents content')}
               <AgentLibrary 
-                isOpen={true}
-                onClose={() => {
-                  console.log('🔍 AppContent: Agent Library close clicked, navigating to home');
-                  setActiveTab('home');
-                }}
                 onAddAgent={(agent) => console.log('Agent added:', agent)}
                 onRemoveAgent={(agent) => console.log('Agent removed:', agent)}
               />
