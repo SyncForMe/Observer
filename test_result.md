@@ -347,6 +347,7 @@ test_plan:
   current_focus:
     - "Agent Database Analysis"
     - "Simulation Control Buttons Implementation"
+    - "Agent Library Add Agents Button"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
