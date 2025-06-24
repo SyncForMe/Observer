@@ -3741,49 +3741,59 @@ async def get_agents(current_user: User = Depends(get_current_user)):
 @api_router.put("/agents/{agent_id}")
 async def update_agent(agent_id: str, agent_update: AgentUpdate, current_user: User = Depends(get_current_user)):
     """Update an existing agent (requires authentication)"""
-    # Find the agent
-    agent = await db.agents.find_one({"id": agent_id})
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    
-    # Prepare update data
-    update_data = {}
-    if agent_update.name is not None:
-        update_data["name"] = agent_update.name
-    if agent_update.archetype is not None:
-        if agent_update.archetype not in AGENT_ARCHETYPES:
-            raise HTTPException(status_code=400, detail="Invalid archetype")
-        update_data["archetype"] = agent_update.archetype
-    if agent_update.personality is not None:
-        update_data["personality"] = agent_update.personality.dict()
-    if agent_update.goal is not None:
-        update_data["goal"] = agent_update.goal
-    if agent_update.expertise is not None:
-        update_data["expertise"] = agent_update.expertise
-    if agent_update.background is not None:
-        update_data["background"] = agent_update.background
-    if agent_update.memory_summary is not None:
-        # Process URLs in memory before storing
-        processed_memory = await llm_manager.process_memory_with_urls(agent_update.memory_summary)
-        update_data["memory_summary"] = processed_memory
-    if agent_update.avatar_url is not None:
-        update_data["avatar_url"] = agent_update.avatar_url
-    
-    # Update the agent
-    result = await db.agents.update_one(
-        {"id": agent_id},
-        {"$set": update_data}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    
-    # Return updated agent
-    updated_agent = await db.agents.find_one({"id": agent_id})
-    if not updated_agent:
-        raise HTTPException(status_code=404, detail="Agent not found after update")
-    
-    return Agent(**updated_agent)
+    try:
+        # Find the agent
+        agent = await db.agents.find_one({"id": agent_id})
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Prepare update data
+        update_data = {}
+        if agent_update.name is not None:
+            update_data["name"] = agent_update.name
+        if agent_update.archetype is not None:
+            if agent_update.archetype not in AGENT_ARCHETYPES:
+                raise HTTPException(status_code=400, detail="Invalid archetype")
+            update_data["archetype"] = agent_update.archetype
+        if agent_update.personality is not None:
+            update_data["personality"] = agent_update.personality.dict()
+        if agent_update.goal is not None:
+            update_data["goal"] = agent_update.goal
+        if agent_update.expertise is not None:
+            update_data["expertise"] = agent_update.expertise
+        if agent_update.background is not None:
+            update_data["background"] = agent_update.background
+        if agent_update.memory_summary is not None:
+            # Process URLs in memory before storing
+            processed_memory = await llm_manager.process_memory_with_urls(agent_update.memory_summary)
+            update_data["memory_summary"] = processed_memory
+        if agent_update.avatar_url is not None:
+            update_data["avatar_url"] = agent_update.avatar_url
+        
+        # Update the agent
+        result = await db.agents.update_one(
+            {"id": agent_id},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Return updated agent
+        updated_agent = await db.agents.find_one({"id": agent_id})
+        if not updated_agent:
+            raise HTTPException(status_code=404, detail="Agent not found after update")
+        
+        return Agent(**updated_agent)
+    except HTTPException as e:
+        # Re-raise HTTP exceptions with their original status code
+        raise e
+    except Exception as e:
+        # For any other exception, check if it's a "not found" error
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail=f"Agent not found: {str(e)}")
+        # Otherwise, return a 500 error
+        raise HTTPException(status_code=500, detail=f"Failed to update agent: {str(e)}")
 
 @api_router.post("/simulation/fast-forward")
 async def fast_forward_simulation(request: FastForwardRequest):
