@@ -4809,7 +4809,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                 previous_context = ""
                 
                 # Get recent conversations for context
-                recent_conversations = await db.conversations.find().sort("created_at", -1).limit(3).to_list(3)
+                recent_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(3).to_list(3)
                 if recent_conversations:
                     previous_context += "PREVIOUS TEAM DISCUSSIONS:\n"
                     for conv in recent_conversations:
