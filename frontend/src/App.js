@@ -745,7 +745,7 @@ const AppContent = () => {
           {activeTab === 'simulation' && (
             <div>
               {console.log('🔍 AppContent: Rendering simulation content')}
-              <SimulationControl setActiveTab={setActiveTab} />
+              <SimulationControl setActiveTab={setActiveTab} activeTab={activeTab} />
             </div>
           )}
           
