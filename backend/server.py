@@ -6012,6 +6012,101 @@ async def delete_agent(agent_id: str, current_user: User = Depends(get_current_u
         raise HTTPException(status_code=404, detail="Agent not found")
     return {"message": "Agent deleted successfully"}
 
+@api_router.delete("/agents/bulk")
+async def delete_agents_bulk(
+    agent_ids: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete multiple agents for the authenticated user"""
+    try:
+        # Handle empty array case
+        if not agent_ids:
+            return {
+                "message": "Successfully deleted 0 agents",
+                "deleted_count": 0
+            }
+        
+        # Verify all agents exist and belong to the user (optional, depending on your use case)
+        agents = await db.agents.find({
+            "id": {"$in": agent_ids},
+            "user_id": current_user.id
+        }).to_list(None)
+        
+        if len(agents) != len(agent_ids):
+            raise HTTPException(status_code=404, detail="Some agents not found or don't belong to user")
+        
+        # Delete the agents
+        result = await db.agents.delete_many({
+            "id": {"$in": agent_ids},
+            "user_id": current_user.id
+        })
+        
+        return {
+            "message": f"Successfully deleted {result.deleted_count} agents",
+            "deleted_count": result.deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting agents: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete agents: {str(e)}")
+
+@api_router.post("/agents/bulk-delete")
+async def delete_agents_bulk_post(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete multiple agents for the authenticated user using POST"""
+    try:
+        # Get agent IDs from request body
+        body = await request.body()
+        if body:
+            import json
+            request_data = json.loads(body)
+            # Handle both array directly and object with agent_ids field
+            if isinstance(request_data, list):
+                agent_ids = request_data
+            elif isinstance(request_data, dict) and "agent_ids" in request_data:
+                agent_ids = request_data["agent_ids"]
+            else:
+                agent_ids = []
+        else:
+            agent_ids = []
+        
+        # Handle empty array case
+        if not agent_ids:
+            return {
+                "message": "Successfully deleted 0 agents",
+                "deleted_count": 0
+            }
+        
+        # Verify all agents exist and belong to the user
+        agents = await db.agents.find({
+            "id": {"$in": agent_ids},
+            "user_id": current_user.id
+        }).to_list(None)
+        
+        if len(agents) != len(agent_ids):
+            raise HTTPException(status_code=404, detail="Some agents not found or don't belong to user")
+        
+        # Delete the agents
+        result = await db.agents.delete_many({
+            "id": {"$in": agent_ids},
+            "user_id": current_user.id
+        })
+        
+        return {
+            "message": f"Successfully deleted {result.deleted_count} agents",
+            "deleted_count": result.deleted_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting agents: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete agents: {str(e)}")
+
 @api_router.post("/conversations/translate")
 async def translate_conversations(request: dict):
     """Translate all existing conversations to target language with improved error handling"""
