@@ -671,6 +671,8 @@ def test_random_scenario():
 
 def test_set_scenario():
     """Test the set scenario endpoint"""
+    global auth_token, test_user_id
+    
     print("\n" + "="*80)
     print("TESTING SET SCENARIO FUNCTIONALITY")
     print("="*80)
