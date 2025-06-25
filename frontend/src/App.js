@@ -755,7 +755,7 @@ const AppContent = () => {
               <AgentLibrary 
                 onAddAgent={async (agent) => {
                   try {
-                    const token = localStorage.getItem('authToken');
+                    const token = localStorage.getItem('auth_token');
                     if (!token) {
                       alert('Please log in to add agents');
                       return { success: false, message: 'Not authenticated' };
