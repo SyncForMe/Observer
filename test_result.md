@@ -573,6 +573,10 @@ test_plan:
     - "Custom Scenario Creation"
     - "Voice Scenario Input"
     - "Scenario Integration with Agents"
+    - "Complete User Workflow"
+    - "Fixed Conversation Generation"
+    - "Conversation Retrieval"
+    - "Error Handling in Conversation Generation"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
