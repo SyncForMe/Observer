@@ -1764,23 +1764,41 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                           >
                             View Details
                           </button>
-                          <button
-                            onClick={() => handleAddAgent(agent)}
-                            disabled={addingAgents.has(agent.id)}
-                            className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
-                              addedAgents.has(agent.id)
-                                ? 'bg-green-100 text-green-800'
-                                : addingAgents.has(agent.id)
-                                ? 'bg-gray-300 text-gray-500'
-                                : 'bg-purple-600 text-white hover:bg-purple-700'
-                            }`}
-                          >
-                            {addedAgents.has(agent.id) 
-                              ? '✅ Added' 
-                              : addingAgents.has(agent.id) 
-                              ? 'Adding...' 
-                              : 'Add Agent'
-                            }
+                          {addedAgents.has(agent.id) ? (
+                            // Enhanced button layout for added agents: [✓] [Add Again] [X]
+                            <div className="flex space-x-1">
+                              <div className="flex items-center justify-center w-10 h-8 bg-green-100 text-green-800 rounded text-sm font-medium">
+                                ✓
+                              </div>
+                              <button
+                                onClick={() => handleAddAgent(agent)}
+                                disabled={addingAgents.has(agent.id)}
+                                className="flex-1 py-2 px-2 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                              >
+                                {addingAgents.has(agent.id) ? 'Adding...' : 'Add Again'}
+                              </button>
+                              <button
+                                onClick={() => handleRemoveAgent(agent)}
+                                className="w-8 h-8 bg-red-100 text-red-800 rounded text-sm font-medium hover:bg-red-200 transition-colors"
+                                title="Remove agent"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            // Standard add button for non-added agents
+                            <button
+                              onClick={() => handleAddAgent(agent)}
+                              disabled={addingAgents.has(agent.id)}
+                              className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+                                addingAgents.has(agent.id)
+                                  ? 'bg-gray-300 text-gray-500'
+                                  : 'bg-purple-600 text-white hover:bg-purple-700'
+                              }`}
+                            >
+                              {addingAgents.has(agent.id) ? 'Adding...' : 'Add Agent'}
+                            </button>
+                          )}
                           </button>
                         </div>
                       </div>
