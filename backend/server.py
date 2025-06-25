@@ -4095,11 +4095,12 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None, cur
     }
 
 @api_router.get("/simulation/state")
-async def get_simulation_state():
-    """Get current simulation state"""
-    state = await db.simulation_state.find_one()
+async def get_simulation_state(current_user: User = Depends(get_current_user)):
+    """Get current simulation state for the user"""
+    state = await db.simulation_state.find_one({"user_id": current_user.id})
     if not state:
-        state = SimulationState().dict()
+        # Create default state for the user
+        state = SimulationState(user_id=current_user.id).dict()
         await db.simulation_state.insert_one(state)
         return state
     
@@ -4123,7 +4124,7 @@ async def get_simulation_state():
         
         # Update the database with calculated time
         await db.simulation_state.update_one(
-            {"id": state["id"]},
+            {"id": state["id"], "user_id": current_user.id},
             {"$set": {"time_remaining_hours": remaining_hours}}
         )
     
