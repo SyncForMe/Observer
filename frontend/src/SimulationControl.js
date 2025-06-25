@@ -1027,6 +1027,24 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           setShowScenarioCreator(false);
         }}
       />
+
+        {/* Conversation Generation Button */}
+        <div className="mt-4">
+          <button
+            onClick={generateConversation}
+            disabled={loading || !isRunning || agents.length < 2}
+            className={`w-full px-6 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
+              loading || !isRunning || agents.length < 2
+                ? 'bg-gray-600 text-gray-400' 
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+            } disabled:opacity-50`}
+          >
+            <span className="text-2xl">💬</span>
+            <span>
+              {loading ? 'Generating...' : agents.length < 2 ? 'Need 2+ Agents' : 'Generate Conversation'}
+            </span>
+          </button>
+        </div>
     </div>
   );
 };
