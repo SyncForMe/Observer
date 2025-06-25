@@ -433,6 +433,21 @@ backend:
         -agent: "testing"
         -comment: "Created a dedicated test script (conversation_workflow_test.py) to test the conversation retrieval endpoints. The tests confirmed that: 1) GET /api/conversations works correctly with authentication, 2) User data isolation is properly implemented - users cannot see other users' conversations, 3) Conversations are properly associated with the user_id. The conversation retrieval functionality is working correctly and provides a secure way for users to access their conversations."
 
+  - task: "Error Handling in Conversation Generation"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing needed for error handling in conversation generation"
+        -working: true
+        -agent: "testing"
+        -comment: "Created a dedicated test script (conversation_workflow_test.py) to test error handling in conversation generation. The tests confirmed that: 1) Conversation generation with < 2 agents is correctly rejected with a 400 Bad Request error, 2) Conversation generation without active simulation is correctly rejected with a 400 Bad Request error, 3) Conversation generation without authentication is correctly rejected with a 403 Forbidden error. The error handling in conversation generation is working correctly and provides appropriate feedback to users."
+
   - task: "Complete User Workflow"
     implemented: true
     working: true
