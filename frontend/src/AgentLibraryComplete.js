@@ -1799,7 +1799,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                               {addingAgents.has(agent.id) ? 'Adding...' : 'Add Agent'}
                             </button>
                           )}
-                          </button>
                         </div>
                       </div>
                     </div>
