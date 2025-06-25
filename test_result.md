@@ -385,7 +385,7 @@ backend:
         -agent: "testing"
         -comment: "Created a comprehensive test script to test agent persistence across tabs and simulation operations. The tests confirmed that: 1) Agents are successfully created and associated with the user, 2) Agents are preserved when starting simulation, 3) Agents are preserved when setting scenario, 4) Agents are preserved when pausing simulation, 5) Agents are preserved when resuming simulation. The agent persistence functionality is working correctly, ensuring that agents are not deleted during simulation operations."
 
-  - task: "Fixed Simulation Workflow"
+  - task: "Fixed Conversation Generation"
     implemented: true
     working: true
     file: "/app/backend/server.py"
@@ -395,10 +395,13 @@ backend:
     status_history:
         -working: "NA"
         -agent: "testing"
-        -comment: "Initial testing needed for fixed simulation workflow"
+        -comment: "Initial testing needed for fixed conversation workflow"
         -working: true
         -agent: "testing"
         -comment: "Created a comprehensive test script to test the fixed simulation workflow. The tests confirmed that: 1) Authentication is properly enforced for all simulation endpoints, 2) Simulation can be started with user authentication, 3) Simulation state is correctly filtered by user_id, 4) Scenario can be set with user authentication, 5) Simulation can be paused and resumed with user authentication, 6) Simulation state is correctly updated after each operation. The fixed simulation workflow is working correctly, providing a reliable way for users to control their simulations."
+        -working: true
+        -agent: "testing"
+        -comment: "Created a dedicated test script (conversation_workflow_test.py) to test the fixed conversation generation endpoint. The tests confirmed that: 1) POST /api/conversation/generate works correctly with authentication, 2) It uses only the user's agents for conversation generation, 3) It properly uses the simulation state for context, 4) Conversations are saved with the correct user_id, 5) Conversation content is substantial and appears to be generated using Gemini. The fixed conversation generation endpoint is working correctly and provides a reliable way for users to generate conversations between their agents."
 
   - task: "Gemini Integration"
     implemented: true
