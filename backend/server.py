@@ -4897,8 +4897,8 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
         )
         messages.append(message)
     
-    # Get conversation count for round numbering
-    conversation_count = await db.conversations.count_documents({})
+    # Get conversation count for round numbering (user-specific)
+    conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
     
     # Create conversation round  
     conversation_round = ConversationRound(
@@ -4907,7 +4907,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
         scenario=scenario,
         scenario_name=scenario_name,
         messages=messages,
-        user_id=""  # Empty for global simulation conversations (until auth is fixed)
+        user_id=current_user.id  # Associate with current user
     )
     
     # Save conversation
