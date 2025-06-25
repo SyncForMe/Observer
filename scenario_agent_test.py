@@ -547,6 +547,8 @@ def test_clear_all_agents():
 
 def test_random_scenario():
     """Test the random scenario generation endpoint"""
+    global auth_token, test_user_id
+    
     print("\n" + "="*80)
     print("TESTING RANDOM SCENARIO GENERATION")
     print("="*80)
