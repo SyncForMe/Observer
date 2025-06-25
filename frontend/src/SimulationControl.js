@@ -988,6 +988,17 @@ const SimulationControl = ({ setActiveTab }) => {
         isOpen={showWeeklyReport}
         onClose={() => setShowWeeklyReport(false)}
       />
+
+      {/* Scenario Creator Modal */}
+      <ScenarioCreator
+        isOpen={showScenarioCreator}
+        onClose={() => setShowScenarioCreator(false)}
+        onScenarioCreated={async (scenarioData) => {
+          // When a scenario is created, refresh the simulation state
+          await fetchSimulationState();
+          setShowScenarioCreator(false);
+        }}
+      />
     </div>
   );
 };
