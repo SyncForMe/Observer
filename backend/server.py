@@ -6002,12 +6002,12 @@ async def get_api_status():
 @api_router.delete("/agents/{agent_id}")
 async def delete_agent(agent_id: str, current_user: User = Depends(get_current_user)):
     """Delete an agent (requires authentication)"""
-    # Check if agent exists first
-    agent = await db.agents.find_one({"id": agent_id})
+    # Check if agent exists and belongs to the user
+    agent = await db.agents.find_one({"id": agent_id, "user_id": current_user.id})
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
-    result = await db.agents.delete_one({"id": agent_id})
+    result = await db.agents.delete_one({"id": agent_id, "user_id": current_user.id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Agent not found")
     return {"message": "Agent deleted successfully"}
