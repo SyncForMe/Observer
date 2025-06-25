@@ -354,6 +354,9 @@ backend:
         -working: false
         -agent: "testing"
         -comment: "Conducted additional testing with a focused test script to verify the user_id issue. Created a test script that explicitly sets the user_id field when creating agents, but found that the user_id is still not being saved in the database. The response from the POST /api/agents endpoint shows an empty user_id field even though we explicitly set it in the request. This confirms that there's an issue with the agent creation endpoint not properly saving the user_id field. The bulk delete endpoints are correctly implemented and are checking for user ownership, but they fail because the agents don't have the correct user_id. This is a backend issue that needs to be fixed in the agent creation endpoint to properly save the user_id field."
+        -working: false
+        -agent: "testing"
+        -comment: "Found the root cause of the issue. In the agent creation endpoint (POST /api/agents), the user_id is hardcoded to an empty string with a comment 'No user association for simulation'. This is why our attempts to set the user_id are not working. The bulk delete endpoints are correctly implemented and are checking for user ownership, but they fail because the agents don't have the correct user_id. To fix this issue, the agent creation endpoint needs to be modified to accept and save the user_id from the current authenticated user instead of hardcoding it to an empty string. The bulk delete endpoints themselves are correctly implemented and should work once the agent creation endpoint is fixed."
   
   - task: "Agent Library Enhanced Button Functionality"
     implemented: true
