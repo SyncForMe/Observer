@@ -850,7 +850,7 @@ def test_gemini_integration():
     
     generate_conversation2_test, generate_conversation2_response = run_test(
         "Generate Second Conversation Using Gemini",
-        "/conversations/generate",
+        "/conversation/generate",
         method="POST",
         auth=True,
         expected_keys=["id", "round_number", "messages"]
