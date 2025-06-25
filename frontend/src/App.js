@@ -786,7 +786,7 @@ const AppContent = () => {
                 }}
                 onRemoveAgent={async (agent) => {
                   try {
-                    const token = localStorage.getItem('authToken');
+                    const token = localStorage.getItem('auth_token');
                     if (!token) {
                       console.log('⚠️ Not authenticated for agent removal');
                       return { success: false, message: 'Not authenticated' };
