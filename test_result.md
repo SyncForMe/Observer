@@ -482,6 +482,21 @@ agent_communication:
         -agent: "testing"
         -comment: "Created a comprehensive test script to test the integration of scenarios with agents. The tests confirmed that: 1) Agents can be created and managed, 2) Custom scenarios can be set and verified in the simulation state, 3) Random scenarios can be set and verified in the simulation state, 4) Simulations can be started with scenarios, 5) The scenario is correctly stored in the simulation state and used during the simulation. There was a minor issue where the scenario name was not displayed in the simulation state after starting the simulation, but this doesn't affect the core functionality. The scenario integration with agents is working correctly and provides a reliable way for users to set scenarios for their agent simulations."
 
+  - task: "POST /api/documents/bulk-delete - Bulk Delete Documents"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing needed for document bulk delete functionality"
+        -working: true
+        -agent: "testing"
+        -comment: "Tested the POST /api/documents/bulk-delete endpoint. The endpoint is working correctly for all test cases: it handles empty arrays, valid document IDs, and non-existent document IDs as expected. The endpoint correctly returns a 200 OK response with a message of 'Successfully deleted X documents' and a deleted_count field. Authentication is properly enforced, with the endpoint returning a 403 Forbidden error for unauthenticated requests. The endpoint correctly handles non-existent document IDs, returning a 404 Not Found error with the message 'Some documents not found or don't belong to user'. This endpoint provides a functional alternative to the DELETE /api/documents/bulk endpoint, allowing users to delete multiple documents at once."
+
 frontend:
   - task: "Simulation Control Buttons Implementation"
     implemented: true
