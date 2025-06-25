@@ -806,6 +806,8 @@ def test_set_scenario():
 
 def test_transcribe_scenario():
     """Test the transcribe scenario endpoint"""
+    global auth_token, test_user_id
+    
     print("\n" + "="*80)
     print("TESTING TRANSCRIBE SCENARIO FUNCTIONALITY")
     print("="*80)
