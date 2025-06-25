@@ -662,11 +662,20 @@ const SimulationControl = ({ setActiveTab }) => {
             <span className="text-white/60 text-sm">{agents.length} agents</span>
             <button
               onClick={fetchAgents}
-              disabled={agentsLoading}
+              disabled={agentsLoading || loading}
               className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
             >
               {agentsLoading ? '⏳' : '🔄 Refresh'}
             </button>
+            {agents.length > 0 && (
+              <button
+                onClick={clearAllAgents}
+                disabled={loading || agentsLoading}
+                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loading ? '⏳' : '🗑️ Clear All'}
+              </button>
+            )}
           </div>
         </div>
 
