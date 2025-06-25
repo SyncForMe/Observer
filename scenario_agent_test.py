@@ -274,6 +274,8 @@ def create_test_agents(num_agents=3):
 
 def test_clear_all_agents():
     """Test the Clear All agents functionality"""
+    global auth_token, test_user_id, created_agent_ids
+    
     print("\n" + "="*80)
     print("TESTING CLEAR ALL AGENTS FUNCTIONALITY")
     print("="*80)
