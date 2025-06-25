@@ -1159,7 +1159,7 @@ def test_complete_user_workflow():
     
     generate_conversation_test, generate_conversation_response = run_test(
         "Generate Workflow Conversation",
-        "/conversations/generate",
+        "/conversation/generate",
         method="POST",
         headers={"Authorization": f"Bearer {workflow_token}"},
         expected_keys=["id", "round_number", "messages"]
