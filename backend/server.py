@@ -3342,7 +3342,7 @@ async def root():
     return {"message": "AI Agent Simulation API"}
 
 @api_router.post("/simulation/set-scenario")
-async def set_scenario(request: ScenarioRequest):
+async def set_scenario(request: ScenarioRequest, current_user: User = Depends(get_current_user)):
     """Set a custom scenario for the simulation"""
     scenario = request.scenario.strip()
     scenario_name = request.scenario_name.strip()
@@ -3352,9 +3352,9 @@ async def set_scenario(request: ScenarioRequest):
     if not scenario_name:
         raise HTTPException(status_code=400, detail="Scenario name required")
     
-    # Update simulation state with new scenario and name
+    # Update simulation state with new scenario and name for the current user
     await db.simulation_state.update_one(
-        {},
+        {"user_id": current_user.id},
         {"$set": {
             "scenario": scenario,
             "scenario_name": scenario_name
