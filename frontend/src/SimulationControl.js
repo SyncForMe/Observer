@@ -225,11 +225,18 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       if (isRunning) {
         fetchObserverMessages();
         fetchSimulationState();
-        fetchAgents();
       }
-    }, 2000);
+    }, 5000);
+
     return () => clearInterval(interval);
-  }, [isRunning]);
+  }, []);
+
+  // Refresh agents when switching to simulation tab
+  useEffect(() => {
+    if (activeTab === 'simulation') {
+      fetchAgents();
+    }
+  }, [activeTab]);
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
