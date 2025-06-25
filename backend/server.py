@@ -4820,7 +4820,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                     previous_context += "\n"
                 
                 # Get existing documents for context
-                existing_documents = await db.documents.find({"user_id": ""}).sort("updated_at", -1).limit(5).to_list(5)
+                existing_documents = await db.documents.find({"user_id": current_user.id}).sort("updated_at", -1).limit(5).to_list(5)
                 if existing_documents:
                     previous_context += "EXISTING TEAM DOCUMENTS:\n"
                     for doc in existing_documents:
