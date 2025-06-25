@@ -490,6 +490,7 @@ class SimulationState(BaseModel):
     time_limit_display: Optional[str] = None  # Human readable time limit
     simulation_start_time: Optional[datetime] = None  # When simulation started
     time_remaining_hours: Optional[float] = None  # Calculated remaining time
+    user_id: str = ""  # User who owns this simulation state
 
 class ApiUsageTracker(BaseModel):
     date: str
