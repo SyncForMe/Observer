@@ -337,6 +337,21 @@ backend:
         -agent: "testing"
         -comment: "Conducted comprehensive testing of the agent database. Created a dedicated test script to analyze the agent structure, archetypes, and team configurations. The GET /api/agents endpoint returns a list of agents with all required fields (id, name, archetype, personality, goal, expertise, background, etc.). The GET /api/archetypes endpoint returns 9 predefined agent archetypes (scientist, artist, leader, skeptic, optimist, introvert, adventurer, mediator, researcher) with their descriptions and default personality traits. The GET /api/saved-agents endpoint returns user-specific saved agents, including template agents that can be used for teams. However, there are only 6 agents in the database, all with the 'scientist' archetype, which contradicts the claim of ~90 agents per category. There is no explicit sector/industry classification field in the agent structure, and no dedicated teams endpoint was found. The agent structure is well-defined with all necessary fields, and the personality structure includes all required traits (extroversion, optimism, curiosity, cooperativeness, energy). Overall, the agent database functionality is working correctly, but the content is limited compared to what was expected."
   
+  - task: "Agent Bulk Delete Endpoints"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing needed for agent bulk delete endpoints"
+        -working: false
+        -agent: "testing"
+        -comment: "Conducted comprehensive testing of the agent bulk delete endpoints. Created a dedicated test script to verify the functionality of both DELETE /api/agents/bulk and POST /api/agents/bulk-delete endpoints. Authentication is properly enforced for both endpoints, with 403 Forbidden errors returned for unauthenticated requests. The POST /api/agents/bulk-delete endpoint correctly handles empty arrays, returning a 200 OK response with a message of 'Successfully deleted 0 agents' and a deleted_count of 0. However, both endpoints have issues with deleting actual agents. When attempting to delete valid agent IDs, both endpoints return 404 errors. The DELETE endpoint returns 'Agent not found' and the POST endpoint returns 'Some agents not found or don't belong to user'. This is likely due to the user_id field not being properly set when creating test agents. The endpoints are correctly checking that agents belong to the current user (user_id matches), but the test agents are created with empty user_id fields. The endpoints correctly handle non-existent agent IDs, returning 404 errors as expected. The 'Clear All' functionality was also tested but failed due to the same user_id issue. Overall, the bulk delete endpoints are implemented but not working correctly due to the user_id validation."
+  
   - task: "Agent Library Enhanced Button Functionality"
     implemented: true
     working: true
