@@ -774,16 +774,13 @@ const AppContent = () => {
                     const result = await response.json();
                     if (response.ok) {
                       console.log('✅ Agent added successfully:', result);
-                      alert(`Agent "${agent.name}" added successfully!`);
                       return { success: true, message: 'Agent added successfully' };
                     } else {
                       console.error('❌ Failed to add agent:', result);
-                      alert(`Failed to add agent: ${result.detail || 'Unknown error'}`);
                       return { success: false, message: result.detail || 'Unknown error' };
                     }
                   } catch (error) {
                     console.error('❌ Error adding agent:', error);
-                    alert(`Error adding agent: ${error.message}`);
                     return { success: false, message: error.message };
                   }
                 }}
