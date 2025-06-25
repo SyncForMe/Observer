@@ -469,6 +469,27 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     setLoading(false);
   };
 
+  const generateConversation = async () => {
+    if (!token) return;
+    
+    try {
+      const response = await axios.post(`${API}/conversation/generate`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data) {
+        console.log('✅ Conversation generated successfully');
+        // Refresh conversations display
+        await fetchObserverMessages();
+      }
+    } catch (error) {
+      console.error('Failed to generate conversation:', error);
+      if (error.response?.status === 400) {
+        console.log('Error: Need at least 2 agents for conversation');
+      }
+    }
+  };
+
   const getRandomScenario = async () => {
     if (!token) return;
     
