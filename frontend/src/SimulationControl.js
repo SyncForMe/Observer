@@ -249,6 +249,48 @@ const SimulationControl = ({ setActiveTab }) => {
     setAgentsLoading(false);
   };
 
+  const clearAllAgents = async () => {
+    if (!token || agents.length === 0) return;
+    
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to remove all ${agents.length} agents from the simulation? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    setLoading(true);
+    try {
+      // Extract all agent IDs
+      const agentIds = agents.map(agent => agent.id);
+      
+      // Call the bulk delete endpoint
+      const response = await axios.post(`${API}/agents/bulk-delete`, agentIds, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data && response.data.deleted_count) {
+        console.log(`✅ Successfully deleted ${response.data.deleted_count} agents`);
+        // Refresh the agents list
+        await fetchAgents();
+      } else {
+        console.log('No agents were deleted');
+      }
+    } catch (error) {
+      console.error('Failed to clear all agents:', error);
+      // Show user-friendly error message
+      if (error.response?.status === 404) {
+        console.log('Some agents were not found or don\'t belong to you');
+      } else {
+        console.log('Failed to clear agents. Please try again.');
+      }
+    }
+    setLoading(false);
+  };
+
   const fetchSimulationState = async () => {
     try {
       const response = await axios.get(`${API}/simulation/state`, {
