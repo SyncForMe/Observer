@@ -195,7 +195,7 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
 };
 
 // Observatory Control Panel Component
-const SimulationControl = ({ setActiveTab }) => {
+const SimulationControl = ({ setActiveTab, activeTab }) => {
   const [simulationState, setSimulationState] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
