@@ -1057,6 +1057,7 @@ test_plan:
     - "Agent Update Functionality"
     - "Agent Deletion"
     - "Invalid Agent ID Handling"
+    - "Agent Library Enhanced Button Functionality"
   stuck_tasks:
     - "DELETE /api/documents/bulk - Bulk Delete Documents"
   test_all: false
