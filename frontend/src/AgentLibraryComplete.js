@@ -2026,18 +2026,41 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               >
                 Close
               </button>
-              <button
-                onClick={() => handleAddAgent(selectedAgentDetails)}
-                disabled={addingAgents.has(selectedAgentDetails.id)}
-                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-                  addedAgents.has(selectedAgentDetails.id)
-                    ? 'bg-green-100 text-green-800'
-                    : addingAgents.has(selectedAgentDetails.id)
-                    ? 'bg-gray-300 text-gray-500'
-                    : 'bg-purple-600 text-white hover:bg-purple-700'
-                }`}
-              >
-                {addedAgents.has(selectedAgentDetails.id) 
+              {addedAgents.has(selectedAgentDetails.id) ? (
+                // Enhanced button layout for added agents: [✓] [Add Again] [X]
+                <div className="flex-1 flex space-x-2">
+                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 text-green-800 rounded-lg text-lg font-medium">
+                    ✓
+                  </div>
+                  <button
+                    onClick={() => handleAddAgent(selectedAgentDetails)}
+                    disabled={addingAgents.has(selectedAgentDetails.id)}
+                    className="flex-1 py-3 px-4 rounded-lg font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                  >
+                    {addingAgents.has(selectedAgentDetails.id) ? 'Adding...' : 'Add Again'}
+                  </button>
+                  <button
+                    onClick={() => handleRemoveAgent(selectedAgentDetails)}
+                    className="w-12 h-12 bg-red-100 text-red-800 rounded-lg text-lg font-medium hover:bg-red-200 transition-colors"
+                    title="Remove agent"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                // Standard add button for non-added agents
+                <button
+                  onClick={() => handleAddAgent(selectedAgentDetails)}
+                  disabled={addingAgents.has(selectedAgentDetails.id)}
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                    addingAgents.has(selectedAgentDetails.id)
+                      ? 'bg-gray-300 text-gray-500'
+                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                  }`}
+                >
+                  {addingAgents.has(selectedAgentDetails.id) ? 'Adding...' : 'Add Agent'}
+                </button>
+              )}
                   ? '✅ Added' 
                   : addingAgents.has(selectedAgentDetails.id) 
                   ? 'Adding...' 
