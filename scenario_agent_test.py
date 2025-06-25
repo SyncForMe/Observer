@@ -1115,6 +1115,8 @@ def test_scenario_integration():
 
 def main():
     """Main function to run all tests"""
+    global auth_token, test_user_id
+    
     print("\n" + "="*80)
     print("RUNNING SCENARIO AND AGENT MANAGEMENT TESTS")
     print("="*80)
