@@ -4743,10 +4743,10 @@ SCENARIO: {scenario}"""
     return document
 
 @api_router.post("/conversation/generate")
-async def generate_conversation():
+async def generate_conversation(current_user: User = Depends(get_current_user)):
     """Generate a conversation round between agents with sequential responses and progression tracking"""
-    # Get current agents (all available agents for now, until auth is fixed)
-    all_agents = await db.agents.find().to_list(100)
+    # Get current user's agents
+    all_agents = await db.agents.find({"user_id": current_user.id}).to_list(100)
     if len(all_agents) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 agents for conversation. Please add more agents to your simulation.")
     
@@ -4755,19 +4755,19 @@ async def generate_conversation():
     agents = random.sample(all_agents, min(3, len(all_agents)))
     agent_objects = [Agent(**agent) for agent in agents]
     
-    # Get simulation state and scenario
-    state = await db.simulation_state.find_one()
+    # Get user's simulation state and scenario
+    state = await db.simulation_state.find_one({"user_id": current_user.id})
     if not state:
         raise HTTPException(status_code=400, detail="No active simulation")
     
     scenario = state.get("scenario", "General discussion about current topics")
     scenario_name = state.get("scenario_name", "General Discussion")
     
-    # Get conversation count for round numbering and context
-    conversation_count = await db.conversations.count_documents({})
+    # Get conversation count for round numbering and context (user-specific)
+    conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
     
-    # Get existing conversations for context
-    existing_conversations = await db.conversations.find().sort("created_at", -1).limit(5).to_list(5)
+    # Get existing conversations for context (user-specific)
+    existing_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(5).to_list(5)
     
     # Build context from previous conversations
     context = ""
