@@ -418,6 +418,21 @@ backend:
         -agent: "testing"
         -comment: "Created a comprehensive test script to test the Gemini integration for conversation generation. The tests confirmed that: 1) Gemini 2.0 Flash model is being used for conversation generation, 2) Conversations can be successfully generated with multiple agents, 3) Generated messages have substantial content, 4) Conversations are relevant to the specified scenario, 5) Multiple conversations can be generated consistently, 6) Conversations are correctly stored in the database. The Gemini integration is working correctly, providing high-quality conversation generation for the simulation."
 
+  - task: "Conversation Retrieval"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing needed for conversation retrieval"
+        -working: true
+        -agent: "testing"
+        -comment: "Created a dedicated test script (conversation_workflow_test.py) to test the conversation retrieval endpoints. The tests confirmed that: 1) GET /api/conversations works correctly with authentication, 2) User data isolation is properly implemented - users cannot see other users' conversations, 3) Conversations are properly associated with the user_id. The conversation retrieval functionality is working correctly and provides a secure way for users to access their conversations."
+
   - task: "Complete User Workflow"
     implemented: true
     working: true
