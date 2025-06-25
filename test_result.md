@@ -1304,15 +1304,14 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Agent Library Endpoints"
-    - "Authentication for Agent Endpoints"
-    - "Agent Data Retrieval"
-    - "Agent Update Functionality"
-    - "Agent Deletion"
-    - "Invalid Agent ID Handling"
-    - "Agent Library Enhanced Button Functionality"
+    - "Agent Persistence Across Tabs"
+    - "Fixed Simulation Workflow"
+    - "Gemini Integration"
+    - "Complete User Workflow"
   stuck_tasks:
-    - "DELETE /api/documents/bulk - Bulk Delete Documents"
+    - "Complete User Workflow"
+  test_all: false
+  test_priority: "high_first"
   test_all: false
   test_priority: "high_first"
 
