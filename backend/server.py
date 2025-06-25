@@ -4051,8 +4051,8 @@ async def test_background_differences():
     }
 
 @api_router.post("/simulation/start")
-async def start_simulation(request: Optional[SimulationStartRequest] = None):
-    """Start or reset the simulation with optional time limit - clears all user data for fresh start"""
+async def start_simulation(request: Optional[SimulationStartRequest] = None, current_user: User = Depends(get_current_user)):
+    """Start or reset the simulation with optional time limit for the current user"""
     
     # Get time limit info from request
     time_limit_hours = None
@@ -4063,23 +4063,24 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None):
         time_limit_hours = request.time_limit_hours
         time_limit_display = request.time_limit_display
     
-    # Reset simulation state
+    # Reset simulation state for the current user
     simulation = SimulationState(
         is_active=True,
         time_limit_hours=time_limit_hours,
         time_limit_display=time_limit_display,
         simulation_start_time=simulation_start_time,
-        time_remaining_hours=time_limit_hours  # Initialize with full time limit
+        time_remaining_hours=time_limit_hours,  # Initialize with full time limit
+        user_id=current_user.id  # Associate with current user
     )
     
-    await db.simulation_state.delete_many({})
+    await db.simulation_state.delete_many({"user_id": current_user.id})  # Clear only user's simulation state
     await db.simulation_state.insert_one(simulation.dict())
     
-    # For now, clear ALL simulation data globally (until proper user auth is fixed)
-    await db.agents.delete_many({})  # Clear all agents  
-    await db.conversations.delete_many({})  # Clear all conversations
-    await db.relationships.delete_many({})  # Clear all relationships
-    await db.summaries.delete_many({})  # Clear all summaries
+    # Clear only the current user's simulation data (not all data globally)
+    await db.conversations.delete_many({"user_id": current_user.id})  # Clear only user's conversations
+    await db.relationships.delete_many({"user_id": current_user.id})  # Clear only user's relationships
+    await db.summaries.delete_many({"user_id": current_user.id})  # Clear only user's summaries
+    # Note: We keep agents as they are associated with the user and shouldn't be deleted on simulation start
     
     # Log the simulation start with time limit info
     time_limit_msg = f" with {time_limit_display} time limit" if time_limit_display else " with no time limit"
@@ -4087,6 +4088,7 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None):
     return {
         "message": f"Simulation started{time_limit_msg}", 
         "state": simulation,
+        "success": True,
         "time_limit_active": time_limit_hours is not None,
         "time_limit_display": time_limit_display
     }
