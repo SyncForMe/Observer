@@ -3410,10 +3410,10 @@ async def get_random_scenario():
     }
 
 @api_router.post("/simulation/pause")
-async def pause_simulation():
+async def pause_simulation(current_user: User = Depends(get_current_user)):
     """Pause the simulation (stops auto-generation)"""
     await db.simulation_state.update_one(
-        {},
+        {"user_id": current_user.id},
         {"$set": {
             "is_active": False,
             "auto_conversations": False,
@@ -3421,17 +3421,17 @@ async def pause_simulation():
         }},
         upsert=True
     )
-    return {"message": "Simulation paused", "is_active": False}
+    return {"message": "Simulation paused", "is_active": False, "success": True}
 
 @api_router.post("/simulation/resume")
-async def resume_simulation():
+async def resume_simulation(current_user: User = Depends(get_current_user)):
     """Resume the simulation"""
     await db.simulation_state.update_one(
-        {},
+        {"user_id": current_user.id},
         {"$set": {"is_active": True}},
         upsert=True
     )
-    return {"message": "Simulation resumed", "is_active": True}
+    return {"message": "Simulation resumed", "is_active": True, "success": True}
 
 @api_router.post("/simulation/generate-summary")
 async def generate_weekly_summary():
