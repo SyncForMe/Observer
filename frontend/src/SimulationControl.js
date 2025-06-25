@@ -462,6 +462,38 @@ const SimulationControl = ({ setActiveTab }) => {
     setLoading(false);
   };
 
+  const getRandomScenario = async () => {
+    if (!token) return;
+    
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/simulation/random-scenario`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data) {
+        // Set the random scenario using the existing set-scenario endpoint
+        await axios.post(`${API}/simulation/set-scenario`, {
+          scenario: response.data.scenario,
+          scenario_name: response.data.scenario_name
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Update local state
+        setScenario(response.data.scenario_name);
+        
+        // Refresh simulation state
+        await fetchSimulationState();
+        
+        console.log(`✅ Random scenario set: ${response.data.scenario_name}`);
+      }
+    } catch (error) {
+      console.error('Failed to get random scenario:', error);
+    }
+    setLoading(false);
+  };
+
   const handleEditAgent = (agent) => {
     setEditingAgent(agent);
     setShowEditModal(true);
