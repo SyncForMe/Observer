@@ -652,14 +652,32 @@ const SimulationControl = ({ setActiveTab }) => {
 
         {/* Scenario Selection */}
         <div className="mb-6">
-          <label className="block text-white text-sm font-medium mb-2">Select Scenario</label>
+          <div className="flex justify-between items-center mb-2">
+            <label className="block text-white text-sm font-medium">Select or Create Scenario</label>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowScenarioCreator(true)}
+                disabled={loading || isRunning}
+                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+              >
+                📝 Create Custom
+              </button>
+              <button
+                onClick={getRandomScenario}
+                disabled={loading || isRunning}
+                className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loading ? '⏳' : '🎲 Random'}
+              </button>
+            </div>
+          </div>
           <select
             value={scenario}
             onChange={(e) => setSimulationScenario(e.target.value)}
             disabled={loading || isRunning}
             className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            <option value="" className="bg-gray-800">Select a scenario...</option>
+            <option value="" className="bg-gray-800">Select a predefined scenario...</option>
             {scenarios.map((s) => (
               <option key={s} value={s} className="bg-gray-800">{s}</option>
             ))}
