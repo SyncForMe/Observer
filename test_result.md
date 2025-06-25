@@ -382,6 +382,11 @@ test_plan:
     - "Simulation Control Buttons Implementation"
     - "Agent Library Add Agents Button"
     - "Agent Library Enhanced Button Functionality"
+    - "Clear All Agents Functionality"
+    - "Random Scenario Generation"
+    - "Custom Scenario Creation"
+    - "Voice Scenario Input"
+    - "Scenario Integration with Agents"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
