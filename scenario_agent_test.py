@@ -859,6 +859,8 @@ def test_transcribe_scenario():
 
 def test_scenario_integration():
     """Test the integration of scenarios with agents"""
+    global auth_token, test_user_id, created_agent_ids
+    
     print("\n" + "="*80)
     print("TESTING SCENARIO INTEGRATION WITH AGENTS")
     print("="*80)
