@@ -1518,6 +1518,28 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     });
   };
 
+  const handleRemoveAgent = async (agent) => {
+    if (!onRemoveAgent) return;
+    
+    try {
+      const result = await onRemoveAgent(agent);
+      
+      if (result && result.success) {
+        setAddedAgents(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(agent.id);
+          return newSet;
+        });
+        console.log('Agent removed successfully:', result.message);
+      } else {
+        console.error('Failed to remove agent:', result?.message || 'Unknown error');
+      }
+      
+    } catch (error) {
+      console.error('Failed to remove agent:', error);
+    }
+  };
+
   const handleQuickTeamAdd = async (teamKey) => {
     const team = quickTeams[teamKey];
     if (!team || !team.agents) return;
