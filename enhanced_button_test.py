@@ -205,6 +205,8 @@ def test_login():
 
 def test_enhanced_button_functionality():
     """Test the enhanced button functionality for agent management"""
+    global auth_token, test_user_id
+    
     print("\n" + "="*80)
     print("TESTING ENHANCED BUTTON FUNCTIONALITY FOR AGENT MANAGEMENT")
     print("="*80)
