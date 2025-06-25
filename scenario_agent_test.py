@@ -210,6 +210,8 @@ def test_login():
 
 def create_test_agents(num_agents=3):
     """Create test agents for the current user"""
+    global auth_token, test_user_id, created_agent_ids
+    
     print("\n" + "="*80)
     print(f"CREATING {num_agents} TEST AGENTS")
     print("="*80)
