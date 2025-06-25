@@ -784,7 +784,21 @@ const AppContent = () => {
                     return { success: false, message: error.message };
                   }
                 }}
-                onRemoveAgent={(agent) => console.log('Agent removed:', agent)}
+                onRemoveAgent={async (agent) => {
+                  try {
+                    const token = localStorage.getItem('authToken');
+                    if (!token) {
+                      console.log('⚠️ Not authenticated for agent removal');
+                      return { success: false, message: 'Not authenticated' };
+                    }
+
+                    console.log('🗑️ Agent removed from simulation:', agent);
+                    return { success: true, message: 'Agent removed successfully' };
+                  } catch (error) {
+                    console.error('❌ Error removing agent:', error);
+                    return { success: false, message: error.message };
+                  }
+                }}
               />
             </div>
           )}
