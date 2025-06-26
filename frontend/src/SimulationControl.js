@@ -444,6 +444,14 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         setIsRunning(true);
         setIsPaused(false);
         await fetchSimulationState();
+        
+        // Auto-generate first conversation after starting simulation
+        if (agents.length >= 2) {
+          console.log('🚀 Auto-generating initial conversation...');
+          setTimeout(() => {
+            generateConversation();
+          }, 2000); // Wait 2 seconds after start
+        }
       }
     } catch (error) {
       console.error('Failed to start simulation:', error);
