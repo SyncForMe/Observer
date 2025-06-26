@@ -80,15 +80,11 @@ const ConversationViewer = () => {
       const response = await axios.get(`${API}/relationships`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.data) {
-        setRelationships(response.data);
-      }
+      setRelationships(response.data || []);
     } catch (error) {
       console.error('Failed to fetch relationships:', error);
     }
   };
-
-  const fetchRelationships = async () => {
 
   const translateConversation = async (conversationId) => {
     if (translationLanguage === 'en') return;
