@@ -238,11 +238,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     fetchSimulationState();
     fetchObserverMessages();
     fetchAgents();
+    fetchConversations();
     // Set up polling for real-time updates
     const interval = setInterval(() => {
       if (isRunning) {
         fetchObserverMessages();
         fetchSimulationState();
+        fetchConversations();
       }
     }, 5000);
 
