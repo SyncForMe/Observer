@@ -824,54 +824,38 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
 
         {/* Control Buttons */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <button
-            onClick={isRunning ? (isPaused ? resumeSimulation : pauseSimulation) : startSimulation}
+            onClick={startFreshSimulation}
             disabled={loading}
-            className={`px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              isRunning 
-                ? (isPaused 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-yellow-600 hover:bg-yellow-700 text-white')
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            } disabled:opacity-50`}
+            className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
           >
-            {loading ? '⏳' : isRunning ? (isPaused ? '▶️ Resume' : '⏸️ Pause') : '🚀 Start'}
+            {loading ? '⏳' : '🔄 Start Fresh'}
           </button>
 
           <button
-            onClick={generateConversation}
-            disabled={loading || !isRunning || agents.length < 2}
-            className={`px-6 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
-              loading || !isRunning || agents.length < 2
-                ? 'bg-gray-600 text-gray-400' 
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            } disabled:opacity-50`}
+            onClick={playPauseSimulation}
+            disabled={loading || agents.length < 2}
+            className={`px-4 py-3 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 ${
+              !isRunning
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : isPaused 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+            }`}
           >
-            <span className="text-2xl">💬</span>
-            <span>
-              {loading ? 'Generating...' : agents.length < 2 ? 'Need 2+ Agents' : 'Generate Conversation'}
-            </span>
+            {loading ? '⏳' : !isRunning ? '▶️ Play' : isPaused ? '▶️ Resume' : '⏸️ Pause'}
           </button>
 
           <button
-            onClick={toggleAutoMode}
-            disabled={loading}
+            onClick={() => setShowObserverChat(!showObserverChat)}
             className={`px-4 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              autoMode 
-                ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+              showObserverChat 
+                ? 'bg-purple-600 hover:bg-purple-700 text-white' 
                 : 'bg-gray-600 hover:bg-gray-700 text-white'
-            } disabled:opacity-50`}
+            }`}
           >
-            🤖 Auto Mode
-          </button>
-
-          <button
-            onClick={generateSummary}
-            disabled={loading || !isRunning}
-            className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
-          >
-            📋 Summary
+            👁️ Observer
           </button>
 
           <button
