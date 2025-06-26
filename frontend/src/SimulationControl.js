@@ -1020,6 +1020,65 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
       )}
 
+      {/* Live Conversation Monitoring Card */}
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-white">🔴 Live Conversations</h3>
+          <div className="flex items-center space-x-2">
+            <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+            <span className="text-white/60 text-sm">
+              {conversations.length} conversations
+            </span>
+            <button
+              onClick={fetchConversations}
+              disabled={conversationLoading}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+            >
+              {conversationLoading ? '⏳' : '🔄 Refresh'}
+            </button>
+          </div>
+        </div>
+
+        {/* Latest Conversations Display */}
+        <div className="bg-white/5 rounded-lg p-4 h-64 overflow-y-auto">
+          {conversations.length === 0 ? (
+            <div className="text-center text-white/60 mt-8">
+              <div className="text-4xl mb-2">💬</div>
+              <p>No conversations yet. Generate conversations to see them here!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {conversations.slice(-3).reverse().map((conversation, index) => (
+                <div key={conversation.id || index} className="bg-white/5 rounded-lg p-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-white font-medium">
+                      Round {conversation.round_number} - {conversation.scenario_name || 'Discussion'}
+                    </span>
+                    <span className="text-white/40 text-xs">
+                      {new Date(conversation.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {conversation.messages?.slice(0, 3).map((message, msgIndex) => (
+                      <div key={msgIndex} className="flex space-x-2">
+                        <span className="text-purple-300 text-sm font-medium min-w-0 flex-shrink-0">
+                          {message.agent_name}:
+                        </span>
+                        <span className="text-white/80 text-sm leading-relaxed">
+                          {message.message?.length > 100 
+                            ? `${message.message.substring(0, 100)}...` 
+                            : message.message}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Agent Edit Modal */}
       <AgentEditModal
         isOpen={showEditModal}
