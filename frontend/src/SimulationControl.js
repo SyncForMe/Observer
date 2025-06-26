@@ -57,22 +57,6 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
     setSaving(false);
   };
 
-  const fetchConversations = async () => {
-    if (!token) return;
-    
-    setConversationLoading(true);
-    try {
-      const response = await axios.get(`${API}/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setConversations(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch conversations:', error);
-      setConversations([]);
-    }
-    setConversationLoading(false);
-  };
-
   const archetypes = [
     'scientist', 'optimist', 'skeptic', 'leader', 'artist', 
     'engineer', 'entrepreneur', 'analyst', 'visionary'
