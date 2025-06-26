@@ -1280,15 +1280,15 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendObserverMessage()}
                 placeholder="Type your observer message..."
-                disabled={loading || !isRunning}
+                disabled={loading}
                 className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               />
               <button
                 onClick={sendObserverMessage}
-                disabled={loading || !newMessage.trim() || !isRunning}
+                disabled={loading || !newMessage.trim()}
                 className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
               >
-                Send
+                {loading ? '⏳' : 'Send'}
               </button>
             </div>
           )}
