@@ -804,13 +804,6 @@ const AppContent = () => {
             </div>
           )}
           
-          {activeTab === 'chat' && (
-            <div>
-              {console.log('🔍 AppContent: Rendering chat content')}
-              <ChatHistory />
-            </div>
-          )}
-          
           {activeTab === 'files' && (
             <div>
               {console.log('🔍 AppContent: Rendering files content')}
