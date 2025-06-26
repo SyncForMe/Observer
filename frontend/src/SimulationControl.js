@@ -1261,26 +1261,6 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
       )}
 
-      {/* Live Conversation Monitoring Card */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">🔴 Live Conversations</h3>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
-            <span className="text-white/60 text-sm">
-              {conversations.length} conversations
-            </span>
-            <button
-              onClick={fetchConversations}
-              disabled={conversationLoading}
-              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-            >
-              {conversationLoading ? '⏳' : '🔄 Refresh'}
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Agent Edit Modal */}
       <AgentEditModal
         isOpen={showEditModal}
