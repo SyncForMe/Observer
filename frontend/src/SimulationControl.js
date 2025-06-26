@@ -846,24 +846,34 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           </select>
         </div>
 
-        {/* Current Scenario Info */}
+        {/* Compact Current Scenario Info */}
         {simulationState && (
-          <div className="bg-white/5 rounded-lg p-4">
-            <h3 className="text-white font-semibold mb-2">Current Simulation</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="text-white/60">Scenario:</span>
-                <div className="text-white">{simulationState.scenario || 'None'}</div>
+          <div className="bg-white/5 rounded-lg p-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <h3 className="text-white font-semibold">Current Simulation</h3>
+                <div className="flex items-center space-x-4 text-sm">
+                  <span className="text-white/60">Agents: <span className="text-white">{agents.length || 0}</span></span>
+                  <span className="text-white/60">Messages: <span className="text-white">{simulationState.message_count || 0}</span></span>
+                </div>
               </div>
-              <div>
-                <span className="text-white/60">Agents:</span>
-                <div className="text-white">{agents.length || 0}</div>
-              </div>
-              <div>
-                <span className="text-white/60">Messages:</span>
-                <div className="text-white">{simulationState.message_count || 0}</div>
-              </div>
+              <button
+                onClick={() => setExpandedScenario(!expandedScenario)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                {expandedScenario ? '📋 Hide Details' : '📋 View Scenario'}
+              </button>
             </div>
+            {expandedScenario && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <div className="text-sm">
+                  <span className="text-white/60">Current Scenario:</span>
+                  <div className="text-white mt-1 p-2 bg-white/5 rounded">
+                    {simulationState.scenario || 'No scenario selected'}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
