@@ -521,18 +521,46 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     setLoading(false);
   };
 
-  const pauseSimulation = async () => {
+  const playPauseSimulation = async () => {
+    if (!token) return;
+    
     setLoading(true);
     try {
-      const response = await axios.post(`${API}/simulation/pause`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data.success) {
-        setIsPaused(true);
-        await fetchSimulationState();
+      if (!isRunning) {
+        // Start the simulation
+        const response = await axios.post(`${API}/simulation/start`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.success) {
+          setIsRunning(true);
+          setIsPaused(false);
+          console.log('🚀 Simulation started - auto-generation active');
+          await fetchSimulationState();
+        }
+      } else if (isPaused) {
+        // Resume the simulation
+        const response = await axios.post(`${API}/simulation/resume`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.success) {
+          setIsPaused(false);
+          console.log('▶️ Simulation resumed - auto-generation active');
+          await fetchSimulationState();
+        }
+      } else {
+        // Pause the simulation
+        const response = await axios.post(`${API}/simulation/pause`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.data.success) {
+          setIsPaused(true);
+          console.log('⏸️ Simulation paused - auto-generation stopped');
+          await fetchSimulationState();
+        }
       }
     } catch (error) {
-      console.error('Failed to pause simulation:', error);
+      console.error('Failed to play/pause simulation:', error);
+      alert('Failed to play/pause simulation. Please try again.');
     }
     setLoading(false);
   };
