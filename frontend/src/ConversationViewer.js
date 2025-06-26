@@ -88,21 +88,7 @@ const ConversationViewer = () => {
     }
   };
 
-  const generateConversation = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.post(`${API}/conversation/generate`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data.success) {
-        await fetchConversations();
-      }
-    } catch (error) {
-      console.error('Failed to generate conversation:', error);
-      alert('Failed to generate conversation. Please try again.');
-    }
-    setLoading(false);
-  };
+  const fetchRelationships = async () => {
 
   const translateConversation = async (conversationId) => {
     if (translationLanguage === 'en') return;
