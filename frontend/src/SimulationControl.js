@@ -212,6 +212,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [showObserverChat, setShowObserverChat] = useState(false);
   const [showScenarioCreator, setShowScenarioCreator] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [conversationLoading, setConversationLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const { user, token } = useAuth();
 
