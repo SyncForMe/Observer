@@ -214,7 +214,11 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const [showScenarioCreator, setShowScenarioCreator] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [conversationLoading, setConversationLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
   const messagesEndRef = useRef(null);
+  const searchRefs = useRef([]);
   const { user, token } = useAuth();
 
   // Fetch simulation state and agents on mount
