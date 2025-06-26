@@ -232,6 +232,22 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       }
     }, 5000);
 
+
+  const fetchConversations = async () => {
+    if (!token) return;
+    
+    setConversationLoading(true);
+    try {
+      const response = await axios.get(`${API}/conversations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversations(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch conversations:', error);
+      setConversations([]);
+    }
+    setConversationLoading(false);
+  };
     return () => clearInterval(interval);
   }, []);
 
