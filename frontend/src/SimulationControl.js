@@ -218,21 +218,6 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const { user, token } = useAuth();
 
   // Fetch simulation state and agents on mount
-  useEffect(() => {
-    fetchSimulationState();
-    fetchObserverMessages();
-    fetchAgents();
-    fetchConversations();
-    // Set up polling for real-time updates
-    const interval = setInterval(() => {
-      if (isRunning) {
-        fetchObserverMessages();
-        fetchSimulationState();
-        fetchConversations();
-      }
-    }, 5000);
-
-
   const fetchConversations = async () => {
     if (!token) return;
     
@@ -248,6 +233,21 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     }
     setConversationLoading(false);
   };
+
+  useEffect(() => {
+    fetchSimulationState();
+    fetchObserverMessages();
+    fetchAgents();
+    fetchConversations();
+    // Set up polling for real-time updates
+    const interval = setInterval(() => {
+      if (isRunning) {
+        fetchObserverMessages();
+        fetchSimulationState();
+        fetchConversations();
+      }
+    }, 5000);
+
     return () => clearInterval(interval);
   }, []);
 
