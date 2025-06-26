@@ -947,30 +947,74 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
       </div>
 
-      {/* Observer Chat - Only show when observer input button is clicked */}
-      {showObserverChat && (
+      {/* Unified Live Conversation Monitoring */}
+      {(showObserverChat || isRunning) && (
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-white">💬 Observer Chat</h3>
-            <button
-              onClick={() => setShowObserverChat(false)}
-              className="text-white/70 hover:text-white text-xl p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              ✕
-            </button>
+            <h3 className="text-xl font-bold text-white">💬 Live Conversations & Observer</h3>
+            <div className="flex items-center space-x-3">
+              <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="text-white/60 text-sm">
+                {conversations.length} rounds, {observerMessages.length} messages
+              </span>
+              <button
+                onClick={fetchConversations}
+                disabled={conversationLoading}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+              >
+                {conversationLoading ? '⏳' : '🔄 Refresh'}
+              </button>
+              {showObserverChat && (
+                <button
+                  onClick={() => setShowObserverChat(false)}
+                  className="text-white/70 hover:text-white text-xl p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
           
-          {/* Messages Display */}
+          {/* Unified Messages Display */}
           <div className="bg-white/5 rounded-lg p-4 h-64 overflow-y-auto mb-4">
-            {observerMessages.length === 0 ? (
+            {conversations.length === 0 && observerMessages.length === 0 ? (
               <div className="text-center text-white/60 mt-8">
-                <div className="text-4xl mb-2">👁️</div>
-                <p>No messages yet. Start observing the simulation!</p>
+                <div className="text-4xl mb-2">💬</div>
+                <p>No conversations yet. Generate conversations or start observing!</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {observerMessages.map((msg, index) => (
-                  <div key={index} className="flex space-x-3">
+              <div className="space-y-4">
+                {/* Show latest conversations */}
+                {conversations.slice(-2).reverse().map((conversation, index) => (
+                  <div key={`conv-${conversation.id || index}`} className="bg-purple-500/20 rounded-lg p-3 border-l-4 border-purple-400">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-purple-200 font-medium">
+                        🤖 Round {conversation.round_number} - {conversation.scenario_name || 'Discussion'}
+                      </span>
+                      <span className="text-white/40 text-xs">
+                        {new Date(conversation.created_at).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {conversation.messages?.slice(0, 2).map((message, msgIndex) => (
+                        <div key={msgIndex} className="flex space-x-2">
+                          <span className="text-purple-300 text-sm font-medium min-w-0 flex-shrink-0">
+                            {message.agent_name}:
+                          </span>
+                          <span className="text-white/80 text-sm leading-relaxed">
+                            {message.message?.length > 80 
+                              ? `${message.message.substring(0, 80)}...` 
+                              : message.message}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                
+                {/* Show observer messages */}
+                {observerMessages.slice(-3).map((msg, index) => (
+                  <div key={`obs-${index}`} className="flex space-x-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
                       msg.type === 'observer' 
                         ? 'bg-blue-600' 
@@ -998,86 +1042,29 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
             )}
           </div>
 
-          {/* Message Input */}
-          <div className="flex space-x-3">
-            <input
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendObserverMessage()}
-              placeholder="Type your observer message..."
-              disabled={loading || !isRunning}
-              className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            />
-            <button
-              onClick={sendObserverMessage}
-              disabled={loading || !newMessage.trim() || !isRunning}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
-            >
-              Send
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Live Conversation Monitoring Card */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-white">🔴 Live Conversations</h3>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
-            <span className="text-white/60 text-sm">
-              {conversations.length} conversations
-            </span>
-            <button
-              onClick={fetchConversations}
-              disabled={conversationLoading}
-              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-            >
-              {conversationLoading ? '⏳' : '🔄 Refresh'}
-            </button>
-          </div>
-        </div>
-
-        {/* Latest Conversations Display */}
-        <div className="bg-white/5 rounded-lg p-4 h-64 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <div className="text-center text-white/60 mt-8">
-              <div className="text-4xl mb-2">💬</div>
-              <p>No conversations yet. Generate conversations to see them here!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {conversations.slice(-3).reverse().map((conversation, index) => (
-                <div key={conversation.id || index} className="bg-white/5 rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-white font-medium">
-                      Round {conversation.round_number} - {conversation.scenario_name || 'Discussion'}
-                    </span>
-                    <span className="text-white/40 text-xs">
-                      {new Date(conversation.created_at).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                    {conversation.messages?.slice(0, 3).map((message, msgIndex) => (
-                      <div key={msgIndex} className="flex space-x-2">
-                        <span className="text-purple-300 text-sm font-medium min-w-0 flex-shrink-0">
-                          {message.agent_name}:
-                        </span>
-                        <span className="text-white/80 text-sm leading-relaxed">
-                          {message.message?.length > 100 
-                            ? `${message.message.substring(0, 100)}...` 
-                            : message.message}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+          {/* Observer Message Input - Only show when observer chat is active */}
+          {showObserverChat && (
+            <div className="flex space-x-3">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendObserverMessage()}
+                placeholder="Type your observer message..."
+                disabled={loading || !isRunning}
+                className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              />
+              <button
+                onClick={sendObserverMessage}
+                disabled={loading || !newMessage.trim() || !isRunning}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
+              >
+                Send
+              </button>
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* Live Conversation Monitoring Card */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
