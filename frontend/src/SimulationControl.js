@@ -238,6 +238,87 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     setConversationLoading(false);
   };
 
+  // Search functionality
+  const performSearch = (term) => {
+    if (!term.trim()) {
+      setSearchResults([]);
+      setCurrentSearchIndex(0);
+      return;
+    }
+
+    const results = [];
+    conversations.forEach((conversation, convIndex) => {
+      conversation.messages?.forEach((message, msgIndex) => {
+        const messageText = message.message?.toLowerCase() || '';
+        const searchLower = term.toLowerCase();
+        
+        if (messageText.includes(searchLower)) {
+          results.push({
+            conversationIndex: convIndex,
+            messageIndex: msgIndex,
+            conversation: conversation,
+            message: message,
+            text: message.message
+          });
+        }
+      });
+    });
+
+    setSearchResults(results);
+    setCurrentSearchIndex(0);
+    
+    // Scroll to first result
+    if (results.length > 0) {
+      setTimeout(() => {
+        const firstRef = searchRefs.current[0];
+        if (firstRef) {
+          firstRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  };
+
+  const navigateSearch = (direction) => {
+    if (searchResults.length === 0) return;
+    
+    let newIndex = currentSearchIndex;
+    if (direction === 'next') {
+      newIndex = (currentSearchIndex + 1) % searchResults.length;
+    } else if (direction === 'prev') {
+      newIndex = currentSearchIndex === 0 ? searchResults.length - 1 : currentSearchIndex - 1;
+    }
+    
+    setCurrentSearchIndex(newIndex);
+    
+    // Scroll to current result
+    setTimeout(() => {
+      const currentRef = searchRefs.current[newIndex];
+      if (currentRef) {
+        currentRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
+
+  const highlightSearchTerm = (text, term, isCurrentResult = false) => {
+    if (!term.trim()) return text;
+    
+    const parts = text.split(new RegExp(`(${term})`, 'gi'));
+    return parts.map((part, index) => {
+      const isMatch = part.toLowerCase() === term.toLowerCase();
+      if (isMatch) {
+        return (
+          <span 
+            key={index} 
+            className={`${isCurrentResult ? 'bg-yellow-400 text-black' : 'bg-yellow-300 text-black'} px-1 rounded`}
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
   useEffect(() => {
     fetchSimulationState();
     fetchObserverMessages();
