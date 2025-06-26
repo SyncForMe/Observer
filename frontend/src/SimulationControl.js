@@ -1023,18 +1023,20 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
             <span>Observer Input</span>
           </button>
 
-          {/* Fast Forward Button */}
+          {/* Generate Conversation Button */}
           <button
-            onClick={toggleFastForward}
-            disabled={loading || !isRunning}
+            onClick={generateConversation}
+            disabled={loading || !isRunning || agents.length < 2}
             className={`px-6 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
-              fastForwardMode 
-                ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                : 'bg-gray-600 hover:bg-gray-700 text-white'
+              loading || !isRunning || agents.length < 2
+                ? 'bg-gray-600 text-gray-400' 
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
             } disabled:opacity-50`}
           >
-            <span className="text-2xl">⚡</span>
-            <span>Fast Forward</span>
+            <span className="text-2xl">💬</span>
+            <span>
+              {loading ? 'Generating...' : agents.length < 2 ? 'Need 2+ Agents' : 'Generate Conversation'}
+            </span>
           </button>
         </div>
 
