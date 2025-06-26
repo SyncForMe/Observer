@@ -565,22 +565,6 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     setLoading(false);
   };
 
-  const resumeSimulation = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.post(`${API}/simulation/resume`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data.success) {
-        setIsPaused(false);
-        await fetchSimulationState();
-      }
-    } catch (error) {
-      console.error('Failed to resume simulation:', error);
-    }
-    setLoading(false);
-  };
-
   const toggleFastForward = async () => {
     setLoading(true);
     try {
