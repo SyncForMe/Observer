@@ -332,13 +332,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         fetchSimulationState();
         fetchConversations();
         
-        // Auto-generate conversations every 30 seconds if agents available
-        if (agents.length >= 2 && Math.random() > 0.5) { // 50% chance every 30 seconds
+        // Auto-generate conversations every 4 seconds if agents available
+        if (agents.length >= 2 && Math.random() > 0.3) { // 70% chance every 4 seconds
           console.log('🤖 Auto-generating conversation...');
           generateConversation();
         }
       }
-    }, 30000); // Every 30 seconds
+    }, 4000); // Every 4 seconds
 
     // More frequent refresh for UI updates
     const quickInterval = setInterval(() => {
