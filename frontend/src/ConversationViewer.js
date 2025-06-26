@@ -161,13 +161,6 @@ const ConversationViewer = () => {
             >
               {autoRefresh ? '🔄 Auto Refresh' : '⏸️ Paused'}
             </button>
-            <button
-              onClick={generateConversation}
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
-            >
-              {loading ? '⏳' : '🎭 Generate'}
-            </button>
           </div>
         </div>
 
