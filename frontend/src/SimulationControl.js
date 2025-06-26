@@ -217,6 +217,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+  const [expandedScenario, setExpandedScenario] = useState(false);
   const messagesEndRef = useRef(null);
   const searchRefs = useRef([]);
   const { user, token } = useAuth();
