@@ -1032,33 +1032,32 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
       </div>
 
-      {/* Unified Live Conversation Monitoring */}
-      {(showObserverChat || isRunning) && (
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-white">💬 Live Conversations & Observer</h3>
-            <div className="flex items-center space-x-3">
-              <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
-              <span className="text-white/60 text-sm">
-                {conversations.length} rounds, {observerMessages.length} messages
-              </span>
-              <button
-                onClick={fetchConversations}
-                disabled={conversationLoading}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-              >
-                {conversationLoading ? '⏳' : '🔄 Refresh'}
-              </button>
-              {showObserverChat && (
-                <button
-                  onClick={() => setShowObserverChat(false)}
-                  className="text-white/70 hover:text-white text-xl p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+      {/* Always Visible Live Conversation Monitoring */}
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-white">💬 Live Conversations & Observer</h3>
+          <div className="flex items-center space-x-3">
+            <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+            <span className="text-white/60 text-sm">
+              {conversations.length} rounds, {observerMessages.length} messages
+            </span>
+            <button
+              onClick={fetchConversations}
+              disabled={conversationLoading}
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+            >
+              {conversationLoading ? '⏳' : '🔄 Refresh'}
+            </button>
+            <button
+              onClick={() => setShowObserverChat(!showObserverChat)}
+              className={`px-3 py-1 text-white text-sm rounded-lg transition-colors ${
+                showObserverChat ? 'bg-purple-600 hover:bg-purple-700' : 'bg-gray-600 hover:bg-gray-700'
+              }`}
+            >
+              {showObserverChat ? '👁️ Active' : '👁️ Observer'}
+            </button>
           </div>
+        </div>
 
           {/* Search Bar */}
           <div className="mb-4">
