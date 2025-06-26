@@ -66,12 +66,30 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <div className="bg-white rounded-lg w-full max-w-5xl max-h-[95vh] overflow-hidden">
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">✏️ Edit Agent</h2>
-              <p className="text-white/80 mt-1">Modify agent details and personality</p>
+            <div className="flex items-center space-x-4">
+              {/* Agent Avatar - 20% of modal size */}
+              <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                {agent?.avatar_url ? (
+                  <img 
+                    src={agent.avatar_url} 
+                    alt={agent.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center">
+                    <span className="text-white text-2xl font-bold">
+                      {agent?.name?.charAt(0) || '🤖'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">✏️ Edit Agent</h2>
+                <p className="text-white/80 mt-1">Modify agent details and personality</p>
+              </div>
             </div>
             <button
               onClick={onClose}
