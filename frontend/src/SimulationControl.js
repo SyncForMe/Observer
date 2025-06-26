@@ -1059,69 +1059,155 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
               )}
             </div>
           </div>
+
+          {/* Search Bar */}
+          <div className="mb-4">
+            <div className="flex space-x-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    performSearch(e.target.value);
+                  }}
+                  placeholder="Search conversations..."
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSearchResults([]);
+                      setCurrentSearchIndex(0);
+                    }}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {searchResults.length > 0 && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-white/60 text-sm">
+                    {currentSearchIndex + 1} of {searchResults.length}
+                  </span>
+                  <button
+                    onClick={() => navigateSearch('prev')}
+                    className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => navigateSearch('next')}
+                    className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                  >
+                    ↓
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           
-          {/* Unified Messages Display */}
-          <div className="bg-white/5 rounded-lg p-4 h-64 overflow-y-auto mb-4">
+          {/* Enhanced Conversation Display - Much Larger */}
+          <div className="bg-white/5 rounded-lg p-4 h-96 overflow-y-auto mb-4">
             {conversations.length === 0 && observerMessages.length === 0 ? (
-              <div className="text-center text-white/60 mt-8">
-                <div className="text-4xl mb-2">💬</div>
-                <p>No conversations yet. Generate conversations or start observing!</p>
+              <div className="text-center text-white/60 mt-16">
+                <div className="text-6xl mb-4">💬</div>
+                <h3 className="text-xl font-semibold mb-2">No Conversations Yet</h3>
+                <p>Generate conversations or start observing to see live activity!</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Show latest conversations */}
-                {conversations.slice(-2).reverse().map((conversation, index) => (
-                  <div key={`conv-${conversation.id || index}`} className="bg-purple-500/20 rounded-lg p-3 border-l-4 border-purple-400">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-purple-200 font-medium">
-                        🤖 Round {conversation.round_number} - {conversation.scenario_name || 'Discussion'}
-                      </span>
-                      <span className="text-white/40 text-xs">
-                        {new Date(conversation.created_at).toLocaleTimeString()}
+              <div className="space-y-6">
+                {/* Show all conversations with full messages */}
+                {conversations.map((conversation, convIndex) => (
+                  <div key={`conv-${conversation.id || convIndex}`} className="bg-purple-500/20 rounded-lg p-4 border-l-4 border-purple-400">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-purple-200 font-bold text-lg">
+                          🤖 Round {conversation.round_number}
+                        </span>
+                        <span className="text-purple-300 font-medium">
+                          {conversation.scenario_name || 'Discussion'}
+                        </span>
+                      </div>
+                      <span className="text-white/50 text-sm">
+                        {new Date(conversation.created_at).toLocaleString()}
                       </span>
                     </div>
-                    <div className="space-y-1 max-h-24 overflow-y-auto">
-                      {conversation.messages?.slice(0, 2).map((message, msgIndex) => (
-                        <div key={msgIndex} className="flex space-x-2">
-                          <span className="text-purple-300 text-sm font-medium min-w-0 flex-shrink-0">
-                            {message.agent_name}:
-                          </span>
-                          <span className="text-white/80 text-sm leading-relaxed">
-                            {message.message?.length > 80 
-                              ? `${message.message.substring(0, 80)}...` 
-                              : message.message}
-                          </span>
-                        </div>
-                      ))}
+                    
+                    {/* Full conversation messages */}
+                    <div className="space-y-3">
+                      {conversation.messages?.map((message, msgIndex) => {
+                        const searchResultIndex = searchResults.findIndex(
+                          result => result.conversationIndex === convIndex && result.messageIndex === msgIndex
+                        );
+                        const isCurrentSearchResult = searchResultIndex === currentSearchIndex;
+                        
+                        return (
+                          <div 
+                            key={msgIndex} 
+                            className={`bg-white/10 rounded-lg p-3 ${isCurrentSearchResult ? 'ring-2 ring-yellow-400' : ''}`}
+                            ref={searchResultIndex >= 0 ? (el) => searchRefs.current[searchResultIndex] = el : null}
+                          >
+                            <div className="flex items-center space-x-2 mb-2">
+                              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-sm font-bold">
+                                  {message.agent_name?.charAt(0) || '🤖'}
+                                </span>
+                              </div>
+                              <span className="text-purple-200 font-semibold">
+                                {message.agent_name}
+                              </span>
+                              <span className="text-white/40 text-xs">
+                                {new Date(message.timestamp || conversation.created_at).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <div className="text-white/90 leading-relaxed pl-10">
+                              {searchTerm ? 
+                                highlightSearchTerm(message.message || '', searchTerm, isCurrentSearchResult) : 
+                                (message.message || '')
+                              }
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
                 
                 {/* Show observer messages */}
-                {observerMessages.slice(-3).map((msg, index) => (
-                  <div key={`obs-${index}`} className="flex space-x-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                      msg.type === 'observer' 
-                        ? 'bg-blue-600' 
-                        : msg.type === 'system' 
-                          ? 'bg-gray-600' 
-                          : 'bg-green-600'
-                    }`}>
-                      {msg.type === 'observer' ? '👁️' : msg.type === 'system' ? '⚙️' : '🤖'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-white font-medium">
-                          {msg.agent_name || msg.type || 'Observer'}
-                        </span>
-                        <span className="text-white/40 text-xs">
-                          {new Date(msg.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <div className="text-white/80 text-sm">{msg.message}</div>
+                {observerMessages.length > 0 && (
+                  <div className="bg-blue-500/20 rounded-lg p-4 border-l-4 border-blue-400">
+                    <h4 className="text-blue-200 font-bold text-lg mb-3">👁️ Observer Activity</h4>
+                    <div className="space-y-3">
+                      {observerMessages.map((msg, index) => (
+                        <div key={`obs-${index}`} className="flex space-x-3 bg-white/10 rounded-lg p-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                            msg.type === 'observer' 
+                              ? 'bg-blue-600' 
+                              : msg.type === 'system' 
+                                ? 'bg-gray-600' 
+                                : 'bg-green-600'
+                          }`}>
+                            {msg.type === 'observer' ? '👁️' : msg.type === 'system' ? '⚙️' : '🤖'}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="text-blue-200 font-semibold">
+                                {msg.agent_name || msg.type || 'Observer'}
+                              </span>
+                              <span className="text-white/40 text-xs">
+                                {new Date(msg.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <div className="text-white/90">{msg.message}</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
                 <div ref={messagesEndRef} />
               </div>
             )}
