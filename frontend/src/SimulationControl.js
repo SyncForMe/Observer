@@ -324,17 +324,34 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     fetchObserverMessages();
     fetchAgents();
     fetchConversations();
-    // Set up polling for real-time updates
+    
+    // Set up polling for real-time updates and auto-generation
     const interval = setInterval(() => {
-      if (isRunning) {
+      if (isRunning && !isPaused) {
         fetchObserverMessages();
         fetchSimulationState();
         fetchConversations();
+        
+        // Auto-generate conversations every 30 seconds if agents available
+        if (agents.length >= 2 && Math.random() > 0.5) { // 50% chance every 30 seconds
+          console.log('🤖 Auto-generating conversation...');
+          generateConversation();
+        }
       }
-    }, 5000);
+    }, 30000); // Every 30 seconds
 
-    return () => clearInterval(interval);
-  }, []);
+    // More frequent refresh for UI updates
+    const quickInterval = setInterval(() => {
+      if (isRunning) {
+        fetchConversations();
+      }
+    }, 5000); // Every 5 seconds
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(quickInterval);
+    };
+  }, [isRunning, isPaused, agents.length]);
 
   // Refresh agents when switching to simulation tab
   useEffect(() => {
