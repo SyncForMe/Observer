@@ -1084,8 +1084,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           </div>
         </div>
 
-          {/* Search Bar */}
-          <div className="mb-4">
+          {/* Compact Search Bar */}
+          <div className="mb-3">
             <div className="flex space-x-2">
               <div className="flex-1 relative">
                 <input
@@ -1095,8 +1095,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                     setSearchTerm(e.target.value);
                     performSearch(e.target.value);
                   }}
-                  placeholder="Search conversations..."
-                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-blue-500"
+                  placeholder="Search..."
+                  className="w-full px-3 py-1 text-sm bg-white/10 border border-white/20 rounded text-white placeholder-white/40 focus:ring-1 focus:ring-blue-500"
                 />
                 {searchTerm && (
                   <button
@@ -1105,26 +1105,26 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                       setSearchResults([]);
                       setCurrentSearchIndex(0);
                     }}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white"
+                    className="absolute right-1 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white text-xs"
                   >
                     ✕
                   </button>
                 )}
               </div>
               {searchResults.length > 0 && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-white/60 text-sm">
-                    {currentSearchIndex + 1} of {searchResults.length}
+                <div className="flex items-center space-x-1">
+                  <span className="text-white/60 text-xs">
+                    {currentSearchIndex + 1}/{searchResults.length}
                   </span>
                   <button
                     onClick={() => navigateSearch('prev')}
-                    className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                    className="px-1 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
                   >
                     ↑
                   </button>
                   <button
                     onClick={() => navigateSearch('next')}
-                    className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded transition-colors"
+                    className="px-1 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
                   >
                     ↓
                   </button>
