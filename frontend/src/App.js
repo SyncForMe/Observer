@@ -262,24 +262,6 @@ const ObserverLogo = () => {
   );
 };
 
-// Simple Chat History Component  
-const ChatHistory = () => {
-  return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Chat History</h2>
-        <p className="text-white/80">Review your past conversations and simulations</p>
-      </div>
-      
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 text-center">
-        <div className="text-6xl mb-4">💬</div>
-        <h3 className="text-xl font-semibold text-white mb-2">No Conversations Yet</h3>
-        <p className="text-white/70">Start a simulation to begin chatting with agents and generate conversation history</p>
-      </div>
-    </div>
-  );
-};
-
 // Simple File Center Component
 const FileCenter = () => {
   return (
