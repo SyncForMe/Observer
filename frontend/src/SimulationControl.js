@@ -470,28 +470,53 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     }
   };
 
-  const startSimulation = async () => {
+  const startFreshSimulation = async () => {
+    if (!token) return;
+    
+    const confirmed = window.confirm(
+      "Are you sure you want to start fresh? This will clear all agents, conversations, and reset the scenario."
+    );
+    
+    if (!confirmed) return;
+    
     setLoading(true);
     try {
-      const response = await axios.post(`${API}/simulation/start`, {}, {
+      // Clear all user's agents
+      if (agents.length > 0) {
+        const agentIds = agents.map(agent => agent.id);
+        await axios.post(`${API}/agents/bulk-delete`, agentIds, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
+      
+      // Reset simulation state
+      await axios.post(`${API}/simulation/start`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.data.success) {
-        setIsRunning(true);
-        setIsPaused(false);
-        await fetchSimulationState();
-        
-        // Auto-generate first conversation after starting simulation
-        if (agents.length >= 2) {
-          console.log('🚀 Auto-generating initial conversation...');
-          setTimeout(() => {
-            generateConversation();
-          }, 2000); // Wait 2 seconds after start
-        }
-      }
+      
+      // Reset local state
+      setAgents([]);
+      setConversations([]);
+      setObserverMessages([]);
+      setScenario('');
+      setIsRunning(false);
+      setIsPaused(false);
+      setSearchTerm('');
+      setSearchResults([]);
+      
+      // Refresh everything
+      await fetchSimulationState();
+      await fetchAgents();
+      await fetchConversations();
+      
+      console.log('✅ Fresh simulation started - everything cleared');
+      
     } catch (error) {
-      console.error('Failed to start simulation:', error);
-      alert('Failed to start simulation. Please try again.');
+      console.error('Failed to start fresh simulation:', error);
+      alert('Failed to start fresh simulation. Please try again.');
     }
     setLoading(false);
   };
