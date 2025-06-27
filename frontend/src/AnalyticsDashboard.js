@@ -508,9 +508,9 @@ const AnalyticsDashboard = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+          className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-gray-600/30 shadow-xl"
         >
-          <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+          <h3 className="text-xl font-bold text-gray-100 mb-6 flex items-center">
             <span className="text-2xl mr-2">🏆</span>
             Top Performing Agents
           </h3>
