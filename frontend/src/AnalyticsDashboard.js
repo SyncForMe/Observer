@@ -690,7 +690,7 @@ const AnalyticsDashboard = () => {
             </div>
 
             {/* System Performance */}
-            <div className="bg-gradient-to-br from-purple-500/10 to-violet-600/10 rounded-lg p-5 border border-purple-300/20">
+            <div className="bg-purple-500/20 rounded-lg p-5 border border-purple-300/30">
               <h4 className="text-white font-semibold mb-4 flex items-center">
                 <span className="text-xl mr-2">⚡</span>
                 System Performance
