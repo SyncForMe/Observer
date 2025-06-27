@@ -793,21 +793,21 @@ const AnalyticsDashboard = () => {
           
           {/* Weekly Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="text-center p-4 bg-white/5 rounded-lg">
+            <div className="text-center p-4 bg-white/15 rounded-lg">
               <div className="text-2xl font-bold text-blue-400">{weeklyData.conversations || 0}</div>
-              <div className="text-white/60 text-sm">Conversations</div>
+              <div className="text-white/70 text-sm">Conversations</div>
             </div>
-            <div className="text-center p-4 bg-white/5 rounded-lg">
+            <div className="text-center p-4 bg-white/15 rounded-lg">
               <div className="text-2xl font-bold text-green-400">{weeklyData.agents_created || 0}</div>
-              <div className="text-white/60 text-sm">Agents Created</div>
+              <div className="text-white/70 text-sm">Agents Created</div>
             </div>
-            <div className="text-center p-4 bg-white/5 rounded-lg">
+            <div className="text-center p-4 bg-white/15 rounded-lg">
               <div className="text-2xl font-bold text-purple-400">{weeklyData.documents_created || 0}</div>
-              <div className="text-white/60 text-sm">Documents</div>
+              <div className="text-white/70 text-sm">Documents</div>
             </div>
-            <div className="text-center p-4 bg-white/5 rounded-lg">
+            <div className="text-center p-4 bg-white/15 rounded-lg">
               <div className="text-2xl font-bold text-orange-400">{weeklyData.most_active_day || 'N/A'}</div>
-              <div className="text-white/60 text-sm">Most Active Day</div>
+              <div className="text-white/70 text-sm">Most Active Day</div>
             </div>
           </div>
           
