@@ -486,38 +486,442 @@ const AppContent = () => {
         <div style={{ minHeight: '400px' }}>
           {/* Simple content without AnimatePresence to test */}
           {activeTab === 'home' && (
-            <div>
-              {console.log('🔍 AppContent: Rendering home content')}
-              <div className="text-center space-y-8">
-                <div>
-                  <h2 className="text-4xl font-bold text-white mb-4">
-                    🎉 Welcome to AI Agent Simulation Platform! 
-                  </h2>
-                  <p className="text-xl text-white/80 max-w-3xl mx-auto">
-                    Create, manage, and run sophisticated simulations with multiple AI agents.
-                  </p>
+            <div className="relative overflow-hidden">
+              {console.log('🔍 AppContent: Rendering professional home content')}
+              
+              {/* 1. HERO SECTION - Above the Fold */}
+              <section className="relative py-20 px-4">
+                {/* Background Animation */}
+                <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+                  <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
                 </div>
                 
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center">
-                    <div className="text-4xl mb-4">🤖</div>
-                    <h3 className="text-xl font-semibold text-white mb-2">Create Agents</h3>
-                    <p className="text-white/70">Design AI agents with unique personalities</p>
-                  </div>
-                  
-                  <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center">
-                    <div className="text-4xl mb-4">💬</div>
-                    <h3 className="text-xl font-semibold text-white mb-2">Run Simulations</h3>
-                    <p className="text-white/70">Watch agents interact in real-time</p>
-                  </div>
-                  
-                  <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 text-center">
-                    <div className="text-4xl mb-4">📊</div>
-                    <h3 className="text-xl font-semibold text-white mb-2">Analyze Results</h3>
-                    <p className="text-white/70">Generate insights from conversations</p>
+                <div className="relative max-w-7xl mx-auto">
+                  <div className="grid lg:grid-cols-2 gap-12 items-center">
+                    {/* Hero Content */}
+                    <motion.div 
+                      initial={{ opacity: 0, x: -50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.8 }}
+                      className="text-left space-y-8"
+                    >
+                      <div className="space-y-4">
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="inline-flex items-center px-4 py-2 bg-purple-600/20 rounded-full border border-purple-400/30"
+                        >
+                          <span className="text-purple-300 text-sm font-medium">🚀 Next-Gen AI Simulation Platform</span>
+                        </motion.div>
+                        
+                        <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight">
+                          Transform Ideas into{' '}
+                          <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                            Reality
+                          </span>
+                        </h1>
+                        
+                        <p className="text-xl text-gray-300 leading-relaxed max-w-xl">
+                          Create intelligent AI agents, run sophisticated simulations, and unlock breakthrough insights. 
+                          Turn complex scenarios into actionable intelligence.
+                        </p>
+                      </div>
+                      
+                      {/* CTA Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveTab('simulation')}
+                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300"
+                        >
+                          🎯 Start Simulation
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveTab('agents')}
+                          className="px-8 py-4 bg-white/10 backdrop-blur-lg text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                        >
+                          🤖 Explore Agents
+                        </motion.button>
+                      </div>
+                      
+                      {/* Stats */}
+                      <div className="flex items-center space-x-8 pt-8">
+                        <div>
+                          <div className="text-2xl font-bold text-white">10,000+</div>
+                          <div className="text-gray-400 text-sm">Simulations Run</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-white">50+</div>
+                          <div className="text-gray-400 text-sm">Agent Types</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-white">99.9%</div>
+                          <div className="text-gray-400 text-sm">Uptime</div>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    {/* Hero Visual */}
+                    <motion.div 
+                      initial={{ opacity: 0, x: 50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.8, delay: 0.2 }}
+                      className="relative"
+                    >
+                      <div className="relative bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
+                        <img 
+                          src="https://images.unsplash.com/photo-1677442136019-21780ecad995" 
+                          alt="AI Technology"
+                          className="w-full h-64 object-cover rounded-xl mb-6"
+                        />
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                              <span className="text-white font-bold">AI</span>
+                            </div>
+                            <div>
+                              <div className="text-white font-medium">Smart Agent Active</div>
+                              <div className="text-gray-400 text-sm">Processing scenario...</div>
+                            </div>
+                          </div>
+                          <div className="bg-blue-600/20 p-4 rounded-lg border border-blue-400/30">
+                            <div className="text-blue-300 text-sm font-medium mb-2">💡 AI Insight Generated</div>
+                            <div className="text-white text-sm">"Based on market analysis, I recommend focusing on user acquisition..."</div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
                 </div>
-              </div>
+              </section>
+
+              {/* 2. SOCIAL PROOF STRIP */}
+              <section className="py-12 border-y border-white/10">
+                <div className="max-w-7xl mx-auto px-4">
+                  <div className="text-center">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      className="inline-flex items-center space-x-2 text-gray-400 mb-8"
+                    >
+                      <span className="text-sm">Trusted by innovative teams worldwide</span>
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    </motion.div>
+                    
+                    <div className="flex justify-center items-center space-x-12 opacity-60">
+                      <div className="text-2xl font-bold text-white">TechCorp</div>
+                      <div className="text-2xl font-bold text-white">InnovateLab</div>
+                      <div className="text-2xl font-bold text-white">FutureAI</div>
+                      <div className="text-2xl font-bold text-white">DataVision</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 3. INTERACTIVE FEATURE SHOWCASE */}
+              <section className="py-20 px-4">
+                <div className="max-w-7xl mx-auto">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    className="text-center mb-16"
+                  >
+                    <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                      Everything You Need to{' '}
+                      <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
+                        Succeed
+                      </span>
+                    </h2>
+                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                      Powerful tools designed for teams who want to explore possibilities, test strategies, and make better decisions.
+                    </p>
+                  </motion.div>
+                  
+                  <div className="grid md:grid-cols-3 gap-8">
+                    {/* Feature 1 - Create Smart Agents */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      whileHover={{ y: -10 }}
+                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-purple-400/50 transition-all duration-500"
+                    >
+                      <div className="absolute top-4 right-4 w-12 h-12 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="text-2xl">🤖</span>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <img 
+                          src="https://images.unsplash.com/photo-1517048676732-d65bc937f952" 
+                          alt="Create Smart Agents"
+                          className="w-full h-48 object-cover rounded-xl"
+                        />
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold text-white mb-4">Create Smart Agents</h3>
+                      <p className="text-gray-300 mb-6 leading-relaxed">
+                        Design AI agents with unique personalities, expertise, and goals. From scientists to CEOs, 
+                        create the perfect team for any scenario.
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                          <span>9 Professional Archetypes</span>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                          <span>Custom Personality Traits</span>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                          <span>AI-Generated Avatars</span>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Feature 2 - Run Simulations */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      whileHover={{ y: -10 }}
+                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-blue-400/50 transition-all duration-500"
+                    >
+                      <div className="absolute top-4 right-4 w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="text-2xl">💬</span>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <img 
+                          src="https://images.unsplash.com/photo-1600880292089-90a7e086ee0c" 
+                          alt="Run Simulations"
+                          className="w-full h-48 object-cover rounded-xl"
+                        />
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold text-white mb-4">Run Simulations</h3>
+                      <p className="text-gray-300 mb-6 leading-relaxed">
+                        Watch intelligent conversations unfold in real-time. Observe, interact, and guide your 
+                        AI team through complex scenarios.
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span>Real-time Conversations</span>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span>Observer Mode Control</span>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                          <span>Multi-language Support</span>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Feature 3 - Generate Insights */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      whileHover={{ y: -10 }}
+                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-green-400/50 transition-all duration-500"
+                    >
+                      <div className="absolute top-4 right-4 w-12 h-12 bg-green-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span className="text-2xl">📊</span>
+                      </div>
+                      
+                      <div className="mb-6">
+                        <img 
+                          src="https://images.pexels.com/photos/3184285/pexels-photo-3184285.jpeg" 
+                          alt="Generate Insights"
+                          className="w-full h-48 object-cover rounded-xl"
+                        />
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold text-white mb-4">Generate Insights</h3>
+                      <p className="text-gray-300 mb-6 leading-relaxed">
+                        Transform conversations into actionable intelligence. Get comprehensive analytics, 
+                        reports, and strategic recommendations.
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                          <span>Advanced Analytics</span>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                          <span>Professional Reports</span>
+                        </div>
+                        <div className="flex items-center space-x-3 text-sm text-gray-400">
+                          <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                          <span>Export & Share</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 4. "SEE IT IN ACTION" DEMO SECTION */}
+              <section className="py-20 px-4 bg-gradient-to-br from-gray-900/30 to-gray-800/30">
+                <div className="max-w-7xl mx-auto">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    className="text-center mb-16"
+                  >
+                    <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                      See It In{' '}
+                      <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                        Action
+                      </span>
+                    </h2>
+                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                      Watch a live demonstration of AI agents collaborating on a real business challenge.
+                    </p>
+                  </motion.div>
+                  
+                  <div className="grid lg:grid-cols-2 gap-12 items-center">
+                    {/* Live Demo Preview */}
+                    <motion.div 
+                      initial={{ opacity: 0, x: -30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-white">💬 Live Simulation</h3>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <span className="text-green-400 text-sm">Active</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4 h-80 overflow-y-auto">
+                        <div className="bg-blue-600/20 p-4 rounded-lg border-l-4 border-blue-400">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">AI</span>
+                            </div>
+                            <span className="text-blue-300 font-medium">Strategy Agent</span>
+                          </div>
+                          <p className="text-white text-sm leading-relaxed">
+                            "Based on market analysis, I recommend focusing on user acquisition through targeted social media campaigns..."
+                          </p>
+                        </div>
+                        
+                        <div className="bg-green-600/20 p-4 rounded-lg border-l-4 border-green-400">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">AI</span>
+                            </div>
+                            <span className="text-green-300 font-medium">Finance Agent</span>
+                          </div>
+                          <p className="text-white text-sm leading-relaxed">
+                            "The budget allocation looks solid. I suggest reserving 30% for testing and optimization to maximize ROI..."
+                          </p>
+                        </div>
+                        
+                        <div className="bg-purple-600/20 p-4 rounded-lg border-l-4 border-purple-400">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">AI</span>
+                            </div>
+                            <span className="text-purple-300 font-medium">Risk Agent</span>
+                          </div>
+                          <p className="text-white text-sm leading-relaxed">
+                            "I've identified potential risks in the timeline. We should consider a phased rollout approach..."
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    {/* Real-time Analytics */}
+                    <motion.div 
+                      initial={{ opacity: 0, x: 30 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10"
+                    >
+                      <h3 className="text-lg font-semibold text-white mb-6">📊 Real-time Analytics</h3>
+                      
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-300 text-sm">Conversation Quality</span>
+                            <span className="text-green-400 text-sm font-medium">94%</span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "94%" }}
+                              transition={{ delay: 0.5, duration: 1 }}
+                              className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-300 text-sm">Solution Consensus</span>
+                            <span className="text-blue-400 text-sm font-medium">87%</span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "87%" }}
+                              transition={{ delay: 0.7, duration: 1 }}
+                              className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-300 text-sm">Action Items Generated</span>
+                            <span className="text-purple-400 text-sm font-medium">12</span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "80%" }}
+                              transition={{ delay: 0.9, duration: 1 }}
+                              className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 border-t border-gray-700">
+                          <h4 className="text-white font-medium mb-3">Key Insights Detected</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2 text-sm text-gray-300">
+                              <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                              <span>Market opportunity identified</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-300">
+                              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                              <span>Budget optimization suggested</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-300">
+                              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                              <span>Risk mitigation planned</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              </section>
             </div>
           )}
           
