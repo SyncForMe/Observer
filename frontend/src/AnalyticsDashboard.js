@@ -23,29 +23,35 @@ const AnalyticsDashboard = () => {
 
   const fetchAnalytics = async () => {
     setLoading(true);
+    setError(null);
     try {
+      console.log('🔍 Fetching analytics with token:', !!token);
       const response = await axios.get(`${API}/analytics/comprehensive?period=${timeRange}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('✅ Analytics response:', response.data);
       if (response.data) {
         setAnalytics(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch analytics:', error);
+      console.error('❌ Failed to fetch analytics:', error);
+      setError('Failed to load analytics data. Please try again.');
     }
     setLoading(false);
   };
 
   const fetchWeeklyData = async () => {
     try {
+      console.log('🔍 Fetching weekly data with token:', !!token);
       const response = await axios.get(`${API}/analytics/weekly-summary`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('✅ Weekly data response:', response.data);
       if (response.data) {
         setWeeklyData(response.data);
       }
     } catch (error) {
-      console.error('Failed to fetch weekly data:', error);
+      console.error('❌ Failed to fetch weekly data:', error.response?.data || error.message);
     }
   };
 
