@@ -391,76 +391,204 @@ const AnalyticsDashboard = () => {
         </div>
       )}
 
-      {/* Detailed Analytics */}
+      {/* Enhanced Detailed Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Activity Chart */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4">📈 Activity Overview</h3>
+        {/* Enhanced Activity Chart */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-white flex items-center">
+              <span className="text-2xl mr-2">📈</span>
+              Activity Overview
+            </h3>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setSelectedMetric('conversations')}
+                className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                  selectedMetric === 'conversations' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                Conversations
+              </button>
+              <button
+                onClick={() => setSelectedMetric('agents')}
+                className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                  selectedMetric === 'agents' 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                }`}
+              >
+                Agents
+              </button>
+            </div>
+          </div>
           
-          {analytics?.daily_activity ? (
+          {processedAnalytics?.daily_activity ? (
             <div className="space-y-4">
-              {/* Simple Bar Chart */}
-              <div className="flex items-end space-x-2 h-32">
-                {analytics.daily_activity.slice(-7).map((day, index) => (
-                  <div key={index} className="flex-1 flex flex-col items-center">
-                    <div 
-                      className="w-full bg-gradient-to-t from-blue-600 to-purple-600 rounded-t"
-                      style={{ 
-                        height: `${Math.max((day.conversations / Math.max(...analytics.daily_activity.map(d => d.conversations))) * 100, 5)}%` 
-                      }}
-                    ></div>
-                    <div className="text-white/60 text-xs mt-2">
-                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                    </div>
-                  </div>
-                ))}
+              {/* Enhanced Bar Chart */}
+              <div className="relative">
+                <div className="flex items-end space-x-1 h-40 px-2">
+                  {processedAnalytics.daily_activity.slice(-14).map((day, index) => {
+                    const maxValue = Math.max(...processedAnalytics.daily_activity.slice(-14).map(d => d.conversations));
+                    const height = Math.max((day.conversations / (maxValue || 1)) * 100, 3);
+                    const isToday = new Date(day.date).toDateString() === new Date().toDateString();
+                    
+                    return (
+                      <div key={index} className="flex-1 flex flex-col items-center group relative">
+                        <motion.div 
+                          initial={{ height: 0 }}
+                          animate={{ height: `${height}%` }}
+                          transition={{ delay: index * 0.1 }}
+                          className={`w-full rounded-t-sm ${
+                            isToday 
+                              ? 'bg-gradient-to-t from-yellow-600 to-yellow-400' 
+                              : 'bg-gradient-to-t from-blue-600 to-purple-600'
+                          } hover:from-purple-500 hover:to-blue-500 transition-all duration-300 cursor-pointer`}
+                        />
+                        
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                          {day.conversations} conversations<br/>
+                          {new Date(day.date).toLocaleDateString()}
+                        </div>
+                        
+                        <div className="text-white/60 text-xs mt-2 transform -rotate-45 origin-top">
+                          {new Date(day.date).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {/* Y-axis labels */}
+                <div className="absolute left-0 top-0 h-40 flex flex-col justify-between text-xs text-white/50">
+                  <span>{Math.max(...(processedAnalytics.daily_activity.slice(-14).map(d => d.conversations) || [0]))}</span>
+                  <span>{Math.floor(Math.max(...(processedAnalytics.daily_activity.slice(-14).map(d => d.conversations) || [0])) / 2)}</span>
+                  <span>0</span>
+                </div>
               </div>
               
-              {/* Legend */}
-              <div className="text-center">
-                <span className="text-white/60 text-sm">Daily Conversations (Last 7 days)</span>
+              {/* Legend and Stats */}
+              <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                <div className="text-center">
+                  <span className="text-white/60 text-sm">Last 14 days</span>
+                </div>
+                <div className="flex space-x-4 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded"></div>
+                    <span className="text-white/70">Regular days</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-gradient-to-r from-yellow-600 to-yellow-400 rounded"></div>
+                    <span className="text-white/70">Today</span>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="text-center text-white/60 py-8">
-              <div className="text-4xl mb-2">📊</div>
+            <div className="text-center text-white/60 py-12">
+              <div className="text-6xl mb-4">📊</div>
               <p>No activity data available</p>
+              <p className="text-sm mt-2">Start some conversations to see your activity chart!</p>
             </div>
           )}
-        </div>
+        </motion.div>
 
-        {/* Top Agents */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4">🏆 Top Performing Agents</h3>
+        {/* Enhanced Top Agents */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.5 }}
+          className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+        >
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+            <span className="text-2xl mr-2">🏆</span>
+            Top Performing Agents
+          </h3>
           
-          {analytics?.top_agents ? (
-            <div className="space-y-3">
-              {analytics.top_agents.slice(0, 5).map((agent, index) => (
-                <div key={index} className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                    index === 0 ? 'bg-yellow-500' : 
-                    index === 1 ? 'bg-gray-400' : 
-                    index === 2 ? 'bg-orange-500' : 'bg-blue-500'
+          {processedAnalytics?.top_agents && processedAnalytics.top_agents.length > 0 ? (
+            <div className="space-y-4">
+              {processedAnalytics.top_agents.slice(0, 5).map((agent, index) => (
+                <motion.div 
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                  className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 group"
+                >
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
+                    index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-yellow-900' : 
+                    index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500 text-gray-900' : 
+                    index === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-orange-900' : 
+                    'bg-gradient-to-br from-blue-500 to-blue-600 text-blue-900'
                   }`}>
-                    {index < 3 ? ['🥇', '🥈', '🥉'][index] : agent.name[0]}
+                    {index < 3 ? ['🥇', '🥈', '🥉'][index] : agent.name[0].toUpperCase()}
                   </div>
-                  <div className="flex-1">
-                    <div className="text-white font-medium">{agent.name}</div>
-                    <div className="text-white/60 text-sm">{agent.conversations} conversations</div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2">
+                      <div className="text-white font-medium truncate">{agent.name}</div>
+                      <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded-full">
+                        {agent.archetype}
+                      </span>
+                    </div>
+                    <div className="text-white/60 text-sm">
+                      {agent.conversations} conversations
+                    </div>
+                    
+                    {/* Performance Bar */}
+                    <div className="mt-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-1 bg-white/10 rounded-full h-2">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(agent.performance_score / 10) * 100}%` }}
+                            transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
+                            className={`h-2 rounded-full ${
+                              index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                              index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-500' :
+                              index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
+                              'bg-gradient-to-r from-blue-400 to-blue-600'
+                            }`}
+                          />
+                        </div>
+                        <div className="text-white/80 text-sm font-medium min-w-0">
+                          {agent.performance_score?.toFixed(1) || 'N/A'}/10
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-white/80">
-                    {agent.performance_score?.toFixed(1) || 'N/A'}
+                  
+                  <div className="text-white/60 group-hover:text-white/80 transition-colors">
+                    #{index + 1}
                   </div>
-                </div>
+                </motion.div>
               ))}
+              
+              {/* View All Button */}
+              <div className="pt-4 border-t border-white/10">
+                <button className="w-full py-2 text-white/70 hover:text-white text-sm hover:bg-white/5 rounded-lg transition-all">
+                  View All Agents →
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="text-center text-white/60 py-8">
-              <div className="text-4xl mb-2">🤖</div>
-              <p>No agent data available</p>
+            <div className="text-center text-white/60 py-12">
+              <div className="text-6xl mb-4">🤖</div>
+              <p>No agents data available</p>
+              <p className="text-sm mt-2">Create some agents to see performance metrics!</p>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* Detailed Statistics */}
