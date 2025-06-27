@@ -160,15 +160,46 @@ const AnalyticsDashboard = () => {
   if (loading && !analytics) {
     return (
       <div className="space-y-6">
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <div className="text-center text-white/60 py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p>Loading analytics...</p>
+        <div className="bg-gradient-to-br from-indigo-500/20 to-purple-600/20 backdrop-blur-lg rounded-xl p-8 border border-white/10">
+          <div className="text-center text-white/80 py-12">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-white/20 border-t-white mx-auto mb-6"></div>
+              <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-t-purple-400 animate-ping mx-auto"></div>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Loading Analytics</h3>
+            <p className="text-white/60">Gathering insights from your AI simulations...</p>
           </div>
         </div>
       </div>
     );
   }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-br from-red-500/20 to-pink-600/20 backdrop-blur-lg rounded-xl p-8 border border-red-300/20">
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-semibold text-white mb-2">Analytics Unavailable</h3>
+            <p className="text-white/70 mb-6">{error}</p>
+            <button
+              onClick={() => {
+                setError(null);
+                fetchAnalytics();
+                fetchWeeklyData();
+              }}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Process analytics data for enhanced display
+  const processedAnalytics = processAnalyticsData(analytics);
 
   return (
     <div className="space-y-6">
