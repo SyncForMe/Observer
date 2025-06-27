@@ -487,34 +487,31 @@ const AppContent = () => {
           {/* Simple content without AnimatePresence to test */}
           {activeTab === 'home' && (
             <div className="relative overflow-hidden">
-              {console.log('🔍 AppContent: Rendering professional home content')}
+              {console.log('🔍 AppContent: Rendering optimized home content')}
               
-              {/* 1. HERO SECTION - Above the Fold */}
+              {/* Preload Critical Images */}
+              <div style={{ display: 'none' }}>
+                <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995" alt="preload" />
+                <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952" alt="preload" />
+                <img src="https://images.unsplash.com/photo-1600880292089-90a7e086ee0c" alt="preload" />
+              </div>
+              
+              {/* 1. OPTIMIZED HERO SECTION */}
               <section className="relative py-20 px-4">
-                {/* Background Animation */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
-                  <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                {/* Simplified Background Animation */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl"></div>
+                  <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl"></div>
                 </div>
                 
                 <div className="relative max-w-7xl mx-auto">
                   <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    {/* Hero Content */}
-                    <motion.div 
-                      initial={{ opacity: 0, x: -50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.8 }}
-                      className="text-left space-y-8"
-                    >
+                    {/* Hero Content - Reduced Animation Complexity */}
+                    <div className="text-left space-y-8">
                       <div className="space-y-4">
-                        <motion.div 
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="inline-flex items-center px-4 py-2 bg-purple-600/20 rounded-full border border-purple-400/30"
-                        >
+                        <div className="inline-flex items-center px-4 py-2 bg-purple-600/20 rounded-full border border-purple-400/30">
                           <span className="text-purple-300 text-sm font-medium">🚀 Next-Gen AI Simulation Platform</span>
-                        </motion.div>
+                        </div>
                         
                         <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight">
                           Transform Ideas into{' '}
@@ -531,23 +528,19 @@ const AppContent = () => {
                       
                       {/* CTA Buttons */}
                       <div className="flex flex-col sm:flex-row gap-4">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
                           onClick={() => setActiveTab('simulation')}
-                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300"
+                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-200 hover:scale-[1.02]"
                         >
                           🎯 Start Simulation
-                        </motion.button>
+                        </button>
                         
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                        <button
                           onClick={() => setActiveTab('agents')}
-                          className="px-8 py-4 bg-white/10 backdrop-blur-lg text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                          className="px-8 py-4 bg-white/10 backdrop-blur-lg text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-200 hover:scale-[1.02]"
                         >
                           🤖 Explore Agents
-                        </motion.button>
+                        </button>
                       </div>
                       
                       {/* Stats */}
@@ -565,21 +558,23 @@ const AppContent = () => {
                           <div className="text-gray-400 text-sm">Uptime</div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                     
-                    {/* Hero Visual */}
-                    <motion.div 
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.8, delay: 0.2 }}
-                      className="relative"
-                    >
+                    {/* Hero Visual - Optimized Loading */}
+                    <div className="relative">
                       <div className="relative bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
-                        <img 
-                          src="https://images.unsplash.com/photo-1677442136019-21780ecad995" 
-                          alt="AI Technology"
-                          className="w-full h-64 object-cover rounded-xl mb-6"
-                        />
+                        <div className="w-full h-64 bg-gray-800/50 rounded-xl mb-6 flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&q=80" 
+                            alt="AI Technology"
+                            className="w-full h-64 object-cover rounded-xl"
+                            loading="eager"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<div class="w-full h-64 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-xl flex items-center justify-center"><span class="text-4xl">🤖</span></div>';
+                            }}
+                          />
+                        </div>
                         <div className="space-y-4">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
@@ -596,7 +591,7 @@ const AppContent = () => {
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
               </section>
