@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { motion, useAnimationControls, AnimatePresence } from 'framer-motion';
+import { motion, useAnimationControls } from 'framer-motion';
 import './App.css';
 import HomePage from './HomePage';
 import AgentLibrary from './AgentLibraryComplete';
