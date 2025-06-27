@@ -203,33 +203,84 @@ const AnalyticsDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header and Controls */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-        <div className="flex justify-between items-center mb-6">
+      {/* Enhanced Header and Controls */}
+      <div className="bg-gradient-to-br from-indigo-500/20 to-purple-600/20 backdrop-blur-lg rounded-xl p-6 border border-white/10">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">📊 Analytics Dashboard</h2>
+            <h2 className="text-3xl font-bold text-white mb-2 flex items-center">
+              <span className="text-4xl mr-3">📊</span>
+              Analytics Dashboard
+            </h2>
             <p className="text-white/80">Monitor your AI simulation performance and insights</p>
+            <div className="flex items-center space-x-4 mt-2 text-sm text-white/60">
+              <span>📅 {processedAnalytics?.generated_at ? new Date(processedAnalytics.generated_at).toLocaleDateString() : 'Today'}</span>
+              <span>👤 {user?.name || 'User'}</span>
+              <span>🔄 Auto-refresh: On</span>
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <select
-              value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
-              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="1d" className="bg-gray-800">Last 24 hours</option>
-              <option value="7d" className="bg-gray-800">Last 7 days</option>
-              <option value="30d" className="bg-gray-800">Last 30 days</option>
-              <option value="90d" className="bg-gray-800">Last 90 days</option>
-            </select>
-            <button
-              onClick={generateWeeklyReport}
-              disabled={loading}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
-            >
-              📑 Generate Report
-            </button>
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            {/* Time Range Selector */}
+            <div className="flex items-center space-x-2">
+              <span className="text-white/70 text-sm">Period:</span>
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm"
+              >
+                <option value="7d" className="bg-gray-800">Last 7 days</option>
+                <option value="30d" className="bg-gray-800">Last 30 days</option>
+                <option value="90d" className="bg-gray-800">Last 90 days</option>
+              </select>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  fetchAnalytics();
+                  fetchWeeklyData();
+                }}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2"
+              >
+                <span>🔄</span>
+                <span>Refresh</span>
+              </button>
+              
+              <button
+                onClick={generateWeeklyReport}
+                disabled={loading}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2"
+              >
+                <span>📑</span>
+                <span>Generate Report</span>
+              </button>
+            </div>
           </div>
         </div>
+        
+        {/* Quick Metrics Preview */}
+        {processedAnalytics && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/10">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{formatNumber(processedAnalytics.conversations.total)}</div>
+              <div className="text-white/60 text-sm">Total Conversations</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{processedAnalytics.agents.total}</div>
+              <div className="text-white/60 text-sm">Active Agents</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{formatNumber(processedAnalytics.documents.total)}</div>
+              <div className="text-white/60 text-sm">Documents Generated</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{formatDuration(processedAnalytics.simulation_time.total)}</div>
+              <div className="text-white/60 text-sm">Total Simulation Time</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Key Metrics Grid */}
