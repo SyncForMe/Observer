@@ -323,10 +323,41 @@ const FileCenter = () => {
 
 // Main App Content Component
 const AppContent = () => {
-  console.log('🔍 AppContent: Component is rendering!');
+  // Initialize state with safe defaults
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('activeTab') || 'home';
+    } catch (error) {
+      console.warn('Error accessing localStorage:', error);
+      return 'home';
+    }
+  });
   
-  const { user, token, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState('home');
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [showAccountModals, setShowAccountModals] = useState(false);
+  const { user, token, logout } = useAuth() || {};
+
+  // Safely persist active tab
+  useEffect(() => {
+    try {
+      if (activeTab) {
+        localStorage.setItem('activeTab', activeTab);
+      }
+    } catch (error) {
+      console.warn('Error saving to localStorage:', error);
+    }
+  }, [activeTab]);
+
+  // Safe tab setter with validation
+  const safeSetActiveTab = useCallback((tab) => {
+    const validTabs = ['home', 'simulation', 'agents', 'history', 'analytics', 'files', 'account'];
+    if (validTabs.includes(tab)) {
+      setActiveTab(tab);
+    } else {
+      console.warn('Invalid tab:', tab);
+      setActiveTab('home');
+    }
+  }, []);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const accountButtonRef = useRef(null);
