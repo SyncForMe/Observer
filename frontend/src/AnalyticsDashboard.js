@@ -606,7 +606,7 @@ const AnalyticsDashboard = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Conversation Stats */}
-            <div className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 rounded-lg p-5 border border-blue-300/20">
+            <div className="bg-blue-500/20 rounded-lg p-5 border border-blue-300/30">
               <h4 className="text-white font-semibold mb-4 flex items-center">
                 <span className="text-xl mr-2">💬</span>
                 Conversations
