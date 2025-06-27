@@ -5,11 +5,50 @@ import { motion, useAnimationControls } from 'framer-motion';
 import './App.css';
 import HomePage from './HomePage';
 import AgentLibrary from './AgentLibraryComplete';
-import SimulationControl from './SimulationControl';
-import ConversationViewer from './ConversationViewer';
-import DocumentCenter from './DocumentCenter';
+import ConversationHistory from './ConversationHistory';
 import AnalyticsDashboard from './AnalyticsDashboard';
-import { ProfileSettingsModal, PreferencesModal, HelpSupportModal, FeedbackModal } from './AccountModals';
+import FileCenter from './FileCenter';
+import AccountModals from './AccountModals';
+import { AuthProvider, useAuth } from './AuthContext';
+import ObserverLogo from './ObserverLogo';
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 text-center max-w-md">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-bold text-white mb-4">Something went wrong</h2>
+            <p className="text-gray-300 mb-6">Please refresh the page to continue.</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
