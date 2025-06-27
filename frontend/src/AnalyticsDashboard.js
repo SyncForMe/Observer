@@ -591,70 +591,184 @@ const AnalyticsDashboard = () => {
         </motion.div>
       </div>
 
-      {/* Detailed Statistics */}
-      {analytics && (
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4">📋 Detailed Statistics</h3>
+      {/* Enhanced Detailed Statistics */}
+      {processedAnalytics && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+        >
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+            <span className="text-2xl mr-2">📋</span>
+            Detailed Statistics
+          </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Conversation Stats */}
-            <div className="bg-white/5 rounded-lg p-4">
-              <h4 className="text-white font-semibold mb-3">💬 Conversations</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+            <div className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 rounded-lg p-5 border border-blue-300/20">
+              <h4 className="text-white font-semibold mb-4 flex items-center">
+                <span className="text-xl mr-2">💬</span>
+                Conversations
+              </h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">Total Messages:</span>
-                  <span className="text-white">{formatNumber(analytics.messages?.total || 0)}</span>
+                  <span className="text-white font-medium">{formatNumber(processedAnalytics.messages?.total || 0)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">Avg per Conversation:</span>
-                  <span className="text-white">{analytics.messages?.average_per_conversation?.toFixed(1) || '0'}</span>
+                  <span className="text-white font-medium">{processedAnalytics.messages?.average_per_conversation?.toFixed(1) || '0'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-white/60">Longest Conversation:</span>
-                  <span className="text-white">{analytics.conversations?.longest_duration || '0m'}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">This Week:</span>
+                  <span className="text-white font-medium">{processedAnalytics.conversations?.weekly || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">This Month:</span>
+                  <span className="text-white font-medium">{processedAnalytics.conversations?.monthly || 0}</span>
+                </div>
+                
+                {/* Progress Bar for Monthly Goal */}
+                <div className="pt-2">
+                  <div className="flex justify-between text-xs text-white/60 mb-1">
+                    <span>Monthly Progress</span>
+                    <span>{((processedAnalytics.conversations?.monthly || 0) / 100 * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((processedAnalytics.conversations?.monthly || 0) / 100 * 100, 100)}%` }}
+                      transition={{ delay: 1, duration: 0.8 }}
+                      className="bg-gradient-to-r from-blue-400 to-cyan-500 h-2 rounded-full"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Agent Performance */}
-            <div className="bg-white/5 rounded-lg p-4">
-              <h4 className="text-white font-semibold mb-3">🤖 Agent Performance</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+            <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-lg p-5 border border-green-300/20">
+              <h4 className="text-white font-semibold mb-4 flex items-center">
+                <span className="text-xl mr-2">🤖</span>
+                Agent Performance
+              </h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">Total Agents:</span>
-                  <span className="text-white">{analytics.agents?.total || 0}</span>
+                  <span className="text-white font-medium">{processedAnalytics.agents?.total || 0}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">Most Active:</span>
-                  <span className="text-white">{analytics.agents?.most_active || 'N/A'}</span>
+                  <span className="text-white font-medium truncate ml-2">{processedAnalytics.agents?.most_active || 'N/A'}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">Avg Performance:</span>
-                  <span className="text-white">{analytics.agents?.average_performance?.toFixed(1) || '0'}/10</span>
+                  <span className="text-white font-medium">{processedAnalytics.agents?.average_performance?.toFixed(1) || '0'}/10</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">Created This Week:</span>
+                  <span className="text-white font-medium">{processedAnalytics.agents?.weekly || 0}</span>
+                </div>
+                
+                {/* Performance Gauge */}
+                <div className="pt-2">
+                  <div className="flex justify-between text-xs text-white/60 mb-1">
+                    <span>Overall Performance</span>
+                    <span>{processedAnalytics.agents?.average_performance?.toFixed(1) || '0'}/10</span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(processedAnalytics.agents?.average_performance || 0) * 10}%` }}
+                      transition={{ delay: 1.2, duration: 0.8 }}
+                      className="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* System Performance */}
-            <div className="bg-white/5 rounded-lg p-4">
-              <h4 className="text-white font-semibold mb-3">⚡ System Performance</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+            <div className="bg-gradient-to-br from-purple-500/10 to-violet-600/10 rounded-lg p-5 border border-purple-300/20">
+              <h4 className="text-white font-semibold mb-4 flex items-center">
+                <span className="text-xl mr-2">⚡</span>
+                System Performance
+              </h4>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">API Calls:</span>
-                  <span className="text-white">{formatNumber(analytics.api_usage?.total_calls || 0)}</span>
+                  <span className="text-white font-medium">{formatNumber(processedAnalytics.api_usage?.total_calls || 0)}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">Avg Response Time:</span>
-                  <span className="text-white">{analytics.api_usage?.average_response_time || '0'}ms</span>
+                  <span className="text-white font-medium">{processedAnalytics.api_usage?.average_response_time?.toFixed(0) || '0'}ms</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-white/60">Success Rate:</span>
-                  <span className="text-white">{analytics.api_usage?.success_rate?.toFixed(1) || '0'}%</span>
+                  <span className="text-white font-medium">{processedAnalytics.api_usage?.success_rate?.toFixed(1) || '0'}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white/60">Documents Generated:</span>
+                  <span className="text-white font-medium">{processedAnalytics.documents?.total || 0}</span>
+                </div>
+                
+                {/* Success Rate Indicator */}
+                <div className="pt-2">
+                  <div className="flex justify-between text-xs text-white/60 mb-1">
+                    <span>System Health</span>
+                    <span className={`${processedAnalytics.api_usage?.success_rate > 95 ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {processedAnalytics.api_usage?.success_rate > 95 ? 'Excellent' : 'Good'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-white/10 rounded-full h-2">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${processedAnalytics.api_usage?.success_rate || 0}%` }}
+                      transition={{ delay: 1.4, duration: 0.8 }}
+                      className={`h-2 rounded-full ${
+                        (processedAnalytics.api_usage?.success_rate || 0) > 95 
+                          ? 'bg-gradient-to-r from-green-400 to-emerald-500'
+                          : 'bg-gradient-to-r from-yellow-400 to-orange-500'
+                      }`}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+          
+          {/* API Usage Chart */}
+          {processedAnalytics.api_usage?.history && processedAnalytics.api_usage.history.length > 0 && (
+            <div className="mt-8 pt-6 border-t border-white/10">
+              <h4 className="text-white font-semibold mb-4 flex items-center">
+                <span className="text-xl mr-2">📊</span>
+                API Usage Trend (Last 30 Days)
+              </h4>
+              <div className="flex items-end space-x-1 h-24">
+                {processedAnalytics.api_usage.history.slice(-30).map((day, index) => {
+                  const maxRequests = Math.max(...processedAnalytics.api_usage.history.map(d => d.requests));
+                  const height = Math.max((day.requests / (maxRequests || 1)) * 100, 2);
+                  
+                  return (
+                    <div key={index} className="flex-1 flex flex-col items-center group relative">
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${height}%` }}
+                        transition={{ delay: 1.6 + index * 0.02, duration: 0.3 }}
+                        className="w-full bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-sm"
+                      />
+                      <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                        {day.requests} requests<br/>
+                        {day.date}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </motion.div>
       )}
 
       {/* Weekly Summary */}
