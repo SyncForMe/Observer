@@ -1161,90 +1161,98 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
       </div>
 
-      {/* Minimalistic Round Control Buttons */}
-      <div className="flex justify-center space-x-6">
-        {/* Play/Pause Button */}
-        <div className="group relative">
-          <button
-            onClick={playPauseSimulation}
-            disabled={loading || agents.length < 2}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-              !isRunning
-                ? 'bg-green-500 hover:bg-green-600 text-white'
-                : isPaused 
-                  ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                  : 'bg-yellow-500 hover:bg-yellow-600 text-white'
-            }`}
-          >
-            <span className="text-lg">
-              {loading ? '⏳' : !isRunning ? '▶️' : isPaused ? '▶️' : '⏸️'}
-            </span>
-          </button>
-          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-            {loading ? 'Loading...' : !isRunning ? 'Start Simulation' : isPaused ? 'Resume Simulation' : 'Pause Simulation'}
-          </div>
-        </div>
+      {/* Control Buttons - Aligned with Live Conversations Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Empty space to match Active Agents column */}
+        <div className="lg:col-span-1"></div>
+        
+        {/* Control Buttons aligned with Live Conversations */}
+        <div className="lg:col-span-3 flex justify-center">
+          <div className="flex space-x-6">
+            {/* Play/Pause Button */}
+            <div className="group relative">
+              <button
+                onClick={playPauseSimulation}
+                disabled={loading || agents.length < 2}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  !isRunning
+                    ? 'bg-green-500 hover:bg-green-600 text-white'
+                    : isPaused 
+                      ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                      : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                }`}
+              >
+                <span className="text-lg">
+                  {loading ? '⏳' : !isRunning ? '▶️' : isPaused ? '▶️' : '⏸️'}
+                </span>
+              </button>
+              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                {loading ? 'Loading...' : !isRunning ? 'Start Simulation' : isPaused ? 'Resume Simulation' : 'Pause Simulation'}
+              </div>
+            </div>
 
-        {/* Observer Button */}
-        <div className="group relative">
-          <button
-            onClick={() => setShowObserverChat(!showObserverChat)}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
-              showObserverChat 
-                ? 'bg-purple-500 hover:bg-purple-600 text-white' 
-                : 'bg-gray-600 hover:bg-gray-700 text-white'
-            }`}
-          >
-            <span className="text-lg">👁️</span>
-          </button>
-          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-            {showObserverChat ? 'Hide Observer' : 'Show Observer'}
-          </div>
-        </div>
+            {/* Observer Button */}
+            <div className="group relative">
+              <button
+                onClick={() => setShowObserverChat(!showObserverChat)}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                  showObserverChat 
+                    ? 'bg-purple-500 hover:bg-purple-600 text-white' 
+                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                }`}
+              >
+                <span className="text-lg">👁️</span>
+              </button>
+              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                {showObserverChat ? 'Hide Observer' : 'Show Observer'}
+              </div>
+            </div>
 
-        {/* Fast Forward Button */}
-        <div className="group relative">
-          <button
-            onClick={toggleFastForward}
-            disabled={loading || !isRunning || agents.length < 2}
-            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-              fastForwardMode
-                ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
-                : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-            }`}
-          >
-            <span className="text-lg">⏩</span>
-          </button>
-          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-            {loading ? 'Processing...' : fastForwardMode ? 'Fast Forward Active' : 'Fast Forward (1 Day)'}
-          </div>
-        </div>
+            {/* Fast Forward Button */}
+            <div className="group relative">
+              <button
+                onClick={toggleFastForward}
+                disabled={loading || !isRunning || agents.length < 2}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  fastForwardMode
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
+                    : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                }`}
+              >
+                <span className="text-lg">⏩</span>
+              </button>
+              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                {loading ? 'Processing...' : fastForwardMode ? 'Fast Forward Active' : 'Fast Forward (1 Day)'}
+              </div>
+            </div>
 
-        {/* Weekly Report Button */}
-        <div className="group relative">
-          <button
-            onClick={() => setShowWeeklyReport(true)}
-            disabled={loading}
-            className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="text-lg">📅</span>
-          </button>
-          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-            {loading ? 'Loading...' : 'Weekly Report'}
-          </div>
-        </div>
+            {/* Weekly Report Button */}
+            <div className="group relative">
+              <button
+                onClick={() => setShowWeeklyReport(true)}
+                disabled={loading}
+                className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-lg">📅</span>
+              </button>
+              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                {loading ? 'Loading...' : 'Weekly Report'}
+              </div>
+            </div>
 
-        {/* Start Fresh Button */}
-        <div className="group relative">
-          <button
-            onClick={startFreshSimulation}
-            disabled={loading}
-            className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="text-lg">🔄</span>
-          </button>
-          <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-            {loading ? 'Clearing...' : 'Clear State'}
+            {/* Start Fresh Button */}
+            <div className="group relative">
+              <button
+                onClick={startFreshSimulation}
+                disabled={loading}
+                className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-lg">🔄</span>
+              </button>
+              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                {loading ? 'Clearing...' : 'Clear State'}
+              </div>
+            </div>
           </div>
         </div>
       </div>
