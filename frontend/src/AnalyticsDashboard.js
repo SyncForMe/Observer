@@ -812,7 +812,7 @@ const AnalyticsDashboard = () => {
           </div>
           
           {/* Summary Content */}
-          <div className="bg-gradient-to-br from-indigo-500/10 to-purple-600/10 rounded-lg p-5 border border-indigo-300/20">
+          <div className="bg-indigo-500/20 rounded-lg p-5 border border-indigo-300/30">
             <h4 className="text-white font-semibold mb-3 flex items-center">
               <span className="text-lg mr-2">📄</span>
               Executive Summary
