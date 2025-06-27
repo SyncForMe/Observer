@@ -922,6 +922,280 @@ const AppContent = () => {
                   </div>
                 </div>
               </section>
+
+              {/* 5. USE CASE GALLERY */}
+              <section className="py-20 px-4">
+                <div className="max-w-7xl mx-auto">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    className="text-center mb-16"
+                  >
+                    <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                      Perfect for{' '}
+                      <span className="bg-gradient-to-r from-pink-400 to-red-400 bg-clip-text text-transparent">
+                        Every Team
+                      </span>
+                    </h2>
+                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                      Whether you're planning strategy, conducting research, or exploring new ideas - our platform adapts to your needs.
+                    </p>
+                  </motion.div>
+                  
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Business Strategy */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      className="group bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-lg rounded-xl p-6 border border-blue-400/20 hover:border-blue-400/50 transition-all duration-300"
+                    >
+                      <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <span className="text-3xl">🎯</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-2">Business Strategy</h3>
+                      <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                        Test market strategies, explore scenarios, and validate decisions with expert AI advisors.
+                      </p>
+                      <div className="space-y-1 text-xs text-gray-400">
+                        <div>• Market analysis simulations</div>
+                        <div>• Strategic planning sessions</div>
+                        <div>• Risk assessment scenarios</div>
+                      </div>
+                    </motion.div>
+
+                    {/* Research & Development */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="group bg-gradient-to-br from-green-600/10 to-emerald-600/10 backdrop-blur-lg rounded-xl p-6 border border-green-400/20 hover:border-green-400/50 transition-all duration-300"
+                    >
+                      <div className="w-16 h-16 bg-green-600/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <span className="text-3xl">🔬</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-2">Research & Development</h3>
+                      <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                        Simulate expert consultations and peer reviews to accelerate innovation and discovery.
+                      </p>
+                      <div className="space-y-1 text-xs text-gray-400">
+                        <div>• Expert panel discussions</div>
+                        <div>• Hypothesis validation</div>
+                        <div>• Technical feasibility analysis</div>
+                      </div>
+                    </motion.div>
+
+                    {/* Training & Education */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="group bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-lg rounded-xl p-6 border border-purple-400/20 hover:border-purple-400/50 transition-all duration-300"
+                    >
+                      <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <span className="text-3xl">📚</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-2">Training & Education</h3>
+                      <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                        Practice scenarios, role-play situations, and learn from AI-powered educational experiences.
+                      </p>
+                      <div className="space-y-1 text-xs text-gray-400">
+                        <div>• Leadership training scenarios</div>
+                        <div>• Conflict resolution practice</div>
+                        <div>• Skill development sessions</div>
+                      </div>
+                    </motion.div>
+
+                    {/* Creative Projects */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="group bg-gradient-to-br from-orange-600/10 to-yellow-600/10 backdrop-blur-lg rounded-xl p-6 border border-orange-400/20 hover:border-orange-400/50 transition-all duration-300"
+                    >
+                      <div className="w-16 h-16 bg-orange-600/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <span className="text-3xl">🎨</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-2">Creative Projects</h3>
+                      <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                        Brainstorm with diverse AI personalities to unlock creativity and generate breakthrough ideas.
+                      </p>
+                      <div className="space-y-1 text-xs text-gray-400">
+                        <div>• Creative brainstorming</div>
+                        <div>• Product ideation sessions</div>
+                        <div>• Innovation workshops</div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 6. GETTING STARTED FLOW */}
+              <section className="py-20 px-4 bg-gradient-to-br from-indigo-900/20 to-purple-900/20">
+                <div className="max-w-7xl mx-auto">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    className="text-center mb-16"
+                  >
+                    <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                      Get Started in{' '}
+                      <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                        3 Simple Steps
+                      </span>
+                    </h2>
+                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                      From idea to insight in minutes. Our intuitive platform makes AI simulation accessible to everyone.
+                    </p>
+                  </motion.div>
+                  
+                  <div className="relative">
+                    {/* Connection Lines */}
+                    <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-600/50 via-blue-600/50 to-green-600/50 transform -translate-y-1/2"></div>
+                    
+                    <div className="grid lg:grid-cols-3 gap-8 relative">
+                      {/* Step 1 */}
+                      <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="relative text-center"
+                      >
+                        <div className="relative mx-auto">
+                          <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-purple-700 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-2xl mb-6 mx-auto relative z-10">
+                            1
+                          </div>
+                          <div className="absolute inset-0 w-20 h-20 bg-purple-600/20 rounded-full animate-ping mx-auto"></div>
+                        </div>
+                        
+                        <div className="bg-gray-900/60 backdrop-blur-lg rounded-xl p-6 border border-purple-400/30">
+                          <div className="mb-4">
+                            <img 
+                              src="https://images.unsplash.com/photo-1716436329475-4c55d05383bb" 
+                              alt="Create Agents"
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                          <h3 className="text-xl font-bold text-white mb-3">Create Your Agents</h3>
+                          <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                            Choose from 9+ professional archetypes or create custom agents with unique personalities, expertise, and goals.
+                          </p>
+                          <button 
+                            onClick={() => setActiveTab('agents')}
+                            className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors"
+                          >
+                            🤖 Browse Agent Library
+                          </button>
+                        </div>
+                      </motion.div>
+
+                      {/* Step 2 */}
+                      <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="relative text-center"
+                      >
+                        <div className="relative mx-auto">
+                          <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-2xl mb-6 mx-auto relative z-10">
+                            2
+                          </div>
+                          <div className="absolute inset-0 w-20 h-20 bg-blue-600/20 rounded-full animate-ping mx-auto"></div>
+                        </div>
+                        
+                        <div className="bg-gray-900/60 backdrop-blur-lg rounded-xl p-6 border border-blue-400/30">
+                          <div className="mb-4">
+                            <img 
+                              src="https://images.unsplash.com/photo-1640109341881-1cd3eaf50909" 
+                              alt="Set Scenario"
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                          <h3 className="text-xl font-bold text-white mb-3">Set Your Scenario</h3>
+                          <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                            Define the context, goals, and parameters for your simulation. From business meetings to research discussions.
+                          </p>
+                          <button 
+                            onClick={() => setActiveTab('simulation')}
+                            className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                          >
+                            📝 Configure Scenario
+                          </button>
+                        </div>
+                      </motion.div>
+
+                      {/* Step 3 */}
+                      <motion.div 
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6 }}
+                        className="relative text-center"
+                      >
+                        <div className="relative mx-auto">
+                          <div className="w-20 h-20 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-2xl mb-6 mx-auto relative z-10">
+                            3
+                          </div>
+                          <div className="absolute inset-0 w-20 h-20 bg-green-600/20 rounded-full animate-ping mx-auto"></div>
+                        </div>
+                        
+                        <div className="bg-gray-900/60 backdrop-blur-lg rounded-xl p-6 border border-green-400/30">
+                          <div className="mb-4">
+                            <img 
+                              src="https://images.pexels.com/photos/32755751/pexels-photo-32755751.jpeg" 
+                              alt="Watch Magic Happen"
+                              className="w-full h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                          <h3 className="text-xl font-bold text-white mb-3">Watch Magic Happen</h3>
+                          <p className="text-gray-300 text-sm leading-relaxed mb-4">
+                            Observe real-time conversations, interact as an observer, and generate comprehensive insights and reports.
+                          </p>
+                          <button 
+                            onClick={() => setActiveTab('analytics')}
+                            className="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+                          >
+                            📊 View Analytics
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  </div>
+                  
+                  {/* Final CTA */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                    className="text-center mt-16"
+                  >
+                    <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
+                      <h3 className="text-2xl font-bold text-white mb-4">Ready to Transform Your Decision Making?</h3>
+                      <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                        Join thousands of teams already using AI simulation to accelerate innovation, reduce risk, and make better decisions.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveTab('simulation')}
+                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300"
+                        >
+                          🚀 Start Your First Simulation
+                        </motion.button>
+                        
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveTab('agents')}
+                          className="px-8 py-4 bg-white/10 backdrop-blur-lg text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
+                        >
+                          🤖 Explore Agent Library
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+              </section>
             </div>
           )}
           
