@@ -480,16 +480,16 @@ const AnalyticsDashboard = () => {
               {/* Legend and Stats */}
               <div className="flex justify-between items-center pt-4 border-t border-white/10">
                 <div className="text-center">
-                  <span className="text-white/60 text-sm">Last 14 days</span>
+                  <span className="text-gray-400 text-sm">Last 14 days</span>
                 </div>
                 <div className="flex space-x-4 text-sm">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded"></div>
-                    <span className="text-white/70">Regular days</span>
+                    <span className="text-gray-300">Regular days</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-gradient-to-r from-yellow-600 to-yellow-400 rounded"></div>
-                    <span className="text-white/70">Today</span>
+                    <span className="text-gray-300">Today</span>
                   </div>
                 </div>
               </div>
