@@ -575,14 +575,14 @@ const AnalyticsDashboard = () => {
               ))}
               
               {/* View All Button */}
-              <div className="pt-4 border-t border-white/10">
-                <button className="w-full py-2 text-white/70 hover:text-white text-sm hover:bg-white/5 rounded-lg transition-all">
+              <div className="pt-4 border-t border-gray-600/30">
+                <button className="w-full py-2 text-gray-300 hover:text-gray-100 text-sm hover:bg-gray-800/40 rounded-lg transition-all">
                   View All Agents →
                 </button>
               </div>
             </div>
           ) : (
-            <div className="text-center text-white/60 py-12">
+            <div className="text-center text-gray-400 py-12">
               <div className="text-6xl mb-4">🤖</div>
               <p>No agents data available</p>
               <p className="text-sm mt-2">Create some agents to see performance metrics!</p>
