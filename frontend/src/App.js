@@ -763,14 +763,10 @@ const AppContent = () => {
                 </div>
               </section>
 
-              {/* 4. "SEE IT IN ACTION" DEMO SECTION */}
+              {/* 4. OPTIMIZED DEMO SECTION */}
               <section className="py-20 px-4 bg-gradient-to-br from-gray-900/30 to-gray-800/30">
                 <div className="max-w-7xl mx-auto">
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    className="text-center mb-16"
-                  >
+                  <div className="text-center mb-16">
                     <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
                       See It In{' '}
                       <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
@@ -780,19 +776,15 @@ const AppContent = () => {
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto">
                       Watch a live demonstration of AI agents collaborating on a real business challenge.
                     </p>
-                  </motion.div>
+                  </div>
                   
                   <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    {/* Live Demo Preview */}
-                    <motion.div 
-                      initial={{ opacity: 0, x: -30 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10"
-                    >
+                    {/* Live Demo Preview - Static for Performance */}
+                    <div className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-white">💬 Live Simulation</h3>
                         <div className="flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                           <span className="text-green-400 text-sm">Active</span>
                         </div>
                       </div>
@@ -834,14 +826,10 @@ const AppContent = () => {
                           </p>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                     
-                    {/* Real-time Analytics */}
-                    <motion.div 
-                      initial={{ opacity: 0, x: 30 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10"
-                    >
+                    {/* Real-time Analytics - Static Bars for Performance */}
+                    <div className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
                       <h3 className="text-lg font-semibold text-white mb-6">📊 Real-time Analytics</h3>
                       
                       <div className="space-y-6">
@@ -851,12 +839,7 @@ const AppContent = () => {
                             <span className="text-green-400 text-sm font-medium">94%</span>
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-2">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              whileInView={{ width: "94%" }}
-                              transition={{ delay: 0.5, duration: 1 }}
-                              className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full"
-                            />
+                            <div className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full w-[94%]" />
                           </div>
                         </div>
                         
@@ -866,12 +849,7 @@ const AppContent = () => {
                             <span className="text-blue-400 text-sm font-medium">87%</span>
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-2">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              whileInView={{ width: "87%" }}
-                              transition={{ delay: 0.7, duration: 1 }}
-                              className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full"
-                            />
+                            <div className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full w-[87%]" />
                           </div>
                         </div>
                         
@@ -881,12 +859,7 @@ const AppContent = () => {
                             <span className="text-purple-400 text-sm font-medium">12</span>
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-2">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              whileInView={{ width: "80%" }}
-                              transition={{ delay: 0.9, duration: 1 }}
-                              className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full"
-                            />
+                            <div className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full w-[80%]" />
                           </div>
                         </div>
                         
@@ -908,7 +881,7 @@ const AppContent = () => {
                           </div>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
               </section>
