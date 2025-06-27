@@ -318,8 +318,8 @@ const AppContent = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
       {console.log('🔍 AppContent: About to render dashboard UI')}
       
-      {/* Header */}
-      <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 relative z-[9998]">
+      {/* Sticky Header */}
+      <header className="sticky top-0 bg-white/10 backdrop-blur-lg border-b border-white/20 z-[9998] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <ObserverLogo />
