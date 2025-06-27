@@ -283,27 +283,31 @@ const AnalyticsDashboard = () => {
         )}
       </div>
 
-      {/* Key Metrics Grid */}
-      {analytics && (
+      {/* Enhanced Key Metrics Grid */}
+      {processedAnalytics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Total Conversations */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white/10 backdrop-blur-lg rounded-xl p-6"
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-br from-blue-500/20 to-cyan-600/20 backdrop-blur-lg rounded-xl p-6 border border-blue-300/20 hover:border-blue-300/40 transition-all duration-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                💬
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-2xl">💬</span>
               </div>
-              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.conversations?.growth)}`}>
-                <span>{getGrowthIcon(analytics.conversations?.growth)}</span>
-                <span className="text-sm">{analytics.conversations?.growth?.toFixed(1) || '0'}%</span>
+              <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.conversations?.growth)}`}>
+                <span>{getGrowthIcon(processedAnalytics.conversations?.growth)}</span>
+                <span className="text-sm font-medium">{processedAnalytics.conversations?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{formatNumber(analytics.conversations?.total || 0)}</div>
-              <div className="text-white/60 text-sm">Total Conversations</div>
+              <div className="text-3xl font-bold mb-1">{formatNumber(processedAnalytics.conversations?.total || 0)}</div>
+              <div className="text-white/70 text-sm font-medium">Total Conversations</div>
+              <div className="text-white/50 text-xs mt-2">
+                +{processedAnalytics.conversations?.weekly || 0} this week
+              </div>
             </div>
           </motion.div>
 
@@ -312,20 +316,24 @@ const AnalyticsDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/10 backdrop-blur-lg rounded-xl p-6"
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-br from-green-500/20 to-emerald-600/20 backdrop-blur-lg rounded-xl p-6 border border-green-300/20 hover:border-green-300/40 transition-all duration-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                🤖
+              <div className="w-14 h-14 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-2xl">🤖</span>
               </div>
-              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.agents?.growth)}`}>
-                <span>{getGrowthIcon(analytics.agents?.growth)}</span>
-                <span className="text-sm">{analytics.agents?.growth?.toFixed(1) || '0'}%</span>
+              <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.agents?.growth)}`}>
+                <span>{getGrowthIcon(processedAnalytics.agents?.growth)}</span>
+                <span className="text-sm font-medium">{processedAnalytics.agents?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{formatNumber(analytics.agents?.active || 0)}</div>
-              <div className="text-white/60 text-sm">Active Agents</div>
+              <div className="text-3xl font-bold mb-1">{formatNumber(processedAnalytics.agents?.active || 0)}</div>
+              <div className="text-white/70 text-sm font-medium">Active Agents</div>
+              <div className="text-white/50 text-xs mt-2">
+                Performance: {processedAnalytics.agents?.average_performance?.toFixed(1) || '0'}/10
+              </div>
             </div>
           </motion.div>
 
@@ -334,20 +342,24 @@ const AnalyticsDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white/10 backdrop-blur-lg rounded-xl p-6"
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-br from-purple-500/20 to-violet-600/20 backdrop-blur-lg rounded-xl p-6 border border-purple-300/20 hover:border-purple-300/40 transition-all duration-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
-                📄
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-600 to-purple-700 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-2xl">📄</span>
               </div>
-              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.documents?.growth)}`}>
-                <span>{getGrowthIcon(analytics.documents?.growth)}</span>
-                <span className="text-sm">{analytics.documents?.growth?.toFixed(1) || '0'}%</span>
+              <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.documents?.growth)}`}>
+                <span>{getGrowthIcon(processedAnalytics.documents?.growth)}</span>
+                <span className="text-sm font-medium">{processedAnalytics.documents?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{formatNumber(analytics.documents?.total || 0)}</div>
-              <div className="text-white/60 text-sm">Documents Generated</div>
+              <div className="text-3xl font-bold mb-1">{formatNumber(processedAnalytics.documents?.total || 0)}</div>
+              <div className="text-white/70 text-sm font-medium">Documents Generated</div>
+              <div className="text-white/50 text-xs mt-2">
+                +{processedAnalytics.documents?.weekly || 0} this week
+              </div>
             </div>
           </motion.div>
 
@@ -356,20 +368,24 @@ const AnalyticsDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/10 backdrop-blur-lg rounded-xl p-6"
+            whileHover={{ scale: 1.02 }}
+            className="bg-gradient-to-br from-orange-500/20 to-amber-600/20 backdrop-blur-lg rounded-xl p-6 border border-orange-300/20 hover:border-orange-300/40 transition-all duration-300"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center">
-                ⏱️
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-600 to-orange-700 rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-2xl">⏱️</span>
               </div>
-              <div className={`flex items-center space-x-1 ${getGrowthColor(analytics.simulation_time?.growth)}`}>
-                <span>{getGrowthIcon(analytics.simulation_time?.growth)}</span>
-                <span className="text-sm">{analytics.simulation_time?.growth?.toFixed(1) || '0'}%</span>
+              <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.simulation_time?.growth)}`}>
+                <span>{getGrowthIcon(processedAnalytics.simulation_time?.growth)}</span>
+                <span className="text-sm font-medium">{processedAnalytics.simulation_time?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{formatDuration(analytics.simulation_time?.total || 0)}</div>
-              <div className="text-white/60 text-sm">Simulation Time</div>
+              <div className="text-3xl font-bold mb-1">{formatDuration(processedAnalytics.simulation_time?.total || 0)}</div>
+              <div className="text-white/70 text-sm font-medium">Simulation Time</div>
+              <div className="text-white/50 text-xs mt-2">
+                Avg: {formatDuration((processedAnalytics.simulation_time?.total || 0) / Math.max(processedAnalytics.conversations?.total || 1, 1))} per conversation
+              </div>
             </div>
           </motion.div>
         </div>
