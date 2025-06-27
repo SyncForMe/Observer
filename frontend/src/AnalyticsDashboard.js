@@ -222,15 +222,15 @@ const AnalyticsDashboard = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Time Range Selector */}
             <div className="flex items-center space-x-2">
-              <span className="text-white/70 text-sm">Period:</span>
+              <span className="text-gray-300 text-sm font-medium">Period:</span>
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm"
+                className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm"
               >
-                <option value="7d" className="bg-gray-800">Last 7 days</option>
-                <option value="30d" className="bg-gray-800">Last 30 days</option>
-                <option value="90d" className="bg-gray-800">Last 90 days</option>
+                <option value="7d" className="bg-gray-800 text-gray-100">Last 7 days</option>
+                <option value="30d" className="bg-gray-800 text-gray-100">Last 30 days</option>
+                <option value="90d" className="bg-gray-800 text-gray-100">Last 90 days</option>
               </select>
             </div>
             
@@ -242,7 +242,7 @@ const AnalyticsDashboard = () => {
                   fetchWeeklyData();
                 }}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 shadow-lg"
               >
                 <span>🔄</span>
                 <span>Refresh</span>
@@ -251,7 +251,7 @@ const AnalyticsDashboard = () => {
               <button
                 onClick={generateWeeklyReport}
                 disabled={loading}
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2"
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 shadow-lg"
               >
                 <span>📑</span>
                 <span>Generate Report</span>
@@ -262,22 +262,22 @@ const AnalyticsDashboard = () => {
         
         {/* Quick Metrics Preview */}
         {processedAnalytics && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-600/30">
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">{formatNumber(processedAnalytics.conversations.total)}</div>
-              <div className="text-white/60 text-sm">Total Conversations</div>
+              <div className="text-2xl font-bold text-gray-100">{formatNumber(processedAnalytics.conversations.total)}</div>
+              <div className="text-gray-400 text-sm">Total Conversations</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">{processedAnalytics.agents.total}</div>
-              <div className="text-white/60 text-sm">Active Agents</div>
+              <div className="text-2xl font-bold text-gray-100">{processedAnalytics.agents.total}</div>
+              <div className="text-gray-400 text-sm">Active Agents</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">{formatNumber(processedAnalytics.documents.total)}</div>
-              <div className="text-white/60 text-sm">Documents Generated</div>
+              <div className="text-2xl font-bold text-gray-100">{formatNumber(processedAnalytics.documents.total)}</div>
+              <div className="text-gray-400 text-sm">Documents Generated</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">{formatDuration(processedAnalytics.simulation_time.total)}</div>
-              <div className="text-white/60 text-sm">Total Simulation Time</div>
+              <div className="text-2xl font-bold text-gray-100">{formatDuration(processedAnalytics.simulation_time.total)}</div>
+              <div className="text-gray-400 text-sm">Total Simulation Time</div>
             </div>
           </div>
         )}
