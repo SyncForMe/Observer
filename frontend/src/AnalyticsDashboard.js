@@ -771,35 +771,109 @@ const AnalyticsDashboard = () => {
         </motion.div>
       )}
 
-      {/* Weekly Summary */}
+      {/* Enhanced Weekly Summary */}
       {weeklyData && (
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-white">📅 Weekly Summary</h3>
-            <span className="text-white/60 text-sm">
-              {weeklyData.week_start} - {weeklyData.week_end}
-            </span>
-          </div>
-          
-          <div className="bg-white/5 rounded-lg p-4">
-            <div className="text-white/80 whitespace-pre-wrap text-sm">
-              {weeklyData.summary || 'No weekly summary available. Generate a report to see insights.'}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+        >
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6">
+            <h3 className="text-xl font-bold text-white flex items-center">
+              <span className="text-2xl mr-2">📅</span>
+              Weekly Summary Report
+            </h3>
+            <div className="mt-2 lg:mt-0">
+              <span className="text-white/60 text-sm bg-white/10 px-3 py-1 rounded-full">
+                {weeklyData.week_start} - {weeklyData.week_end}
+              </span>
             </div>
           </div>
           
-          {weeklyData.key_insights && (
-            <div className="mt-4">
-              <h4 className="text-white font-semibold mb-2">💡 Key Insights</h4>
+          {/* Weekly Metrics Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="text-center p-4 bg-white/5 rounded-lg">
+              <div className="text-2xl font-bold text-blue-400">{weeklyData.conversations || 0}</div>
+              <div className="text-white/60 text-sm">Conversations</div>
+            </div>
+            <div className="text-center p-4 bg-white/5 rounded-lg">
+              <div className="text-2xl font-bold text-green-400">{weeklyData.agents_created || 0}</div>
+              <div className="text-white/60 text-sm">Agents Created</div>
+            </div>
+            <div className="text-center p-4 bg-white/5 rounded-lg">
+              <div className="text-2xl font-bold text-purple-400">{weeklyData.documents_created || 0}</div>
+              <div className="text-white/60 text-sm">Documents</div>
+            </div>
+            <div className="text-center p-4 bg-white/5 rounded-lg">
+              <div className="text-2xl font-bold text-orange-400">{weeklyData.most_active_day || 'N/A'}</div>
+              <div className="text-white/60 text-sm">Most Active Day</div>
+            </div>
+          </div>
+          
+          {/* Summary Content */}
+          <div className="bg-gradient-to-br from-indigo-500/10 to-purple-600/10 rounded-lg p-5 border border-indigo-300/20">
+            <h4 className="text-white font-semibold mb-3 flex items-center">
+              <span className="text-lg mr-2">📄</span>
+              Executive Summary
+            </h4>
+            <div className="text-white/80 whitespace-pre-wrap text-sm leading-relaxed">
+              {weeklyData.summary || 'No weekly summary available. Generate a report to see insights and recommendations based on your simulation activity.'}
+            </div>
+          </div>
+          
+          {/* Key Insights */}
+          {weeklyData.key_insights && weeklyData.key_insights.length > 0 && (
+            <div className="mt-6">
+              <h4 className="text-white font-semibold mb-4 flex items-center">
+                <span className="text-lg mr-2">💡</span>
+                Key Insights & Recommendations
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {weeklyData.key_insights.map((insight, index) => (
-                  <div key={index} className="bg-white/5 rounded-lg p-3">
-                    <div className="text-white/80 text-sm">{insight}</div>
-                  </div>
+                  <motion.div 
+                    key={index}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 1 + index * 0.1 }}
+                    className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 rounded-lg p-4 border border-blue-300/20 hover:border-blue-300/40 transition-all duration-200"
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="text-white text-sm font-bold">{index + 1}</span>
+                      </div>
+                      <div className="text-white/80 text-sm leading-relaxed">{insight}</div>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </div>
           )}
-        </div>
+          
+          {/* Daily Breakdown */}
+          {weeklyData.daily_breakdown && (
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <h4 className="text-white font-semibold mb-4 flex items-center">
+                <span className="text-lg mr-2">📊</span>
+                Daily Activity Breakdown
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                {Object.entries(weeklyData.daily_breakdown || {}).map(([day, count], index) => (
+                  <motion.div 
+                    key={day}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.2 + index * 0.1 }}
+                    className="text-center p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
+                  >
+                    <div className="text-lg font-bold text-white">{count}</div>
+                    <div className="text-white/60 text-xs">{day.slice(0, 3)}</div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+        </motion.div>
       )}
     </div>
   );
