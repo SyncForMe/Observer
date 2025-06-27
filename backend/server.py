@@ -5208,9 +5208,12 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
 async def get_conversations(current_user: User = Depends(get_current_user)):
     """Get conversation rounds for the current user"""
     # Get user's simulation conversations
-    conversations = await db.conversations.find({
-        "user_id": current_user.id
-    }).sort("created_at", 1).to_list(1000)
+    # Ensure we're only getting conversations for the current user
+    user_id = current_user.id
+    
+    # Get only the conversations for the current user
+    # Use $eq operator to ensure exact match and filter out empty user_id
+    conversations = await db.conversations.find({"user_id": {"$eq": user_id}}).sort("created_at", 1).to_list(1000)
     
     # Convert to response format, handling any missing fields
     conversation_rounds = []

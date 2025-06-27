@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, createContext, useContext } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { motion, useAnimationControls, AnimatePresence } from 'framer-motion';
 import './App.css';
@@ -8,6 +9,7 @@ import SimulationControl from './SimulationControl';
 import ConversationViewer from './ConversationViewer';
 import DocumentCenter from './DocumentCenter';
 import AnalyticsDashboard from './AnalyticsDashboard';
+import { ProfileSettingsModal, PreferencesModal, HelpSupportModal, FeedbackModal } from './AccountModals';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -280,213 +282,20 @@ const FileCenter = () => {
   );
 };
 
-// Profile Settings Modal Component  
-const ProfileSettingsModal = ({ isOpen, onClose }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    bio: ''
-  });
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (user && isOpen) {
-      setFormData({
-        name: user.name || '',
-        email: user.email || '',
-        bio: user.bio || ''
-      });
-    }
-  }, [user, isOpen]);
-
-  const handleInputChange = (e) => {
-    if (e && e.target) {
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.value
-      });
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">👤 Profile Settings</h2>
-              <p className="text-white/80 mt-1">Manage your account information and preferences</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          {/* Profile Picture */}
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center text-2xl">
-              {user?.name?.[0] || '👤'}
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">{formData.name || 'User'}</h3>
-              <p className="text-gray-600">{formData.email || 'No email'}</p>
-              <button className="text-blue-600 text-sm hover:text-blue-700 mt-1">
-                Change profile photo
-              </button>
-            </div>
-          </div>
-
-          {/* Basic Information */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">Basic Information</h4>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your full name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your email"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                rows="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Tell us about yourself..."
-              ></textarea>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 mt-6">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Save Changes
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Preferences Modal Component
-const PreferencesModal = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">⚙️ Preferences</h2>
-              <p className="text-white/80 mt-1">Customize your AI simulation experience</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          <div className="text-center text-gray-600">
-            <p>Preferences settings coming soon!</p>
-            <p className="text-sm mt-2">Theme, language, notifications, and AI behavior customization</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Help Modal Component
-const HelpModal = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">🆘 Help & Support</h2>
-              <p className="text-white/80 mt-1">Find answers and get help with AI Agent Simulation</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          <div className="text-center text-gray-600">
-            <p>Help and support documentation coming soon!</p>
-            <p className="text-sm mt-2">FAQ, tutorials, and contact information</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Main App Content Component
 const AppContent = () => {
   console.log('🔍 AppContent: Component is rendering!');
   
+  const { user, token, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const accountButtonRef = useRef(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
-  const { user, logout, token } = useAuth();
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   console.log('🔍 AppContent: User data:', user);
   console.log('🔍 AppContent: Active tab:', activeTab);
@@ -510,7 +319,7 @@ const AppContent = () => {
       {console.log('🔍 AppContent: About to render dashboard UI')}
       
       {/* Header */}
-      <header className="bg-white/10 backdrop-blur-lg border-b border-white/20">
+      <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 relative z-[9998]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <ObserverLogo />
@@ -583,11 +392,11 @@ const AppContent = () => {
               </button>
             </nav>
             
-            {/* User Account Dropdown */}
+            {/* User Account Dropdown - WORKING VERSION */}
             <div className="relative account-dropdown">
               <button
                 onClick={() => {
-                  console.log('🔍 AppContent: Account dropdown clicked');
+                  console.log('🔍 Account button clicked - toggling dropdown');
                   setShowAccountDropdown(!showAccountDropdown);
                 }}
                 className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-200"
@@ -601,12 +410,13 @@ const AppContent = () => {
                 </svg>
               </button>
               
+              {/* Working Dropdown Menu */}
               {showAccountDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999]">
                   <div className="py-1">
                     <button
                       onClick={() => {
-                        console.log('🔍 AppContent: Analytics clicked');
+                        console.log('🔍 Analytics clicked');
                         setShowAnalyticsModal(true);
                         setShowAccountDropdown(false);
                       }}
@@ -617,7 +427,7 @@ const AppContent = () => {
                     </button>
                     <button
                       onClick={() => {
-                        console.log('🔍 AppContent: Profile clicked');
+                        console.log('🔍 Profile clicked - setting modal to true');
                         setShowProfileModal(true);
                         setShowAccountDropdown(false);
                       }}
@@ -628,7 +438,7 @@ const AppContent = () => {
                     </button>
                     <button
                       onClick={() => {
-                        console.log('🔍 AppContent: Preferences clicked');
+                        console.log('🔍 Preferences clicked');
                         setShowPreferencesModal(true);
                         setShowAccountDropdown(false);
                       }}
@@ -639,7 +449,7 @@ const AppContent = () => {
                     </button>
                     <button
                       onClick={() => {
-                        console.log('🔍 AppContent: Help clicked');
+                        console.log('🔍 Help clicked');
                         setShowHelpModal(true);
                         setShowAccountDropdown(false);
                       }}
@@ -651,7 +461,7 @@ const AppContent = () => {
                     <div className="border-t border-gray-100 mt-1 pt-1">
                       <button
                         onClick={() => {
-                          console.log('🔍 AppContent: Logout clicked');
+                          console.log('🔍 Logout clicked');
                           logout();
                           setShowAccountDropdown(false);
                         }}
@@ -795,12 +605,41 @@ const AppContent = () => {
         </div>
       </main>
 
-      {/* Modals */}
+      {/* Comprehensive Account Modals - Now Working! */}
       <ProfileSettingsModal
         isOpen={showProfileModal}
         onClose={() => {
-          console.log('🔍 AppContent: Closing profile modal');
+          console.log('🔍 Closing profile modal');
           setShowProfileModal(false);
+        }}
+        user={user}
+        token={token}
+        analyticsData={{}} // Can be populated with actual analytics data later
+      />
+      
+      <PreferencesModal
+        isOpen={showPreferencesModal}
+        onClose={() => {
+          console.log('🔍 Closing preferences modal');
+          setShowPreferencesModal(false);
+        }}
+        audioNarrativeEnabled={false} // Can be managed with state later
+      />
+      
+      <HelpSupportModal
+        isOpen={showHelpModal}
+        onClose={() => {
+          console.log('🔍 Closing help modal');
+          setShowHelpModal(false);
+        }}
+        onOpenFeedback={() => setShowFeedbackModal(true)}
+      />
+
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+          console.log('🔍 Closing feedback modal');
+          setShowFeedbackModal(false);
         }}
       />
       
@@ -810,13 +649,24 @@ const AppContent = () => {
           console.log('🔍 AppContent: Closing preferences modal');
           setShowPreferencesModal(false);
         }}
+        audioNarrativeEnabled={false} // Can be managed with state later
       />
       
-      <HelpModal
+      <HelpSupportModal
         isOpen={showHelpModal}
         onClose={() => {
           console.log('🔍 AppContent: Closing help modal');
           setShowHelpModal(false);
+        }}
+        onOpenFeedback={() => setShowFeedbackModal(true)}
+      />
+
+      {/* Additional modals */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => {
+          console.log('🔍 AppContent: Closing feedback modal');
+          setShowFeedbackModal(false);
         }}
       />
 
