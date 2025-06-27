@@ -836,7 +836,7 @@ const AnalyticsDashboard = () => {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 1 + index * 0.1 }}
-                    className="bg-gradient-to-br from-blue-500/10 to-cyan-600/10 rounded-lg p-4 border border-blue-300/20 hover:border-blue-300/40 transition-all duration-200"
+                    className="bg-blue-500/20 rounded-lg p-4 border border-blue-300/30 hover:border-blue-300/50 transition-all duration-200"
                   >
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
