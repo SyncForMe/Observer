@@ -548,7 +548,7 @@ const AnalyticsDashboard = () => {
                     {/* Performance Bar */}
                     <div className="mt-2">
                       <div className="flex items-center space-x-2">
-                        <div className="flex-1 bg-white/10 rounded-full h-2">
+                        <div className="flex-1 bg-gray-700 rounded-full h-2">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${(agent.performance_score / 10) * 100}%` }}
@@ -561,14 +561,14 @@ const AnalyticsDashboard = () => {
                             }`}
                           />
                         </div>
-                        <div className="text-white/80 text-sm font-medium min-w-0">
+                        <div className="text-gray-200 text-sm font-medium min-w-0">
                           {agent.performance_score?.toFixed(1) || 'N/A'}/10
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="text-white/60 group-hover:text-white/80 transition-colors">
+                  <div className="text-gray-400 group-hover:text-gray-300 transition-colors">
                     #{index + 1}
                   </div>
                 </motion.div>
