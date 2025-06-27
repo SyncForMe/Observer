@@ -596,18 +596,14 @@ const AppContent = () => {
                 </div>
               </section>
 
-              {/* 2. SOCIAL PROOF STRIP */}
+              {/* 2. SOCIAL PROOF STRIP - Simplified */}
               <section className="py-12 border-y border-white/10">
                 <div className="max-w-7xl mx-auto px-4">
                   <div className="text-center">
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      className="inline-flex items-center space-x-2 text-gray-400 mb-8"
-                    >
+                    <div className="inline-flex items-center space-x-2 text-gray-400 mb-8">
                       <span className="text-sm">Trusted by innovative teams worldwide</span>
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                    </motion.div>
+                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                    </div>
                     
                     <div className="flex justify-center items-center space-x-12 opacity-60">
                       <div className="text-2xl font-bold text-white">TechCorp</div>
@@ -619,14 +615,10 @@ const AppContent = () => {
                 </div>
               </section>
 
-              {/* 3. INTERACTIVE FEATURE SHOWCASE */}
+              {/* 3. OPTIMIZED FEATURE SHOWCASE */}
               <section className="py-20 px-4">
                 <div className="max-w-7xl mx-auto">
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    className="text-center mb-16"
-                  >
+                  <div className="text-center mb-16">
                     <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
                       Everything You Need to{' '}
                       <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
@@ -636,27 +628,28 @@ const AppContent = () => {
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto">
                       Powerful tools designed for teams who want to explore possibilities, test strategies, and make better decisions.
                     </p>
-                  </motion.div>
+                  </div>
                   
                   <div className="grid md:grid-cols-3 gap-8">
-                    {/* Feature 1 - Create Smart Agents */}
-                    <motion.div 
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 }}
-                      whileHover={{ y: -10 }}
-                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-purple-400/50 transition-all duration-500"
-                    >
+                    {/* Feature 1 - Optimized */}
+                    <div className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-2">
                       <div className="absolute top-4 right-4 w-12 h-12 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <span className="text-2xl">🤖</span>
                       </div>
                       
                       <div className="mb-6">
-                        <img 
-                          src="https://images.unsplash.com/photo-1517048676732-d65bc937f952" 
-                          alt="Create Smart Agents"
-                          className="w-full h-48 object-cover rounded-xl"
-                        />
+                        <div className="w-full h-48 bg-gray-800/50 rounded-xl flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=600&q=80" 
+                            alt="Create Smart Agents"
+                            className="w-full h-48 object-cover rounded-xl"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<div class="w-full h-48 bg-gradient-to-br from-purple-600/20 to-blue-600/20 rounded-xl flex items-center justify-center"><span class="text-4xl">🤖</span></div>';
+                            }}
+                          />
+                        </div>
                       </div>
                       
                       <h3 className="text-2xl font-bold text-white mb-4">Create Smart Agents</h3>
@@ -679,26 +672,27 @@ const AppContent = () => {
                           <span>AI-Generated Avatars</span>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
 
-                    {/* Feature 2 - Run Simulations */}
-                    <motion.div 
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      whileHover={{ y: -10 }}
-                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-blue-400/50 transition-all duration-500"
-                    >
+                    {/* Feature 2 - Optimized */}
+                    <div className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-blue-400/50 transition-all duration-300 hover:-translate-y-2">
                       <div className="absolute top-4 right-4 w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <span className="text-2xl">💬</span>
                       </div>
                       
                       <div className="mb-6">
-                        <img 
-                          src="https://images.unsplash.com/photo-1600880292089-90a7e086ee0c" 
-                          alt="Run Simulations"
-                          className="w-full h-48 object-cover rounded-xl"
-                        />
+                        <div className="w-full h-48 bg-gray-800/50 rounded-xl flex items-center justify-center">
+                          <img 
+                            src="https://images.unsplash.com/photo-1600880292089-90a7e086ee0c?w=600&q=80" 
+                            alt="Run Simulations"
+                            className="w-full h-48 object-cover rounded-xl"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<div class="w-full h-48 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-xl flex items-center justify-center"><span class="text-4xl">💬</span></div>';
+                            }}
+                          />
+                        </div>
                       </div>
                       
                       <h3 className="text-2xl font-bold text-white mb-4">Run Simulations</h3>
@@ -721,26 +715,27 @@ const AppContent = () => {
                           <span>Multi-language Support</span>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
 
-                    {/* Feature 3 - Generate Insights */}
-                    <motion.div 
-                      initial={{ opacity: 0, y: 30 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                      whileHover={{ y: -10 }}
-                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-green-400/50 transition-all duration-500"
-                    >
+                    {/* Feature 3 - Optimized */}
+                    <div className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-green-400/50 transition-all duration-300 hover:-translate-y-2">
                       <div className="absolute top-4 right-4 w-12 h-12 bg-green-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <span className="text-2xl">📊</span>
                       </div>
                       
                       <div className="mb-6">
-                        <img 
-                          src="https://images.pexels.com/photos/3184285/pexels-photo-3184285.jpeg" 
-                          alt="Generate Insights"
-                          className="w-full h-48 object-cover rounded-xl"
-                        />
+                        <div className="w-full h-48 bg-gray-800/50 rounded-xl flex items-center justify-center">
+                          <img 
+                            src="https://images.pexels.com/photos/3184285/pexels-photo-3184285.jpeg?w=600&q=80" 
+                            alt="Generate Insights"
+                            className="w-full h-48 object-cover rounded-xl"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = '<div class="w-full h-48 bg-gradient-to-br from-green-600/20 to-blue-600/20 rounded-xl flex items-center justify-center"><span class="text-4xl">📊</span></div>';
+                            }}
+                          />
+                        </div>
                       </div>
                       
                       <h3 className="text-2xl font-bold text-white mb-4">Generate Insights</h3>
@@ -763,7 +758,7 @@ const AppContent = () => {
                           <span>Export & Share</span>
                         </div>
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
               </section>
