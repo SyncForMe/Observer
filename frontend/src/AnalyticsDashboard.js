@@ -204,15 +204,15 @@ const AnalyticsDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Enhanced Header and Controls */}
-      <div className="bg-gradient-to-br from-indigo-500/20 to-purple-600/20 backdrop-blur-lg rounded-xl p-6 border border-white/10">
+      <div className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-gray-600/30 shadow-2xl">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
           <div>
-            <h2 className="text-3xl font-bold text-white mb-2 flex items-center">
+            <h2 className="text-3xl font-bold text-gray-100 mb-2 flex items-center">
               <span className="text-4xl mr-3">📊</span>
               Analytics Dashboard
             </h2>
-            <p className="text-white/80">Monitor your AI simulation performance and insights</p>
-            <div className="flex items-center space-x-4 mt-2 text-sm text-white/60">
+            <p className="text-gray-300">Monitor your AI simulation performance and insights</p>
+            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-400">
               <span>📅 {processedAnalytics?.generated_at ? new Date(processedAnalytics.generated_at).toLocaleDateString() : 'Today'}</span>
               <span>👤 {user?.name || 'User'}</span>
               <span>🔄 Auto-refresh: On</span>
