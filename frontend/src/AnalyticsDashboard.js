@@ -648,7 +648,7 @@ const AnalyticsDashboard = () => {
             </div>
 
             {/* Agent Performance */}
-            <div className="bg-gradient-to-br from-green-500/10 to-emerald-600/10 rounded-lg p-5 border border-green-300/20">
+            <div className="bg-green-500/20 rounded-lg p-5 border border-green-300/30">
               <h4 className="text-white font-semibold mb-4 flex items-center">
                 <span className="text-xl mr-2">🤖</span>
                 Agent Performance
