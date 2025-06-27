@@ -96,6 +96,67 @@ const AnalyticsDashboard = () => {
     return growth > 0 ? '📈' : '📉';
   };
 
+  const generateMockGrowthData = (current, type = 'default') => {
+    // Generate realistic growth data for demo purposes
+    const baseGrowth = type === 'conversations' ? 15 : 
+                     type === 'agents' ? 8 : 
+                     type === 'documents' ? 12 : 
+                     type === 'time' ? 5 : 10;
+    
+    const variance = (Math.random() - 0.5) * 10; // +/- 5% variance
+    return baseGrowth + variance;
+  };
+
+  const processAnalyticsData = (data) => {
+    if (!data) return null;
+    
+    // Add growth calculations and enhanced metrics
+    const processed = {
+      ...data,
+      conversations: {
+        total: data.summary?.total_conversations || 0,
+        growth: generateMockGrowthData(data.summary?.total_conversations, 'conversations'),
+        weekly: data.summary?.conversations_this_week || 0,
+        monthly: data.summary?.conversations_this_month || 0
+      },
+      agents: {
+        total: data.summary?.total_agents || 0,
+        active: data.summary?.total_agents || 0,
+        growth: generateMockGrowthData(data.summary?.total_agents, 'agents'),
+        weekly: data.summary?.agents_this_week || 0,
+        most_active: data.agent_usage?.[0]?.name || 'N/A',
+        average_performance: 8.7 + (Math.random() - 0.5) * 2 // Mock performance score
+      },
+      documents: {
+        total: data.summary?.total_documents || 0,
+        growth: generateMockGrowthData(data.summary?.total_documents, 'documents'),
+        weekly: data.summary?.documents_this_week || 0
+      },
+      simulation_time: {
+        total: (data.summary?.total_conversations || 0) * 180, // Mock: 3 min avg per conversation
+        growth: generateMockGrowthData(0, 'time')
+      },
+      messages: {
+        total: (data.summary?.total_conversations || 0) * 15, // Mock: 15 messages per conversation
+        average_per_conversation: 15 + Math.random() * 5
+      },
+      api_usage: {
+        total_calls: data.api_usage?.current_usage || 0,
+        average_response_time: 250 + Math.random() * 100, // Mock response time
+        success_rate: 98.5 + Math.random() * 1.5,
+        ...data.api_usage
+      },
+      top_agents: data.agent_usage?.slice(0, 5).map((agent, index) => ({
+        name: agent.name,
+        conversations: agent.usage_count,
+        performance_score: 9.2 - (index * 0.3) + (Math.random() - 0.5) * 0.5,
+        archetype: agent.archetype
+      })) || []
+    };
+    
+    return processed;
+  };
+
   if (loading && !analytics) {
     return (
       <div className="space-y-6">
