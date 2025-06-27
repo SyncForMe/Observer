@@ -5,13 +5,15 @@ import { useAuth } from './App';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
 
-// Comprehensive Analytics Dashboard
+// Enhanced Analytics Dashboard with Beautiful Visualizations
 const AnalyticsDashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [weeklyData, setWeeklyData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [timeRange, setTimeRange] = useState('7d');
+  const [error, setError] = useState(null);
+  const [timeRange, setTimeRange] = useState('30d');
   const [summaryPeriod, setSummaryPeriod] = useState('weekly');
+  const [selectedMetric, setSelectedMetric] = useState('conversations');
   const { user, token } = useAuth();
 
   useEffect(() => {
