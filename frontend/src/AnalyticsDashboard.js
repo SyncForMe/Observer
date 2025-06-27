@@ -523,7 +523,7 @@ const AnalyticsDashboard = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  className="flex items-center space-x-4 p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200 group"
+                  className="flex items-center space-x-4 p-4 bg-gray-800/60 rounded-lg hover:bg-gray-700/60 transition-all duration-200 group"
                 >
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
                     index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-yellow-900' : 
@@ -536,12 +536,12 @@ const AnalyticsDashboard = () => {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
-                      <div className="text-white font-medium truncate">{agent.name}</div>
-                      <span className="text-xs bg-white/10 text-white/70 px-2 py-1 rounded-full">
+                      <div className="text-gray-100 font-medium truncate">{agent.name}</div>
+                      <span className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded-full">
                         {agent.archetype}
                       </span>
                     </div>
-                    <div className="text-white/60 text-sm">
+                    <div className="text-gray-400 text-sm">
                       {agent.conversations} conversations
                     </div>
                     
