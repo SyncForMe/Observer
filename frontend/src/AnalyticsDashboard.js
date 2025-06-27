@@ -398,30 +398,30 @@ const AnalyticsDashboard = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+          className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-gray-600/30 shadow-xl"
         >
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-white flex items-center">
+            <h3 className="text-xl font-bold text-gray-100 flex items-center">
               <span className="text-2xl mr-2">📈</span>
               Activity Overview
             </h3>
             <div className="flex space-x-2">
               <button
                 onClick={() => setSelectedMetric('conversations')}
-                className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                className={`px-3 py-1 rounded-lg text-sm transition-all font-medium ${
                   selectedMetric === 'conversations' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    ? 'bg-blue-600 text-white shadow-lg' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
                 Conversations
               </button>
               <button
                 onClick={() => setSelectedMetric('agents')}
-                className={`px-3 py-1 rounded-lg text-sm transition-all ${
+                className={`px-3 py-1 rounded-lg text-sm transition-all font-medium ${
                   selectedMetric === 'agents' 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    ? 'bg-green-600 text-white shadow-lg' 
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                 }`}
               >
                 Agents
