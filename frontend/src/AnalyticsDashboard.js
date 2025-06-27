@@ -864,7 +864,7 @@ const AnalyticsDashboard = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.2 + index * 0.1 }}
-                    className="text-center p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
+                    className="text-center p-3 bg-white/15 rounded-lg hover:bg-white/20 transition-all"
                   >
                     <div className="text-lg font-bold text-white">{count}</div>
                     <div className="text-white/60 text-xs">{day.slice(0, 3)}</div>
