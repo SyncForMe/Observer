@@ -88,7 +88,7 @@ const AnalyticsDashboard = () => {
 
   const getGrowthColor = (growth) => {
     if (!growth) return 'text-gray-400';
-    return growth > 0 ? 'text-green-400' : 'text-red-400';
+    return growth > 0 ? 'text-green-300' : 'text-red-300';
   };
 
   const getGrowthIcon = (growth) => {
