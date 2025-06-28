@@ -1801,9 +1801,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
                 <span>⚡</span>
                 <span>QUICK TEAMS</span>
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
-                  {Object.keys(quickTeams).length}
-                </span>
               </h3>
               <button
                 type="button"
