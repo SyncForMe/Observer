@@ -1181,7 +1181,7 @@ const AppContent = () => {
                       </p>
                       <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <button
-                          onClick={() => setActiveTab('simulation')}
+                          onClick={() => safeSetActiveTab('simulation')}
                           className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02]"
                         >
                           🚀 Start Your First Simulation
