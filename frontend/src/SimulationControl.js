@@ -590,8 +590,12 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     } catch (error) {
       console.error('Failed to send observer message:', error);
       console.error('Error details:', error.response?.data);
-      alert('Failed to send message. Please try again.');
-      setLoading(false);
+      if (!confirm('Failed to send message. Would you like to try again?')) {
+        setLoading(false);
+        return;
+      }
+      // Retry the operation
+      await sendObserverMessage();
     }
   };
 
