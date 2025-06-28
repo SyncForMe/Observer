@@ -1250,7 +1250,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 <span className="text-lg">🔄</span>
               </button>
               <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                {loading ? 'Clearing...' : 'Clear State'}
+                {loading ? 'Starting Fresh...' : 'Start Fresh'}
               </div>
             </div>
           </div>
