@@ -494,6 +494,42 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     }
   };
 
+  // Function to display messages with staggered timing for better UX
+  const displayMessagesWithDelay = async (conversationData) => {
+    if (!conversationData || !conversationData.messages) return;
+    
+    // Add the conversation structure first (empty messages)
+    const emptyConversation = {
+      ...conversationData,
+      messages: []
+    };
+    
+    setConversations(prevConversations => [...prevConversations, emptyConversation]);
+    
+    // Then add messages one by one with delay
+    for (let i = 0; i < conversationData.messages.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between messages
+      
+      setConversations(prevConversations => {
+        const updatedConversations = [...prevConversations];
+        const lastConvIndex = updatedConversations.length - 1;
+        const lastConversation = updatedConversations[lastConvIndex];
+        
+        updatedConversations[lastConvIndex] = {
+          ...lastConversation,
+          messages: [...(lastConversation.messages || []), conversationData.messages[i]]
+        };
+        
+        return updatedConversations;
+      });
+      
+      // Scroll to bottom as each message appears
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  };
+
   // Observer message functionality
   const sendObserverMessage = async () => {
     if (!newMessage.trim() || !token) return;
