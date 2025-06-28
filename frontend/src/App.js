@@ -1244,19 +1244,63 @@ const AppContent = () => {
   );
 };
 
-// Test version to debug rendering
+// Main App Component - Restored with full functionality
 const App = () => {
   console.log('🔍 App: Component mounting');
   
-  // Simple test render first
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
-      <div className="text-center text-white">
-        <h1 className="text-4xl font-bold mb-4">🚀 App is Working!</h1>
-        <p className="text-xl">React app is rendering properly</p>
+  try {
+    const authContext = useAuth();
+    console.log('🔍 App: Auth context available:', !!authContext);
+    
+    const { user, loading } = authContext;
+    console.log('🔍 App: Rendering with user:', !!user, 'loading:', loading);
+
+    // Handler for HomePage authentication
+    const handleAuthentication = useCallback((token, userData) => {
+      console.log('🔍 App: handleAuthentication called with token:', !!token, 'user:', !!userData);
+      // This will be handled by the AuthContext
+    }, []);
+
+    if (loading) {
+      console.log('🔍 App: Showing loading screen');
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+            <p className="text-white/80">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!user) {
+      console.log('🔍 App: No user, showing HomePage');
+      return <HomePage onAuthenticated={handleAuthentication} />;
+    }
+
+    console.log('🔍 App: User found, showing AppContent');
+    return (
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
+    );
+  } catch (error) {
+    console.error('🔥 App: Error in component:', error);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-red-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <h1 className="text-2xl font-bold mb-4">App Error</h1>
+          <p>{error.message}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+          >
+            Refresh Page
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 };
 
 // Main App wrapper with AuthProvider
