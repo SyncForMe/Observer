@@ -784,7 +784,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         // Don't show alert for expected errors (like insufficient agents)
         console.log('Conversation generation skipped:', error.response?.data?.detail);
       } else {
-        alert('Failed to generate conversation. Please add more agents or check your simulation setup.');
+        if (!confirm('Failed to generate conversation. Please add more agents or check your simulation setup. Would you like to try again?')) {
+          setLoading(false);
+          return;
+        }
+        // Retry the operation
+        await generateConversation();
+        return;
       }
     }
     setLoading(false);
