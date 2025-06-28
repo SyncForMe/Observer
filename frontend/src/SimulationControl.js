@@ -718,7 +718,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         return;
       }
       // Retry the operation
-      await toggleSimulation();
+      await playPauseSimulation();
       return;
     }
     setLoading(false);
