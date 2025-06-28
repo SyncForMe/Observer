@@ -10,7 +10,6 @@ import AnalyticsDashboard from './AnalyticsDashboard';
 import FileCenter from './FileCenter';
 import AccountModals from './AccountModals';
 import { AuthProvider, useAuth } from './AuthContext';
-import ObserverLogo from './ObserverLogo';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
