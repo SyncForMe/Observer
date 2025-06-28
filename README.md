@@ -1199,34 +1199,24 @@ The platform provides a comprehensive REST API for all functionality:
 
 For complete API documentation, visit `/docs` when running the backend server.
 
-## 🔧 Environment Variables
+## 🧪 Testing
 
-### Backend (.env)
-```env
-# Database
-MONGO_URL=mongodb://localhost:27017/ai_simulation
-
-# Security
-JWT_SECRET_KEY=your_super_secure_jwt_secret_key_here
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# AI Services
-OPENAI_API_KEY=your_openai_api_key_here
-FAL_KEY=your_fal_ai_key_here
-
-# Google OAuth (optional)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+### Backend Tests
+```bash
+cd backend
+python -m pytest tests/ -v
 ```
 
-### Frontend (.env)
-```env
-# Backend URL
-REACT_APP_BACKEND_URL=http://localhost:8001
+### Frontend Tests
+```bash
+cd frontend
+yarn test
+```
 
-# Development
-WDS_SOCKET_PORT=443
+### Integration Tests
+```bash
+# Run full test suite
+./scripts/run-tests.sh
 ```
 
 ## 📚 Documentation
