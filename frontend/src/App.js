@@ -648,7 +648,7 @@ const AppContent = () => {
                     <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
                       Perfect for{' '}
                       <span className="bg-gradient-to-r from-pink-400 to-red-400 bg-clip-text text-transparent">
-                        Every Team
+                        Any team
                       </span>
                     </h2>
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto">
