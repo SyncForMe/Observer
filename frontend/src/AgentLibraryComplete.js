@@ -2439,7 +2439,14 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                         ))}
                       </div>
                       
-                      <button className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-2 px-4 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSearchQuery('');
+                          setSelectedArchetype('all');
+                        }}
+                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-2 px-4 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all"
+                      >
                         View All →
                       </button>
                     </div>
