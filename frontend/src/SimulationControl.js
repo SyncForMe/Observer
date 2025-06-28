@@ -750,7 +750,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       await fetchConversations();
     } catch (error) {
       console.error('Failed to fast forward:', error);
-      alert('Failed to fast forward simulation. Please try again.');
+      if (!confirm('Failed to fast forward simulation. Would you like to try again?')) {
+        setLoading(false);
+        return;
+      }
+      // Retry the operation
+      await fastForwardSimulation();
+      return;
     }
     setLoading(false);
   };
