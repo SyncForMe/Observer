@@ -1044,20 +1044,21 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 ⬇️
               </span>
             </button>
-            <div className="flex space-x-2">
-              <button
-                onClick={getRandomScenario}
-                disabled={loading || isRunning}
-                className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-              >
-                {loading ? '⏳' : '🎲 Random'}
-              </button>
-            </div>
           </div>
           
           {/* Expandable Scenario Input */}
           {showSetScenario && (
             <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-white/60 text-sm">Enter custom scenario or generate random:</span>
+                <button
+                  onClick={getRandomScenario}
+                  disabled={loading || isRunning}
+                  className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {loading ? '⏳' : '🎲 Random'}
+                </button>
+              </div>
               <div className="relative">
                 <textarea
                   value={customScenario}
