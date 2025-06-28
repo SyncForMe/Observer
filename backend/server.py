@@ -7188,7 +7188,11 @@ async def transcribe_scenario_audio(
         raise
     except Exception as e:
         logging.error(f"Error in scenario transcription: {e}")
-        raise HTTPException(status_code=500, detail=f"Scenario transcription failed: {str(e)}")
+        # Return a 400 error instead of 500 for invalid audio format
+        if "Invalid audio format" in str(e):
+            raise HTTPException(status_code=400, detail=f"Invalid audio format. Please try recording again.")
+        else:
+            raise HTTPException(status_code=500, detail=f"Scenario transcription failed: {str(e)}")
 
 @api_router.post("/speech/transcribe-and-summarize")
 async def transcribe_and_summarize_for_field(
