@@ -1,13 +1,12 @@
-# 🔭 AI Agent Simulation Observatory
+# 🤖 AI Agent Simulation Platform
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Node.js 18+](https://img.shields.io/badge/node-18+-green.svg)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18.0-blue)](https://reactjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Latest-009688)](https://fastapi.tiangolo.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-green)](https://www.mongodb.com/)
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-18.0+-61DAFB.svg)](https://reactjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-00A86B.svg)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-47A248.svg)](https://www.mongodb.com/)
 
-> **A professional-grade AI agent simulation platform for real-time multi-agent conversations, monitoring, and research.**
+A sophisticated platform for creating, managing, and running AI agent simulations with real-time conversations and comprehensive analytics. Build teams of AI experts, run complex scenarios, and generate actionable insights.
 
 Experience the future of AI interaction through sophisticated agent simulations with real-time monitoring, intervention capabilities, and comprehensive analytics. Perfect for researchers, developers, and organizations exploring multi-agent AI dynamics.
 
