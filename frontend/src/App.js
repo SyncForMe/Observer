@@ -1415,7 +1415,11 @@ const App = () => {
   }
 
   console.log('🔍 App: User found, showing AppContent');
-  return <AppContent />;
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
 };
 
 // Error Boundary Component
