@@ -1744,9 +1744,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
                 <span>⭐</span>
                 <span>MY AGENTS</span>
-                <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
-                  {savedAgents.length}
-                </span>
               </h3>
               <button
                 type="button"
