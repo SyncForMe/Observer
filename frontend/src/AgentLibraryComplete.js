@@ -1520,6 +1520,32 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     return archetypes.sort();
   };
 
+  // Statistics and featured content functions
+  const getSectorStats = () => {
+    return Object.entries(sectors).map(([key, sector]) => ({
+      key,
+      name: sector.name,
+      icon: sector.icon,
+      count: Object.values(sector.categories).reduce((total, category) => total + category.agents.length, 0)
+    })).sort((a, b) => b.count - a.count);
+  };
+
+  const getFeaturedAgents = () => {
+    const allAgents = getAllAgents();
+    // Get a mix of different archetypes for variety
+    const featured = [];
+    const archetypes = [...new Set(allAgents.map(a => a.archetype))];
+    
+    archetypes.slice(0, 3).forEach(archetype => {
+      const agentsOfType = allAgents.filter(a => a.archetype === archetype);
+      if (agentsOfType.length > 0) {
+        featured.push(agentsOfType[Math.floor(Math.random() * agentsOfType.length)]);
+      }
+    });
+    
+    return featured;
+  };
+
   const handleAddAgent = async (agent) => {
     if (!onAddAgent) return;
     
