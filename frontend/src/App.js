@@ -1085,33 +1085,6 @@ const AppContent = () => {
           setShowFeedbackModal(false);
         }}
       />
-      
-      <PreferencesModal
-        isOpen={showPreferencesModal}
-        onClose={() => {
-          console.log('🔍 AppContent: Closing preferences modal');
-          setShowPreferencesModal(false);
-        }}
-        audioNarrativeEnabled={false} // Can be managed with state later
-      />
-      
-      <HelpSupportModal
-        isOpen={showHelpModal}
-        onClose={() => {
-          console.log('🔍 AppContent: Closing help modal');
-          setShowHelpModal(false);
-        }}
-        onOpenFeedback={() => setShowFeedbackModal(true)}
-      />
-
-      {/* Additional modals */}
-      <FeedbackModal
-        isOpen={showFeedbackModal}
-        onClose={() => {
-          console.log('🔍 AppContent: Closing feedback modal');
-          setShowFeedbackModal(false);
-        }}
-      />
 
       {/* Analytics Modal */}
       {showAnalyticsModal && (
