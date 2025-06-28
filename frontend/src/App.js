@@ -827,7 +827,7 @@ const AppContent = () => {
                           <span>Export & Share</span>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
               </section>
