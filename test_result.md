@@ -578,6 +578,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Created comprehensive test scripts to test the Start Fresh functionality. The tests confirmed that: 1) The sequence of POST /api/simulation/start followed by POST /api/simulation/pause works correctly, 2) The POST /api/simulation/start endpoint clears all conversations for the current user, 3) The POST /api/simulation/pause endpoint stops the simulation (sets is_active=false), 4) User isolation is properly maintained - Start Fresh only affects the current user's conversations, 5) The functionality works with both empty and non-empty conversation states. All tests passed successfully, confirming that the Start Fresh functionality is working as expected. The backend correctly handles the sequence of operations, clearing conversations and stopping the simulation. Authentication is properly enforced for all endpoints, and user data isolation is maintained throughout the process."
+        -working: true
+        -agent: "testing"
+        -comment: "Created a dedicated test script (observer_simulation_control_test.py) to test the Start Fresh functionality in the context of observer messages. The tests confirmed that: 1) The POST /api/simulation/start endpoint correctly clears all conversations, 2) Agents are preserved when starting fresh, 3) The simulation state is properly reset. The Start Fresh functionality works correctly even after sending observer messages, ensuring that users can reset their simulation state while keeping their agents."
 
 
   - task: "POST /api/documents/bulk-delete - Bulk Delete Documents"
