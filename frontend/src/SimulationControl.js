@@ -674,6 +674,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         formData.append('audio', audioBlob, 'scenario.webm');
 
         try {
+          console.log('🎤 Sending audio for transcription...');
           const response = await axios.post(`${API}/speech/transcribe-scenario`, formData, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -681,11 +682,21 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
             }
           });
 
+          console.log('📝 Transcription response:', response.data);
+          
           if (response.data && response.data.text) {
+            console.log('✅ Setting transcribed text:', response.data.text);
             setCustomScenario(response.data.text);
+          } else {
+            console.log('❌ No text in transcription response');
+            if (!confirm('No speech was detected. Would you like to try recording again?')) {
+              return;
+            }
+            await handleVoiceInput();
           }
         } catch (error) {
           console.error('Failed to transcribe audio:', error);
+          console.error('Error details:', error.response?.data);
           if (!confirm('Failed to transcribe audio. Would you like to try again?')) {
             return;
           }
