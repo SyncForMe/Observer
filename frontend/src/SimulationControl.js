@@ -537,8 +537,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           return newConversations;
         });
         
-        // Display messages one by one with staggered timing
-        await displayMessagesWithDelay(response.data.agent_responses);
+        // Reset loading state immediately after sending, before displaying messages
+        setLoading(false);
+        
+        // Display messages one by one with staggered timing (async, non-blocking)
+        displayMessagesWithDelay(response.data.agent_responses);
+      } else {
+        setLoading(false);
       }
       
       // Scroll to bottom after new message
@@ -550,8 +555,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       console.error('Failed to send observer message:', error);
       console.error('Error details:', error.response?.data);
       alert('Failed to send message. Please try again.');
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Remove agent
