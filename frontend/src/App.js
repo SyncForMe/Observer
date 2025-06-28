@@ -865,24 +865,7 @@ const AppContent = () => {
                 </div>
               </section>
 
-              {/* 2. SOCIAL PROOF STRIP - Simplified */}
-              <section className="py-12 border-y border-white/10">
-                <div className="max-w-7xl mx-auto px-4">
-                  <div className="text-center">
-                    <div className="inline-flex items-center space-x-2 text-gray-400 mb-8">
-                      <span className="text-sm">Trusted by innovative teams worldwide</span>
-                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                    </div>
-                    
-                    <div className="flex justify-center items-center space-x-12 opacity-60">
-                      <div className="text-2xl font-bold text-white">TechCorp</div>
-                      <div className="text-2xl font-bold text-white">InnovateLab</div>
-                      <div className="text-2xl font-bold text-white">FutureAI</div>
-                      <div className="text-2xl font-bold text-white">DataVision</div>
-                    </div>
-                  </div>
-                </div>
-              </section>
+
 
 
 
