@@ -549,6 +549,7 @@ const AppContent = () => {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.2 }}
                           className="inline-flex items-center px-4 py-2 bg-purple-600/20 rounded-full border border-purple-400/30"
+                          style={{ display: 'none' }}
                         >
                           <span className="text-purple-300 text-sm font-medium">🚀 Next-Gen AI Simulation Platform</span>
                         </motion.div>
