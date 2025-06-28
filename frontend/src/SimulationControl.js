@@ -1058,26 +1058,35 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           {/* Expandable Scenario Input */}
           {showSetScenario && (
             <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
-              <div className="flex space-x-2">
+              <div className="relative">
                 <textarea
                   value={customScenario}
                   onChange={(e) => setCustomScenario(e.target.value)}
                   placeholder="Enter your scenario here... (e.g., 'A team of researchers discovers an unexpected signal from deep space')"
                   disabled={loading || isRunning || isRecording}
-                  className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
+                  className="w-full px-3 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
                   rows="3"
                 />
                 <button
                   onClick={handleVoiceInput}
                   disabled={loading || isRunning}
-                  className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                  className={`absolute right-2 top-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${
                     isRecording 
-                      ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
-                      : 'bg-white/10 hover:bg-white/20'
+                      ? 'bg-red-500/20 text-red-400 animate-pulse' 
+                      : 'text-white/60 hover:text-white hover:bg-white/10'
                   }`}
                   title={isRecording ? 'Recording... Click to stop' : 'Click to record scenario with voice'}
                 >
-                  {isRecording ? '🛑' : '🎤'}
+                  <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                    <rect x="10" y="20" width="4" height="2" rx="1"/>
+                  </svg>
                 </button>
               </div>
               <div className="flex justify-end space-x-2">
