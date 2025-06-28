@@ -443,9 +443,9 @@ async def get_usage():
         }
 
 @api_router.get("/observer/messages")
-async def get_observer_messages():
-    """Get all observer messages"""
-    messages = await db.observer_messages.find().sort("timestamp", -1).to_list(100)
+async def get_observer_messages(current_user: User = Depends(get_current_user)):
+    """Get all observer messages for the current user"""
+    messages = await db.observer_messages.find({"user_id": current_user.id}).sort("timestamp", -1).to_list(100)
     return messages
 
 
