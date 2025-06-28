@@ -125,41 +125,37 @@ ai-agent-simulation/
 └── README.md            # This file
 ```
 
-### **3. Installation**
+## 🔧 Configuration
 
-#### **Backend Setup**
+### Environment Variables
+
+#### Backend (.env)
 ```bash
-cd backend
+# Database
+MONGO_URL=mongodb://localhost:27017/ai_agents
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Authentication
+JWT_SECRET_KEY=your_jwt_secret_key
+JWT_ALGORITHM=HS256
 
-# Install dependencies
-pip install -r requirements.txt
+# AI Services
+OPENAI_API_KEY=your_openai_api_key
+FAL_API_KEY=your_fal_api_key
 
-# Start MongoDB (if not running)
-mongod --dbpath ./data/db
-
-# Run backend server
-uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+# Server Configuration
+DEBUG=True
+CORS_ORIGINS=["http://localhost:3000"]
 ```
 
-#### **Frontend Setup**
+#### Frontend (.env)
 ```bash
-cd frontend
+# Backend API
+REACT_APP_BACKEND_URL=http://localhost:8001
 
-# Install dependencies
-yarn install
-
-# Start development server
-yarn start
+# Feature Flags
+REACT_APP_ENABLE_ANALYTICS=true
+REACT_APP_ENABLE_AI_AVATARS=true
 ```
-
-### **4. Access Application**
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8001
-- **API Documentation**: http://localhost:8001/docs
 
 ---
 
