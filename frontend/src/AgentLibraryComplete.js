@@ -1707,21 +1707,27 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
       {/* Main Agent Library Content */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden">
-        <div className="flex h-[600px]">
-          {/* Sidebar */}
-          <div className="w-64 bg-gray-50 border-r p-4">
-            {/* MY AGENTS header with expandable button */}
+        <div className="flex h-[700px]">
+          {/* Modern Sidebar */}
+          <div className="w-72 bg-gradient-to-b from-white/20 to-white/10 backdrop-blur-lg border-r border-white/20 p-6">
+            {/* MY AGENTS header with modern styling */}
             <div 
-              className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+              className="flex justify-between items-center cursor-pointer hover:bg-white/10 p-3 rounded-xl transition-all mb-6 group"
               onClick={() => setIsMyAgentsExpanded(!isMyAgentsExpanded)}
             >
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">MY AGENTS</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <span>⭐</span>
+                <span>MY AGENTS</span>
+                <span className="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                  {savedAgents.length}
+                </span>
+              </h3>
               <button
                 type="button"
-                className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                className="text-white/60 hover:text-white transition-all duration-200 group-hover:scale-110"
                 style={{ transform: isMyAgentsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
