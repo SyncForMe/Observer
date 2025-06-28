@@ -2292,99 +2292,17 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 )}
               </div>
             ) : (
-              // Minimalistic Library Visual
-              <div className="max-w-4xl mx-auto py-16">
-                {/* Simple Header */}
-                <div className="text-center mb-12">
-                  <h3 className="text-3xl font-bold text-gray-900 mb-2">Agent Library</h3>
-                  <p className="text-gray-600">{getAllAgents().length} Experts Available</p>
-                </div>
-
-                {/* Visual Library Shelves */}
-                <div className="bg-gradient-to-b from-gray-100 to-gray-200 rounded-2xl p-8 border border-gray-300">
-                  {/* Library Shelves Visual */}
-                  <div className="space-y-6">
-                    {/* Shelf 1 - Quick Teams */}
-                    <div 
-                      onClick={() => setShowQuickTeamsOnly(true)}
-                      className="cursor-pointer group"
-                    >
-                      <div className="bg-gray-800 h-1 rounded-full mb-2"></div>
-                      <div className="flex space-x-1 mb-2">
-                        {[1,2,3,4,5,6].map((i) => (
-                          <div 
-                            key={i}
-                            className="h-12 bg-gradient-to-b from-blue-400 to-blue-600 rounded-t-sm flex-1 group-hover:scale-105 transition-transform"
-                          ></div>
-                        ))}
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm font-medium text-gray-700">Quick Teams</div>
-                      </div>
-                    </div>
-
-                    {/* Shelf 2 - Healthcare */}
-                    <div 
-                      onClick={() => setSelectedSector('healthcare')}
-                      className="cursor-pointer group"
-                    >
-                      <div className="bg-gray-800 h-1 rounded-full mb-2"></div>
-                      <div className="flex space-x-1 mb-2">
-                        {[1,2,3,4,5,6,7,8,9,10,11].map((i) => (
-                          <div 
-                            key={i}
-                            className="h-14 bg-gradient-to-b from-green-400 to-green-600 rounded-t-sm flex-1 group-hover:scale-105 transition-transform"
-                          ></div>
-                        ))}
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm font-medium text-gray-700">Healthcare</div>
-                      </div>
-                    </div>
-
-                    {/* Shelf 3 - Finance */}
-                    <div 
-                      onClick={() => setSelectedSector('finance')}
-                      className="cursor-pointer group"
-                    >
-                      <div className="bg-gray-800 h-1 rounded-full mb-2"></div>
-                      <div className="flex space-x-1 mb-2">
-                        {[1,2,3,4,5,6,7,8].map((i) => (
-                          <div 
-                            key={i}
-                            className="h-16 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-t-sm flex-1 group-hover:scale-105 transition-transform"
-                          ></div>
-                        ))}
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm font-medium text-gray-700">Finance</div>
-                      </div>
-                    </div>
-
-                    {/* Shelf 4 - Technology */}
-                    <div 
-                      onClick={() => setSelectedSector('technology')}
-                      className="cursor-pointer group"
-                    >
-                      <div className="bg-gray-800 h-1 rounded-full mb-2"></div>
-                      <div className="flex space-x-1 mb-2">
-                        {[1,2,3,4,5,6,7,8,9].map((i) => (
-                          <div 
-                            key={i}
-                            className="h-13 bg-gradient-to-b from-purple-400 to-purple-600 rounded-t-sm flex-1 group-hover:scale-105 transition-transform"
-                          ></div>
-                        ))}
-                      </div>
-                      <div className="text-center">
-                        <div className="text-sm font-medium text-gray-700">Technology</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Simple Stats */}
-                <div className="text-center mt-8 text-sm text-gray-500">
-                  {Object.keys(sectors).length} Industries • {getUniqueArchetypes().length} Personality Types
+              // Default Empty State
+              <div className="text-center py-20">
+                <div className="text-6xl mb-6">🏛️</div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Agent Library</h3>
+                <p className="text-gray-600 max-w-lg mx-auto mb-6">
+                  Select a team from <strong>Quick Team Builders</strong> to see pre-configured agent teams, 
+                  or choose a sector from <strong>Sectors</strong> to browse agents by industry.
+                </p>
+                <div className="space-y-2 text-sm text-gray-500">
+                  <p>🔬 Quick Team Builders: Pre-made teams for instant setup</p>
+                  <p>🏭 Sectors: Browse agents by healthcare, finance, and technology</p>
                 </div>
               </div>
             )}
