@@ -1516,19 +1516,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
               </div>
             </div>
 
-            {/* Weekly Report Button */}
-            <div className="group relative">
-              <button
-                onClick={() => setShowWeeklyReport(true)}
-                disabled={loading}
-                className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="text-lg">📅</span>
-              </button>
-              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                {loading ? 'Loading...' : 'Weekly Report'}
-              </div>
-            </div>
+
 
             {/* Start Fresh Button */}
             <div className="group relative">
