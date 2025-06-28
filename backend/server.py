@@ -288,30 +288,34 @@ class ObserverInput(BaseModel):
     observer_message: str
 
 @api_router.post("/observer/send-message")
-async def send_observer_message(input_data: ObserverInput):
+async def send_observer_message(input_data: ObserverInput, current_user: User = Depends(get_current_user)):
     """Send a message from the observer (user) to the AI agents"""
     observer_message = input_data.observer_message.strip()
     
     if not observer_message:
         raise HTTPException(status_code=400, detail="Observer message cannot be empty")
     
-    # Get current agents
-    agents = await db.agents.find().to_list(100)
+    # Get current user's agents ONLY - this was the bug!
+    agents = await db.agents.find({"user_id": current_user.id}).to_list(100)
     if len(agents) < 1:
         raise HTTPException(status_code=400, detail="No agents available to respond")
     
     agent_objects = [Agent(**agent) for agent in agents]
     
-    # Get simulation state
-    state = await db.simulation_state.find_one()
+    # Get user's simulation state
+    state = await db.simulation_state.find_one({"user_id": current_user.id})
     if not state:
         raise HTTPException(status_code=404, detail="Simulation not started")
     
     scenario = state.get("scenario", "Research Station")
     
-    # Store observer message
-    observer_msg = ObserverMessage(message=observer_message, timestamp=datetime.utcnow())
-    await db.observer_messages.insert_one(observer_msg.dict())
+    # Store observer message with user_id
+    observer_msg_data = {
+        "message": observer_message,
+        "user_id": current_user.id,
+        "timestamp": datetime.utcnow()
+    }
+    await db.observer_messages.insert_one(observer_msg_data)
     
     # Generate responses from each agent to the observer
     messages = []
@@ -327,7 +331,7 @@ async def send_observer_message(input_data: ObserverInput):
     
     for agent in agent_objects:
         if not await llm_manager.can_make_request():
-            response = f"{agent.name} is listening but cannot respond right now (API limit reached)."
+            response = f"Hello! {agent.name} here - I hear you loud and clear."
         else:
             # Create LLM chat instance for this agent responding to observer
             chat = LlmChat(
@@ -345,29 +349,35 @@ Your personality traits:
 Your goal: {agent.goal}
 Your expertise: {agent.expertise}
 
-🎯 CRITICAL: The Observer is your PROJECT LEAD/CEO with ultimate decision-making authority.
+🎯 IMPORTANT: The Observer is your project lead/supervisor with decision-making authority.
 
-You are in {scenario}. The Observer (your project lead/CEO) has just given you direction.
+You are in {scenario}. The Observer has just spoken to you and your team.
 
 RESPONSE GUIDELINES:
-- Show respect for their authority and position
-- Acknowledge their directive clearly  
-- You may politely suggest alternatives if you see critical issues, but frame them respectfully
-- Ultimately, align with their vision and priorities
-- Be professional but authentic to your personality
-- Keep response brief (1-2 sentences)
-- Address them respectfully: "Yes," "Understood," "Absolutely," etc.
+- Respond naturally and conversationally
+- If they say "hello", respond with a friendly greeting
+- Be authentic to your personality while showing respect
+- Keep responses brief (1-2 sentences)
+- NO formal acknowledgments like "Understood" or "I acknowledge"
+- Talk like a real person, not a robot
 
-Remember: They have CEO-level authority over this project and team. Their word carries significant weight."""
+Examples:
+- If Observer says "hello agents" → "Hello! Good to hear from you."
+- If Observer gives direction → "Got it, I'll focus on that" or "Sounds like a plan"
+- Be conversational and human-like"""
             ).with_model("gemini", "gemini-2.0-flash")
             
             try:
-                user_message = UserMessage(text=f"Observer (your project lead/CEO) says: '{observer_message}'\n\nRespond professionally, acknowledging their authority while being authentic to your personality. Show that you respect their leadership position.")
+                user_message = UserMessage(text=f"Observer says: '{observer_message}'\n\nRespond naturally and conversationally. Be authentic to your personality while showing appropriate respect for their leadership role.")
                 response = await chat.send_message(user_message)
                 await llm_manager.increment_usage()
             except Exception as e:
                 logging.error(f"Error generating observer response for {agent.name}: {e}")
-                response = f"Understood. {agent.name} acknowledges your direction and will proceed accordingly."
+                # More natural fallback responses based on message content
+                if "hello" in observer_message.lower():
+                    response = f"Hello! {agent.name} here - good to hear from you."
+                else:
+                    response = f"Got it! {agent.name} is on it."
         
         message = ConversationMessage(
             agent_id=agent.id,
@@ -377,8 +387,8 @@ Remember: They have CEO-level authority over this project and team. Their word c
         )
         messages.append(message)
     
-    # Get current round number
-    conversation_count = await db.conversations.count_documents({})
+    # Get current round number for user
+    conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
     
     # Create special observer conversation round
     conversation_round = ConversationRound(
@@ -386,7 +396,9 @@ Remember: They have CEO-level authority over this project and team. Their word c
         time_period=f"Observer Input - {datetime.now().strftime('%H:%M')}",
         scenario=f"Observer Directive: {observer_message}",
         scenario_name="Observer Guidance",
-        messages=messages
+        messages=messages,
+        user_id=current_user.id,
+        created_at=datetime.utcnow()
     )
     
     await db.conversations.insert_one(conversation_round.dict())
