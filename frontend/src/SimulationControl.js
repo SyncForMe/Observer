@@ -1090,28 +1090,47 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                           <div
                             key={message.id || messageIndex}
                             ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
-                            className={`bg-white/5 rounded-lg p-3 border-l-4 ${
-                              isCurrentSearch 
-                                ? 'border-yellow-400 bg-yellow-400/10' 
-                                : isHighlighted 
-                                  ? 'border-blue-400 bg-blue-400/10' 
-                                  : 'border-white/20'
+                            className={`rounded-lg p-3 border-l-4 ${
+                              message.agent_name === "Observer (You)"
+                                ? 'bg-blue-500/20 border-blue-500 shadow-lg' // Special styling for observer messages
+                                : isCurrentSearch 
+                                  ? 'border-yellow-400 bg-yellow-400/10' 
+                                  : isHighlighted 
+                                    ? 'border-blue-400 bg-blue-400/10' 
+                                    : 'bg-white/5 border-white/20'
                             } transition-all duration-200`}
                           >
                             <div className="flex items-start space-x-3">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                message.agent_name === "Observer (You)"
+                                  ? 'bg-gradient-to-br from-blue-600 to-blue-800' // Special blue gradient for observer
+                                  : 'bg-gradient-to-br from-purple-500 to-pink-500'
+                              }`}>
                                 <span className="text-white text-xs font-semibold">
-                                  {message.agent_name?.[0] || '🤖'}
+                                  {message.agent_name === "Observer (You)" ? '👁️' : (message.agent_name?.[0] || '🤖')}
                                 </span>
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2 mb-1">
-                                  <span className="text-white font-medium text-sm">{message.agent_name}</span>
+                                  <span className={`font-medium text-sm ${
+                                    message.agent_name === "Observer (You)"
+                                      ? 'text-blue-300' // Special color for observer name
+                                      : 'text-white'
+                                  }`}>
+                                    {message.agent_name}
+                                    {message.agent_name === "Observer (You)" && (
+                                      <span className="ml-1 text-xs bg-blue-600 px-1 py-0.5 rounded">CEO</span>
+                                    )}
+                                  </span>
                                   <span className="text-white/40 text-xs">
                                     {new Date(message.timestamp).toLocaleTimeString()}
                                   </span>
                                 </div>
-                                <p className="text-white/90 text-sm leading-relaxed">
+                                <p className={`text-sm leading-relaxed ${
+                                  message.agent_name === "Observer (You)"
+                                    ? 'text-blue-100 font-medium' // Special styling for observer text
+                                    : 'text-white/90'
+                                }`}>
                                   {highlightSearchTerm(message.message, searchTerm)}
                                 </p>
                               </div>
