@@ -679,7 +679,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          sampleRate: 44100
+          sampleRate: 44100,
+          channelCount: 1 // Mono audio for better compatibility
         }
       });
       
@@ -690,19 +691,30 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         throw new Error('MediaRecorder not supported in this browser');
       }
       
-      // Try different formats for better compatibility
-      let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'audio/wav';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = ''; // Let browser decide
-          }
+      // Try different formats for better compatibility with OpenAI Whisper
+      let mimeType = '';
+      let fileExtension = '.webm';
+      
+      // Prefer formats that work best with OpenAI Whisper
+      const supportedFormats = [
+        { mime: 'audio/wav', ext: '.wav' },
+        { mime: 'audio/mp4', ext: '.mp4' },
+        { mime: 'audio/mpeg', ext: '.mp3' },
+        { mime: 'audio/webm;codecs=opus', ext: '.webm' },
+        { mime: 'audio/webm', ext: '.webm' },
+        { mime: 'audio/ogg;codecs=opus', ext: '.ogg' }
+      ];
+      
+      for (const format of supportedFormats) {
+        if (MediaRecorder.isTypeSupported(format.mime)) {
+          mimeType = format.mime;
+          fileExtension = format.ext;
+          break;
         }
       }
       
-      console.log('🎵 Using MIME type:', mimeType);
+      console.log('🎵 Using MIME type:', mimeType || 'browser default');
+      console.log('📄 File extension:', fileExtension);
       
       const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       
@@ -742,13 +754,16 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           return;
         }
         
+        // Create filename with proper extension
+        const fileName = `scenario_audio${fileExtension}`;
+        
         const formData = new FormData();
-        formData.append('audio', audioBlob, 'scenario.webm');
+        formData.append('audio', audioBlob, fileName);
         
         // Log the FormData contents
         console.log('📋 FormData contents:');
         for (let [key, value] of formData.entries()) {
-          console.log(`  ${key}:`, value);
+          console.log(`  ${key}:`, value, 'name:', value.name, 'type:', value.type);
         }
 
         try {
@@ -756,7 +771,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           console.log('📋 Request details:', {
             url: `${API}/speech/transcribe-scenario`,
             fileSize: audioBlob.size,
-            fileName: 'scenario.webm',
+            fileName: fileName,
             mimeType: audioBlob.type,
             token: token ? 'Present' : 'Missing'
           });
@@ -801,7 +816,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           if (error.response?.status === 401) {
             alert('Authentication failed. Please refresh the page and try again.');
           } else if (error.response?.status === 400) {
-            alert(`Invalid request: ${error.response.data?.detail || 'Invalid audio format'}. Please try recording again.`);
+            const errorMsg = error.response.data?.detail || 'Invalid audio format';
+            console.error('❌ Server rejected audio format:', {
+              sentFormat: audioBlob.type,
+              fileName: fileName,
+              fileSize: audioBlob.size
+            });
+            alert(`Invalid request: ${errorMsg}. Try a different browser or check microphone settings.`);
           } else if (error.code === 'ECONNABORTED') {
             alert('Request timeout. Please try with a shorter recording.');
           } else {
