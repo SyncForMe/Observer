@@ -4838,7 +4838,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                         previous_context += f"- {doc.get('title', 'Untitled')} ({doc.get('category', 'Document')}): {doc.get('description', 'No description')}\n"
                     previous_context += "\n"
                 
-                conversation_context = f"{previous_context}You're starting a discussion about: {scenario}\n\nBuild on previous work where relevant and drive toward concrete decisions and actions."
+                conversation_context = f"{previous_context}{observer_context}You're starting a discussion about: {scenario}\n\nBuild on previous work where relevant and drive toward concrete decisions and actions. Pay special attention to any Observer directives - they are your project lead/CEO."
             else:
                 # Build context from what others have said so far
                 conversation_context = "CURRENT DISCUSSION:\n\n"
