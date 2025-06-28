@@ -727,7 +727,7 @@ const AppContent = () => {
                           <span>AI-Generated Avatars</span>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Feature 2 - Restored Animations */}
                     <motion.div 
