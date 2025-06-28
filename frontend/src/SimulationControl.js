@@ -947,18 +947,11 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       });
       
       const randomScenario = response.data.scenario;
-      setScenario(randomScenario);
       
-      // Set the scenario
-      await axios.post(`${API}/simulation/set-scenario`, {
-        scenario: randomScenario,
-        scenario_name: randomScenario
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Set the scenario in the text box for editing instead of directly applying
+      setCustomScenario(randomScenario);
+      setShowSetScenario(true); // Expand the set scenario section
       
-      // Refresh simulation state
-      await fetchSimulationState();
     } catch (error) {
       console.error('Failed to get random scenario:', error);
       if (!confirm('Failed to get random scenario. Would you like to try again?')) {
