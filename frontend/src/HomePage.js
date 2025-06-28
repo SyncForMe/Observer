@@ -31,24 +31,39 @@ const HomePage = ({ onAuthenticated }) => {
     setError('');
 
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/register';
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : { email: formData.email, password: formData.password, name: formData.name };
+      if (isLogin) {
+        console.log('🔍 LOGIN DEBUG: Attempting login with:', {
+          email: formData.email,
+          password: formData.password ? '***' : 'empty'
+        });
 
-      console.log('🔍 LOGIN DEBUG: Attempting login with:', {
-        endpoint: `${API}${endpoint}`,
-        email: payload.email,
-        password: payload.password ? '***' : 'empty'
-      });
+        const result = await login(formData.email, formData.password);
+        
+        if (result.success) {
+          console.log('✅ LOGIN SUCCESS');
+          // AuthContext will handle the state update automatically
+        } else {
+          console.error('❌ LOGIN ERROR:', result.error);
+          setError(result.error || 'Login failed. Please try again.');
+        }
+      } else {
+        // For registration, still use direct API call since AuthContext doesn't have register
+        const payload = { email: formData.email, password: formData.password, name: formData.name };
+        
+        console.log('🔍 REGISTER DEBUG: Attempting registration with:', {
+          email: payload.email,
+          name: payload.name
+        });
 
-      const response = await axios.post(`${API}${endpoint}`, payload);
-      
-      console.log('✅ LOGIN SUCCESS:', response.data);
-      
-      // Call parent callback to update authentication state
-      onAuthenticated(response.data.access_token, response.data.user);
-      
+        const response = await axios.post(`${API}/auth/register`, payload);
+        console.log('✅ REGISTRATION SUCCESS:', response.data);
+        
+        // After successful registration, log them in
+        const loginResult = await login(formData.email, formData.password);
+        if (!loginResult.success) {
+          setError('Registration successful but login failed. Please try logging in manually.');
+        }
+      }
     } catch (error) {
       console.error('❌ AUTHENTICATION ERROR:', error);
       console.error('Error response:', error.response);
