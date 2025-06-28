@@ -4844,7 +4844,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                 conversation_context = "CURRENT DISCUSSION:\n\n"
                 for j, msg in enumerate(messages):
                     conversation_context += f"{msg.agent_name}: \"{msg.message}\"\n\n"
-                conversation_context += f"Respond to the discussion above. Look for opportunities to:\n- Synthesize what's been said\n- Propose concrete next steps\n- Call for decisions or votes\n- Commit to creating/updating documents"
+                conversation_context += f"{observer_context}Respond to the discussion above. Look for opportunities to:\n- Synthesize what's been said\n- Propose concrete next steps\n- Call for decisions or votes\n- Commit to creating/updating documents\n\nRemember: The Observer is your project lead/CEO - their guidance should heavily influence your response."
             
             # Build conversation history in the format expected by generate_agent_response
             conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
