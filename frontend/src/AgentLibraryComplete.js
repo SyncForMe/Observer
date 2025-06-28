@@ -1735,7 +1735,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
       <div className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden">
         <div className="flex h-[700px]">
           {/* Modern Sidebar */}
-          <div className="w-72 bg-gradient-to-b from-white/20 to-white/10 backdrop-blur-lg border-r border-white/20 p-6">
+          <div className="w-72 bg-gradient-to-b from-white/20 to-white/10 backdrop-blur-lg border-r border-white/20 p-6 overflow-y-auto">
             {/* MY AGENTS header with modern styling */}
             <div 
               className="flex justify-between items-center cursor-pointer hover:bg-white/10 p-3 rounded-xl transition-all mb-6 group"
