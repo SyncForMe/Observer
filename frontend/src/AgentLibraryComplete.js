@@ -1828,14 +1828,14 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
             {/* Scrollable Content Area */}
             <div className="flex-1 p-6 overflow-y-auto">
-            {searchQuery && !selectedQuickTeam && !selectedSector ? (
-              // Search Results View
+            {searchQuery ? (
+              // Search Results View - Always prioritize search when user is typing
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-800">
+                  <h3 className="text-xl font-bold text-white">
                     Search Results for "{searchQuery}"
                   </h3>
-                  <span className="text-gray-500">
+                  <span className="text-gray-300">
                     {getFilteredAgents().length} agents found
                   </span>
                 </div>
