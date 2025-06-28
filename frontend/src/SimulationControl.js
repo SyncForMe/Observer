@@ -441,34 +441,62 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const startFreshSimulation = async () => {
     if (!token) return;
     
-    if (!confirm('This will clear all conversations and reset to a clean state. Continue?')) {
+    if (!confirm('This will clear all conversations, remove all agents, and pause the simulation. Continue?')) {
       return;
     }
 
     setLoading(true);
     try {
-      // Use simulation start to clear conversations and reset state
+      console.log('🔄 Starting fresh simulation...');
+      
+      // Step 1: Pause simulation first if it's running
+      if (isRunning && !isPaused) {
+        console.log('⏸️ Pausing simulation...');
+        await axios.post(`${API}/simulation/pause`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      
+      // Step 2: Clear all agents
+      if (agents.length > 0) {
+        console.log(`🗑️ Clearing ${agents.length} agents...`);
+        const agentIds = agents.map(agent => agent.id);
+        await axios.post(`${API}/agents/bulk-delete`, agentIds, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      
+      // Step 3: Start fresh simulation to clear conversations
+      console.log('🆕 Starting fresh simulation state...');
       await axios.post(`${API}/simulation/start`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Immediately pause the simulation to set it to stopped state
+      // Step 4: Immediately pause the simulation to set it to stopped state
+      console.log('⏸️ Pausing fresh simulation...');
       await axios.post(`${API}/simulation/pause`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Refresh data to get current state
-      await fetchAgents();
-      await fetchConversations();
-      await fetchSimulationState();
+      // Step 5: Clear local state immediately
+      setAgents([]);
+      setConversations([]);
+      setObserverMessages([]);
+      setScenario('');
+      setNewMessage('');
       
-      // Set local state to clean stopped state
+      // Set simulation state to clean stopped state
       setIsRunning(false);
       setIsPaused(false);
       setAutoMode(false);
       setFastForwardMode(false);
       
-      console.log('✅ Fresh state created - conversations cleared, simulation stopped');
+      // Step 6: Refresh data to confirm clean state
+      await fetchAgents();
+      await fetchConversations();
+      await fetchSimulationState();
+      
+      console.log('✅ Fresh state created - all conversations cleared, all agents removed, simulation paused');
     } catch (error) {
       console.error('Failed to create fresh state:', error);
       alert('Failed to create fresh state. Please try again.');
