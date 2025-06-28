@@ -84,6 +84,79 @@ const FeedbackModal = ({ isOpen, onClose, user, token }) => {
   );
 };
 
+// Import individual modal components
+const ProfileSettingsModal = ({ isOpen, onClose, user, token }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900/95 backdrop-blur-lg rounded-2xl p-6 max-w-md w-full border border-white/10">
+        <h2 className="text-xl font-bold text-white mb-4">Profile Settings</h2>
+        <p className="text-gray-300 mb-6">Profile settings functionality coming soon!</p>
+        <button
+          onClick={onClose}
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const PreferencesModal = ({ isOpen, onClose, user, token }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900/95 backdrop-blur-lg rounded-2xl p-6 max-w-md w-full border border-white/10">
+        <h2 className="text-xl font-bold text-white mb-4">Preferences</h2>
+        <p className="text-gray-300 mb-6">User preferences functionality coming soon!</p>
+        <button
+          onClick={onClose}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const HelpSupportModal = ({ isOpen, onClose, user, token }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900/95 backdrop-blur-lg rounded-2xl p-6 max-w-md w-full border border-white/10">
+        <h2 className="text-xl font-bold text-white mb-4">Help & Support</h2>
+        <p className="text-gray-300 mb-6">Support system functionality coming soon!</p>
+        <button
+          onClick={onClose}
+          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const FeedbackModal = ({ isOpen, onClose, user, token }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-gray-900/95 backdrop-blur-lg rounded-2xl p-6 max-w-md w-full border border-white/10">
+        <h2 className="text-xl font-bold text-white mb-4">Feedback</h2>
+        <p className="text-gray-300 mb-6">Feedback system functionality coming soon!</p>
+        <button
+          onClick={onClose}
+          className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   constructor(props) {
