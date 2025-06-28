@@ -309,11 +309,21 @@ async def send_observer_message(input_data: ObserverInput):
     scenario = state.get("scenario", "Research Station")
     
     # Store observer message
-    observer_msg = ObserverMessage(message=observer_message)
+    observer_msg = ObserverMessage(message=observer_message, timestamp=datetime.utcnow())
     await db.observer_messages.insert_one(observer_msg.dict())
     
     # Generate responses from each agent to the observer
     messages = []
+    
+    # Add the observer message as the first "message" in the conversation
+    observer_display_msg = ConversationMessage(
+        agent_id="observer",
+        agent_name="Observer (You)",
+        message=observer_message,
+        mood="authoritative"
+    )
+    messages.append(observer_display_msg)
+    
     for agent in agent_objects:
         if not await llm_manager.can_make_request():
             response = f"{agent.name} is listening but cannot respond right now (API limit reached)."
@@ -332,19 +342,31 @@ Your personality traits:
 - Energy: {agent.personality.energy}/10
 
 Your goal: {agent.goal}
+Your expertise: {agent.expertise}
 
-You are in {scenario}. The Observer (project lead/supervisor) has just spoken to you and your team.
-Respond professionally and authentically to your personality. Keep it brief (1-2 sentences).
-Address the Observer respectfully but naturally according to your personality."""
+🎯 CRITICAL: The Observer is your PROJECT LEAD/CEO with ultimate decision-making authority.
+
+You are in {scenario}. The Observer (your project lead/CEO) has just given you direction.
+
+RESPONSE GUIDELINES:
+- Show respect for their authority and position
+- Acknowledge their directive clearly  
+- You may politely suggest alternatives if you see critical issues, but frame them respectfully
+- Ultimately, align with their vision and priorities
+- Be professional but authentic to your personality
+- Keep response brief (1-2 sentences)
+- Address them respectfully: "Yes," "Understood," "Absolutely," etc.
+
+Remember: They have CEO-level authority over this project and team. Their word carries significant weight."""
             ).with_model("gemini", "gemini-2.0-flash")
             
             try:
-                user_message = UserMessage(text=f"Observer says: '{observer_message}'\n\nRespond to the Observer professionally according to your personality.")
+                user_message = UserMessage(text=f"Observer (your project lead/CEO) says: '{observer_message}'\n\nRespond professionally, acknowledging their authority while being authentic to your personality. Show that you respect their leadership position.")
                 response = await chat.send_message(user_message)
                 await llm_manager.increment_usage()
             except Exception as e:
                 logging.error(f"Error generating observer response for {agent.name}: {e}")
-                response = f"{agent.name} nods thoughtfully in response."
+                response = f"Understood. {agent.name} acknowledges your direction and will proceed accordingly."
         
         message = ConversationMessage(
             agent_id=agent.id,
@@ -361,7 +383,8 @@ Address the Observer respectfully but naturally according to your personality.""
     conversation_round = ConversationRound(
         round_number=conversation_count + 1,
         time_period=f"Observer Input - {datetime.now().strftime('%H:%M')}",
-        scenario=f"Observer: {observer_message}",
+        scenario=f"Observer Directive: {observer_message}",
+        scenario_name="Observer Guidance",
         messages=messages
     )
     
