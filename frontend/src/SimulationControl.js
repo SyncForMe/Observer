@@ -1018,17 +1018,16 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3">
         <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-bold text-white mb-2">🔭 Observatory</h2>
-            <p className="text-white/80">Manage and monitor your AI agent simulations</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
-            <span className="text-white text-sm">
-              {isRunning ? (isPaused ? 'Paused' : 'Running') : 'Stopped'}
-            </span>
+          <div className="flex items-center space-x-3">
+            <h2 className="text-lg font-semibold text-white">🔭 Observatory</h2>
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+              <span className="text-white/80 text-xs">
+                {isRunning ? (isPaused ? 'Paused' : 'Running') : 'Stopped'}
+              </span>
+            </div>
           </div>
         </div>
 
