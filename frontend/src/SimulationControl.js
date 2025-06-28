@@ -607,10 +607,6 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   // Remove agent
   const handleRemoveAgent = async (agentId) => {
     if (!token) return;
-    
-    if (!confirm('Are you sure you want to remove this agent from the simulation?')) {
-      return;
-    }
 
     setLoading(true);
     try {
@@ -624,10 +620,12 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     } catch (error) {
       console.error('Failed to remove agent:', error);
       if (!confirm('Failed to remove agent. Would you like to try again?')) {
+        setLoading(false);
         return;
       }
       // Retry the operation
       await handleRemoveAgent(agentId);
+      return;
     }
     setLoading(false);
   };
