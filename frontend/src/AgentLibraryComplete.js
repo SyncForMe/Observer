@@ -2453,42 +2453,51 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   </div>
                 </div>
 
-                {/* Quick Start Guide */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
-                  <div className="text-center mb-6">
-                    <h4 className="text-xl font-bold text-gray-800 mb-2">💡 Get Started in 3 Simple Steps</h4>
-                    <p className="text-gray-600">Build your perfect AI team in minutes</p>
+                {/* Simple Getting Started Guide */}
+                <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200">
+                  <div className="text-center mb-8">
+                    <h4 className="text-2xl font-bold text-gray-800 mb-2">Get Started in 3 Simple Steps</h4>
+                    <p className="text-gray-600">From browsing to building in minutes.</p>
                   </div>
                   
-                  <div className="grid md:grid-cols-3 gap-6">
+                  <div className="grid md:grid-cols-3 gap-8">
                     <div className="text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+                      <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-4">
                         1
                       </div>
-                      <h5 className="font-semibold text-gray-800 mb-2">🔍 Choose</h5>
-                      <p className="text-sm text-gray-600">
-                        Browse sectors or quick teams to find the perfect agents for your needs
+                      <h5 className="text-lg font-semibold text-gray-800 mb-3">Browse Agents</h5>
+                      <p className="text-gray-600 mb-4">
+                        Explore our library of expert agents or choose from ready-made teams for your specific needs.
                       </p>
+                      <button className="text-purple-600 hover:text-purple-800 font-medium">
+                        🤖 Browse Agent Library
+                      </button>
                     </div>
                     
                     <div className="text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+                      <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-4">
                         2
                       </div>
-                      <h5 className="font-semibold text-gray-800 mb-2">👁️ Preview</h5>
-                      <p className="text-sm text-gray-600">
-                        Review agent profiles, expertise, and background before selection
+                      <h5 className="text-lg font-semibold text-gray-800 mb-3">Add to Team</h5>
+                      <p className="text-gray-600 mb-4">
+                        Review agent profiles and add your selected experts to build the perfect simulation team.
                       </p>
+                      <button className="text-purple-600 hover:text-purple-800 font-medium">
+                        📝 Build Your Team
+                      </button>
                     </div>
                     
                     <div className="text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-orange-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+                      <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-4">
                         3
                       </div>
-                      <h5 className="font-semibold text-gray-800 mb-2">🚀 Add to Simulation</h5>
-                      <p className="text-sm text-gray-600">
-                        Add selected agents to your simulation and start collaborating
+                      <h5 className="text-lg font-semibold text-gray-800 mb-3">Start Simulation</h5>
+                      <p className="text-gray-600 mb-4">
+                        Launch your simulation and watch as your AI agents collaborate to solve complex challenges.
                       </p>
+                      <button className="text-purple-600 hover:text-purple-800 font-medium">
+                        🚀 Launch Simulation
+                      </button>
                     </div>
                   </div>
                 </div>
