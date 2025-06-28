@@ -40,39 +40,57 @@ A sophisticated platform for creating, managing, and running AI agent simulation
 - **Smooth Animations** using Framer Motion for engaging interactions
 - **Intuitive Navigation** with modern search and filtering capabilities
 
----
+## 🚀 Quick Start
 
-## 🏗️ **Architecture Overview**
+### Prerequisites
 
-### **Technology Stack**
+- **Node.js** 16.0+ and **yarn**
+- **Python** 3.8+ and **pip**
+- **MongoDB** 4.4+ (local or cloud instance)
+- **Modern web browser** with ES6+ support
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Frontend** | React 18 + Tailwind CSS | Modern, responsive UI with real-time updates |
-| **Backend** | FastAPI + Python 3.8+ | High-performance async API with auto-documentation |
-| **Database** | MongoDB 4.4+ | Flexible document storage for agents and conversations |
-| **AI Integration** | Gemini 2.0 Flash | Advanced conversation generation |
-| **Authentication** | JWT + OAuth | Secure user management |
-| **Deployment** | Docker + Kubernetes | Scalable containerized deployment |
+### Installation
 
-### **System Architecture**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React Frontend │◄──►│  FastAPI Backend│◄──►│   MongoDB DB    │
-│                 │    │                 │    │                 │
-│ • Observatory   │    │ • Agent API     │    │ • Users         │
-│ • Agent Library │    │ • Conversation  │    │ • Agents        │
-│ • Real-time UI  │    │ • Auth System   │    │ • Conversations │
-│ • Search/Filter │    │ • Gemini API    │    │ • Scenarios     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-        │                       │                       │
-        └───────────────────────┼───────────────────────┘
-                                │
-                    ┌─────────────────┐
-                    │   Gemini 2.0    │
-                    │   Flash API     │
-                    └─────────────────┘
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/ai-agent-simulation.git
+   cd ai-agent-simulation
+   ```
+
+2. **Set up the backend**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. **Set up the frontend**
+   ```bash
+   cd frontend
+   yarn install
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+4. **Start the services**
+   ```bash
+   # Terminal 1: Start MongoDB (if local)
+   mongod
+
+   # Terminal 2: Start backend
+   cd backend
+   uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+
+   # Terminal 3: Start frontend
+   cd frontend
+   yarn start
+   ```
+
+5. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8001
+   - API Documentation: http://localhost:8001/docs
 
 ---
 
