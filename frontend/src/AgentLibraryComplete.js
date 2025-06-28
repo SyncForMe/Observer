@@ -2292,17 +2292,225 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 )}
               </div>
             ) : (
-              // Default Empty State
-              <div className="text-center py-20">
-                <div className="text-6xl mb-6">🏛️</div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Agent Library</h3>
-                <p className="text-gray-600 max-w-lg mx-auto mb-6">
-                  Select a team from <strong>Quick Team Builders</strong> to see pre-configured agent teams, 
-                  or choose a sector from <strong>Sectors</strong> to browse agents by industry.
-                </p>
-                <div className="space-y-2 text-sm text-gray-500">
-                  <p>🔬 Quick Team Builders: Pre-made teams for instant setup</p>
-                  <p>🏭 Sectors: Browse agents by healthcare, finance, and technology</p>
+              // Modern Dashboard Landing
+              <div className="space-y-8">
+                {/* Hero Welcome Section */}
+                <div className="text-center">
+                  <div className="inline-flex items-center space-x-3 mb-4">
+                    <div className="text-5xl">🌟</div>
+                    <div>
+                      <h3 className="text-3xl font-bold text-gray-800">
+                        Discover Your{' '}
+                        <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                          Perfect Team
+                        </span>
+                      </h3>
+                      <p className="text-gray-600 mt-1">
+                        Explore {getAllAgents().length}+ expert agents across all industries
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interactive Navigation Cards */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  {/* Quick Teams Card */}
+                  <div 
+                    onClick={() => setShowQuickTeamsOnly(true)}
+                    className="group cursor-pointer bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 rounded-2xl p-6 hover:border-blue-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                  >
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        ⚡
+                      </div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-700 transition-colors">
+                        Quick Teams
+                      </h4>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Ready-to-use expert teams for instant deployment
+                      </p>
+                      
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Available Teams:</span>
+                          <span className="font-semibold text-blue-600">{Object.keys(quickTeams).length}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full w-full"></div>
+                        </div>
+                      </div>
+                      
+                      <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all">
+                        Explore Teams →
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Sectors Card */}
+                  <div className="group cursor-pointer bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 hover:border-green-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        🏢
+                      </div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-green-700 transition-colors">
+                        By Sector
+                      </h4>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Browse agents organized by industry expertise
+                      </p>
+                      
+                      <div className="space-y-2 mb-4">
+                        {getSectorStats().slice(0, 3).map((sector) => (
+                          <div key={sector.key} className="flex justify-between text-sm">
+                            <span className="text-gray-600 flex items-center">
+                              <span className="mr-1">{sector.icon}</span>
+                              {sector.name}
+                            </span>
+                            <span className="font-semibold text-green-600">{sector.count}</span>
+                          </div>
+                        ))}
+                        {getSectorStats().length > 3 && (
+                          <div className="text-xs text-gray-500">
+                            + {getSectorStats().length - 3} more sectors
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-1 mb-4">
+                        {getSectorStats().slice(0, 3).map((sector, index) => (
+                          <button
+                            key={sector.key}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSector(sector.key);
+                            }}
+                            className="bg-green-100 hover:bg-green-200 text-green-700 text-xs py-1 px-2 rounded transition-colors"
+                          >
+                            {sector.icon}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Featured Agents Card */}
+                  <div className="group cursor-pointer bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200 rounded-2xl p-6 hover:border-orange-400 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center text-white text-2xl mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        🌟
+                      </div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-orange-700 transition-colors">
+                        Featured Agents
+                      </h4>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Trending and popular agents this week
+                      </p>
+                      
+                      <div className="space-y-3 mb-4">
+                        {getFeaturedAgents().map((agent, index) => (
+                          <div 
+                            key={agent.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedAgentDetails(agent);
+                            }}
+                            className="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/50 transition-colors cursor-pointer"
+                          >
+                            <img
+                              src={agent.avatar}
+                              alt={agent.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="16" cy="16" r="16" fill="#E5E7EB"/>
+                                    <circle cx="16" cy="12" r="5" fill="#9CA3AF"/>
+                                    <path d="M5 28c0-6.08 4.92-11 11-11s11 4.92 11 11" fill="#9CA3AF"/>
+                                  </svg>
+                                `)}`;
+                              }}
+                            />
+                            <div className="flex-1 text-left">
+                              <div className="text-sm font-medium text-gray-800 truncate">{agent.name}</div>
+                              <div className="text-xs text-gray-500 truncate">{agent.title}</div>
+                            </div>
+                            <div className="text-xs text-orange-600">#{index + 1}</div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <button className="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-2 px-4 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all">
+                        View All →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Start Guide */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
+                  <div className="text-center mb-6">
+                    <h4 className="text-xl font-bold text-gray-800 mb-2">💡 Get Started in 3 Simple Steps</h4>
+                    <p className="text-gray-600">Build your perfect AI team in minutes</p>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+                        1
+                      </div>
+                      <h5 className="font-semibold text-gray-800 mb-2">🔍 Choose</h5>
+                      <p className="text-sm text-gray-600">
+                        Browse sectors or quick teams to find the perfect agents for your needs
+                      </p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+                        2
+                      </div>
+                      <h5 className="font-semibold text-gray-800 mb-2">👁️ Preview</h5>
+                      <p className="text-sm text-gray-600">
+                        Review agent profiles, expertise, and background before selection
+                      </p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-orange-500 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+                        3
+                      </div>
+                      <h5 className="font-semibold text-gray-800 mb-2">🚀 Add to Simulation</h5>
+                      <p className="text-sm text-gray-600">
+                        Add selected agents to your simulation and start collaborating
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Statistics */}
+                <div className="bg-white/50 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                  <h4 className="text-lg font-bold text-gray-800 mb-4 text-center">📊 Library Statistics</h4>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{getAllAgents().length}</div>
+                      <div className="text-sm text-gray-600">Total Agents</div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{Object.keys(sectors).length}</div>
+                      <div className="text-sm text-gray-600">Industries</div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{getUniqueArchetypes().length}</div>
+                      <div className="text-sm text-gray-600">Archetypes</div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">{Object.keys(quickTeams).length}</div>
+                      <div className="text-sm text-gray-600">Quick Teams</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
