@@ -777,7 +777,7 @@ const AppContent = () => {
                           <span>Multi-language Support</span>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Feature 3 - Restored Animations */}
                     <motion.div 
