@@ -1487,6 +1487,39 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     setLoadingSavedAgents(false);
   };
 
+  // Modern search and filter functions
+  const getAllAgents = () => {
+    const allAgents = [];
+    Object.values(sectors).forEach(sector => {
+      Object.values(sector.categories).forEach(category => {
+        allAgents.push(...category.agents);
+      });
+    });
+    return allAgents;
+  };
+
+  const getFilteredAgents = () => {
+    const allAgents = getAllAgents();
+    return allAgents.filter(agent => {
+      const matchesSearch = searchQuery === '' || 
+        agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        agent.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        agent.expertise.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        agent.archetype.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesArchetype = selectedArchetype === 'all' || 
+        agent.archetype === selectedArchetype;
+      
+      return matchesSearch && matchesArchetype;
+    });
+  };
+
+  const getUniqueArchetypes = () => {
+    const allAgents = getAllAgents();
+    const archetypes = [...new Set(allAgents.map(agent => agent.archetype))];
+    return archetypes.sort();
+  };
+
   const handleAddAgent = async (agent) => {
     if (!onAddAgent) return;
     
