@@ -654,8 +654,14 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     }
 
     if (isRecording) {
-      // Stop recording
+      // Stop recording immediately when clicked again
+      console.log('🛑 User requested to stop recording');
       setIsRecording(false);
+      // The actual stopping will be handled by the mediaRecorder reference
+      if (window.currentMediaRecorder && window.currentMediaRecorder.state === 'recording') {
+        console.log('⏹️ Stopping MediaRecorder...');
+        window.currentMediaRecorder.stop();
+      }
       return;
     }
 
@@ -699,6 +705,10 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       console.log('🎵 Using MIME type:', mimeType);
       
       const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      
+      // Store reference for stopping from button click
+      window.currentMediaRecorder = mediaRecorder;
+      
       const audioChunks = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -711,9 +721,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       mediaRecorder.onstop = async () => {
         console.log('🛑 Recording stopped, processing audio...');
         
+        // Clear the reference
+        window.currentMediaRecorder = null;
+        
         if (audioChunks.length === 0) {
           console.error('❌ No audio data recorded');
           alert('No audio was recorded. Please try again.');
+          setIsRecording(false);
           return;
         }
         
@@ -724,11 +738,9 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         if (audioBlob.size === 0) {
           console.error('❌ Audio blob is empty');
           alert('No audio was recorded. Please check your microphone and try again.');
+          setIsRecording(false);
           return;
         }
-        
-        // Create a simple test first - just log what we would send
-        console.log('🧪 Testing with minimal audio data...');
         
         const formData = new FormData();
         formData.append('audio', audioBlob, 'scenario.webm');
@@ -808,23 +820,26 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       mediaRecorder.onerror = (event) => {
         console.error('❌ MediaRecorder error:', event.error);
         alert('Recording error occurred. Please try again.');
+        window.currentMediaRecorder = null;
         setIsRecording(false);
       };
 
       console.log('🎬 Starting MediaRecorder...');
+      console.log('💡 Click the microphone button again to stop recording');
       mediaRecorder.start(1000); // Collect data every second
 
-      // Auto-stop after 10 seconds for testing
+      // Backup auto-stop after 60 seconds (only as safety fallback)
       setTimeout(() => {
         if (mediaRecorder.state === 'recording') {
-          console.log('⏰ Auto-stopping recording after 10 seconds for testing');
+          console.log('⏰ Safety auto-stop after 60 seconds');
           mediaRecorder.stop();
         }
-      }, 10000);
+      }, 60000);
 
     } catch (error) {
       console.error('❌ Failed to start recording:', error);
       setIsRecording(false);
+      window.currentMediaRecorder = null;
       
       if (error.name === 'NotAllowedError') {
         alert('Microphone access denied. Please allow microphone access and try again.');
