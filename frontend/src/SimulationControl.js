@@ -52,7 +52,12 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
       onClose();
     } catch (error) {
       console.error('Error saving agent:', error);
-      alert('Failed to save agent. Please try again.');
+      if (!confirm('Failed to save agent. Would you like to try again?')) {
+        setSaving(false);
+        return;
+      }
+      // Retry the operation
+      await handleSave();
     }
     setSaving(false);
   };
