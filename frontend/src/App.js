@@ -6,6 +6,7 @@ import './App.css';
 import HomePage from './HomePage';
 import AgentLibrary from './AgentLibraryComplete';
 import ConversationViewer from './ConversationViewer';
+import { AuthProvider, useAuth } from './AuthContext';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
