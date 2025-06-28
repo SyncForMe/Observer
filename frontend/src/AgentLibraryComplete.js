@@ -1843,8 +1843,8 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 {getFilteredAgents().length === 0 ? (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">🔍</div>
-                    <h3 className="text-xl font-bold text-gray-600 mb-2">No agents found</h3>
-                    <p className="text-gray-500">Try adjusting your search terms or filters</p>
+                    <h3 className="text-xl font-bold text-white mb-2">No agents found</h3>
+                    <p className="text-gray-300">Try adjusting your search terms or filters</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
