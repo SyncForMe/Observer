@@ -1733,24 +1733,37 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               </button>
             </div>
             
-            {/* My Agents list - conditionally rendered */}
+            {/* My Agents list - modern design */}
             {isMyAgentsExpanded && (
-              <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
+              <div className="space-y-3 mb-8 max-h-64 overflow-y-auto">
                 {loadingSavedAgents ? (
-                  <div className="text-center py-4 text-gray-500">Loading your agents...</div>
+                  <div className="text-center py-6">
+                    <div className="animate-spin w-6 h-6 border-2 border-white/30 border-t-white rounded-full mx-auto mb-2"></div>
+                    <span className="text-white/80 text-sm">Loading your agents...</span>
+                  </div>
                 ) : savedAgents.length === 0 ? (
-                  <div className="text-center py-4 text-gray-500 text-sm">
-                    No saved agents yet.<br/>
-                    Create and save agents to see them here.
+                  <div className="text-center py-6 bg-white/5 rounded-xl border border-white/10">
+                    <div className="text-3xl mb-2">👤</div>
+                    <p className="text-white/60 text-sm">
+                      No saved agents yet.<br/>
+                      <span className="text-white/40">Create and save agents to see them here.</span>
+                    </p>
                   </div>
                 ) : (
                   savedAgents.map((agent) => (
                     <div
                       key={agent.id}
-                      className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100 border cursor-pointer"
+                      className="group w-full text-left p-4 rounded-xl transition-all duration-300 text-white hover:bg-white/10 border border-white/10 hover:border-purple-400/50 cursor-pointer backdrop-blur-sm"
                     >
-                      <div className="font-medium">{agent.name}</div>
-                      <div className="text-xs text-gray-500 capitalize">{agent.archetype}</div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-blue-400 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          {agent.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate group-hover:text-purple-300 transition-colors">{agent.name}</div>
+                          <div className="text-xs text-white/60 capitalize truncate">{agent.archetype}</div>
+                        </div>
+                      </div>
                     </div>
                   ))
                 )}
