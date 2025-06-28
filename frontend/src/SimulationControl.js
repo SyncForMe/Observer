@@ -1032,7 +1032,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
 
         {/* Set Scenario */}
-        <div className="mb-6">
+        <div className="mt-3 mb-3">
           <div className="flex justify-between items-center mb-2">
             <button
               onClick={() => setShowSetScenario(!showSetScenario)}
