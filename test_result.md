@@ -324,8 +324,8 @@ The application has evolved from having compilation errors and duplicate compone
 backend:
   - task: "Observer Message Functionality"
     implemented: true
-    working: true
-    file: "/app/frontend/src/SimulationControl.js"
+    working: false
+    file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -342,6 +342,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Conducted UI testing of the Observer Message functionality. Successfully verified that: 1) The Observer button in the control panel correctly toggles the observer chat interface, 2) The observer input field and send button work properly, 3) Observer messages can be sent while the simulation is running, 4) After sending an observer message, the simulation can be paused and resumed without issues, 5) The observer message appears in the conversation with the correct styling. The UI implementation matches the code review findings, with the observer chat section being properly implemented with appropriate styling and functionality. The only minor issue is that the observer messages don't consistently show with the 'Observer (You)' label in the UI, but they do appear in the conversation flow. Overall, the Observer Message functionality works as expected from a UI perspective."
+        -working: false
+        -agent: "testing"
+        -comment: "Created dedicated test scripts to investigate the agent database and observer message issues. The tests revealed several critical issues: 1) The observer message endpoint is not properly filtering agents by user_id - it's getting all agents from the database instead of just the current user's agents, which is why so many agents are responding to observer messages (18 agents instead of 6 for the admin user), 2) The observer message endpoint does not require authentication - this is a security issue that allows anyone to send observer messages, 3) The get_observer_messages endpoint returns a 500 Internal Server Error, 4) The ConversationRound created for observer messages doesn't have a user_id (user_id is an empty string). These issues need to be fixed to ensure proper user data isolation and security."
 
   - task: "Agent Database Analysis"
     implemented: true
