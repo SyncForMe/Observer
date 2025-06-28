@@ -1824,26 +1824,32 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               </div>
             )}
             
-            {/* SECTORS header with expandable button */}
+            {/* SECTORS header with modern styling */}
             <div 
-              className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+              className="flex justify-between items-center cursor-pointer hover:bg-white/10 p-3 rounded-xl transition-all mb-6 group"
               onClick={() => setIsSectorsExpanded(!isSectorsExpanded)}
             >
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">SECTORS</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <span>🏢</span>
+                <span>SECTORS</span>
+                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                  {Object.keys(sectors).length}
+                </span>
+              </h3>
               <button
                 type="button"
-                className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                className="text-white/60 hover:text-white transition-all duration-200 group-hover:scale-110"
                 style={{ transform: isSectorsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
             </div>
             
-            {/* Sectors list - conditionally rendered */}
+            {/* Sectors list - modern design */}
             {isSectorsExpanded && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {Object.entries(sectors).map(([key, sector]) => (
                   <button
                     key={key}
@@ -1852,17 +1858,19 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                       setSelectedCategory(null);
                       setSelectedQuickTeam(null);
                     }}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    className={`w-full text-left p-4 rounded-xl transition-all duration-300 group ${
                       selectedSector === key
-                        ? 'bg-purple-100 text-purple-800 border-l-4 border-purple-600'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-gradient-to-r from-green-500/20 to-blue-500/20 text-white border border-green-400/50 shadow-lg'
+                        : 'text-white hover:bg-white/10 border border-white/10 hover:border-green-400/50'
                     }`}
                   >
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{sector.icon}</span>
-                      <div>
-                        <div className="font-medium text-sm">{sector.name}</div>
-                        <div className="text-xs text-gray-500">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-400 rounded-xl flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform">
+                        {sector.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate group-hover:text-green-300 transition-colors">{sector.name}</div>
+                        <div className="text-xs text-white/60 truncate">
                           {Object.keys(sector.categories).length} categories
                         </div>
                       </div>
