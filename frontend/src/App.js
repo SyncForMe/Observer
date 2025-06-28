@@ -640,6 +640,147 @@ const AppContent = () => {
                 </div>
               </section>
 
+              {/* 4. OPTIMIZED DEMO SECTION */}
+              <section className="py-20 px-4 bg-gradient-to-br from-gray-900/30 to-gray-800/30">
+                <div className="max-w-7xl mx-auto">
+                  <div className="text-center mb-16">
+                    <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                      See It In{' '}
+                      <span className="bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                        Action
+                      </span>
+                    </h2>
+                    <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                      Watch a live demonstration of AI agents collaborating on a real business challenge.
+                    </p>
+                  </div>
+                  
+                  <div className="grid lg:grid-cols-2 gap-12 items-center">
+                    {/* Live Demo Preview - Static for Performance */}
+                    <div className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-white">💬 Live Simulation</h3>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <span className="text-green-400 text-sm">Active</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4 h-80 overflow-y-auto">
+                        <div className="bg-blue-600/20 p-4 rounded-lg border-l-4 border-blue-400">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">AI</span>
+                            </div>
+                            <span className="text-blue-300 font-medium">Strategy Agent</span>
+                          </div>
+                          <p className="text-white text-sm leading-relaxed">
+                            "Based on market analysis, I recommend focusing on user acquisition through targeted social media campaigns..."
+                          </p>
+                        </div>
+                        
+                        <div className="bg-green-600/20 p-4 rounded-lg border-l-4 border-green-400">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">AI</span>
+                            </div>
+                            <span className="text-green-300 font-medium">Finance Agent</span>
+                          </div>
+                          <p className="text-white text-sm leading-relaxed">
+                            "The budget allocation looks solid. I suggest reserving 30% for testing and optimization to maximize ROI..."
+                          </p>
+                        </div>
+                        
+                        <div className="bg-purple-600/20 p-4 rounded-lg border-l-4 border-purple-400">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">AI</span>
+                            </div>
+                            <span className="text-purple-300 font-medium">Risk Agent</span>
+                          </div>
+                          <p className="text-white text-sm leading-relaxed">
+                            "I've identified potential risks in the timeline. We should consider a phased rollout approach..."
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Real-time Analytics - Static Bars for Performance */}
+                    <div className="bg-gray-900/60 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
+                      <h3 className="text-lg font-semibold text-white mb-6">📊 Real-time Analytics</h3>
+                      
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-300 text-sm">Conversation Quality</span>
+                            <span className="text-green-400 text-sm font-medium">94%</span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "94%" }}
+                              transition={{ delay: 0.5, duration: 1 }}
+                              viewport={{ once: true }}
+                              className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-300 text-sm">Solution Consensus</span>
+                            <span className="text-blue-400 text-sm font-medium">87%</span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "87%" }}
+                              transition={{ delay: 0.7, duration: 1 }}
+                              viewport={{ once: true }}
+                              className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-300 text-sm">Action Items Generated</span>
+                            <span className="text-purple-400 text-sm font-medium">12</span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "80%" }}
+                              transition={{ delay: 0.9, duration: 1 }}
+                              viewport={{ once: true }}
+                              className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 border-t border-gray-700">
+                          <h4 className="text-white font-medium mb-3">Key Insights Detected</h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-2 text-sm text-gray-300">
+                              <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                              <span>Market opportunity identified</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-300">
+                              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                              <span>Budget optimization suggested</span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-300">
+                              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                              <span>Risk mitigation planned</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
               {/* 2. SOCIAL PROOF STRIP - Simplified */}
               <section className="py-12 border-y border-white/10">
                 <div className="max-w-7xl mx-auto px-4">
