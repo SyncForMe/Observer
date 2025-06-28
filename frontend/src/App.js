@@ -11,6 +11,24 @@ import FileCenter from './FileCenter';
 import AccountModals from './AccountModals';
 import { AuthProvider, useAuth } from './AuthContext';
 
+// Simple FileCenter Component
+const FileCenter = () => {
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-white mb-4">File Center</h2>
+        <p className="text-white/80">Manage your files, documents, and generated content</p>
+      </div>
+      
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 text-center">
+        <div className="text-6xl mb-4">📁</div>
+        <h3 className="text-xl font-semibold text-white mb-2">No Files Yet</h3>
+        <p className="text-white/70">Files and documents will appear here after agent conversations and simulations</p>
+      </div>
+    </div>
+  );
+};
+
 // Simple DocumentCenter Component
 const DocumentCenter = () => {
   return (
