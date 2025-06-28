@@ -1811,7 +1811,16 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   type="text"
                   placeholder="Find agents by name, skill, role, or expertise..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    // Auto-clear selections when user starts typing to show search results
+                    if (e.target.value.trim()) {
+                      setSelectedSector(null);
+                      setSelectedCategory(null);
+                      setSelectedQuickTeam(null);
+                      setShowQuickTeamsOnly(false);
+                    }
+                  }}
                   className="w-full pl-10 pr-4 py-4 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
                 />
               </div>
