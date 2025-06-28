@@ -702,14 +702,16 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     
     setLoading(true);
     try {
-      await axios.post(`${API}/conversation/generate`, {}, {
+      const response = await axios.post(`${API}/conversation/generate`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('✅ Conversation generated');
+      console.log('✅ Conversation generated:', response.data);
       
-      // Only fetch new conversations instead of all conversations
-      await fetchNewConversations();
+      // Use staggered display for regular conversations too
+      if (response.data) {
+        await displayMessagesWithDelay(response.data);
+      }
       
     } catch (error) {
       console.error('Failed to generate conversation:', error);
