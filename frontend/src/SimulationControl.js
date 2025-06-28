@@ -57,7 +57,7 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
         return;
       }
       // Retry the operation
-      await handleSave();
+      await handleSubmit(e);
     }
     setSaving(false);
   };
