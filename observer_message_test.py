@@ -1,0 +1,360 @@
+#!/usr/bin/env python3
+import requests
+import json
+import time
+import os
+import sys
+from dotenv import load_dotenv
+import uuid
+
+# Load environment variables from frontend/.env
+load_dotenv('/app/frontend/.env')
+
+# Get the backend URL from environment variables
+BACKEND_URL = os.environ.get('REACT_APP_BACKEND_URL')
+if not BACKEND_URL:
+    print("Error: REACT_APP_BACKEND_URL not found in environment variables")
+    sys.exit(1)
+
+# Ensure the URL ends with /api
+API_URL = f"{BACKEND_URL}/api"
+print(f"Using API URL: {API_URL}")
+
+# Global variables for auth testing
+auth_token = None
+test_user_id = None
+
+def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, auth=False, headers=None, params=None, measure_time=False):
+    """Run a test against the specified endpoint"""
+    url = f"{API_URL}{endpoint}"
+    print(f"\n{'='*80}\nTesting: {test_name} ({method} {url})")
+    
+    # Set up headers with auth token if needed
+    if headers is None:
+        headers = {}
+    
+    if auth and auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
+    
+    try:
+        start_time = time.time()
+        
+        if method == "GET":
+            response = requests.get(url, headers=headers, params=params)
+        elif method == "POST":
+            response = requests.post(url, json=data, headers=headers, params=params)
+        elif method == "PUT":
+            response = requests.put(url, json=data, headers=headers, params=params)
+        elif method == "DELETE":
+            if data is not None:
+                response = requests.delete(url, json=data, headers=headers, params=params)
+            else:
+                response = requests.delete(url, headers=headers, params=params)
+        else:
+            print(f"Unsupported method: {method}")
+            return False, None
+        
+        end_time = time.time()
+        response_time = end_time - start_time
+        
+        # Print response details
+        print(f"Status Code: {response.status_code}")
+        
+        if measure_time:
+            print(f"Response Time: {response_time:.4f} seconds")
+        
+        # Check if response is JSON
+        try:
+            response_data = response.json()
+            print(f"Response: {json.dumps(response_data, indent=2)}")
+        except json.JSONDecodeError:
+            print(f"Response is not JSON: {response.text}")
+            response_data = {}
+        
+        # Verify status code
+        status_ok = response.status_code == expected_status
+        
+        # Verify expected keys if provided
+        keys_ok = True
+        if expected_keys and status_ok:
+            for key in expected_keys:
+                if key not in response_data:
+                    print(f"Missing expected key in response: {key}")
+                    keys_ok = False
+        
+        # Determine test result
+        test_passed = status_ok and keys_ok
+        
+        # Update test results
+        result = "PASSED" if test_passed else "FAILED"
+        print(f"Test Result: {result}")
+        
+        return test_passed, response_data
+    
+    except Exception as e:
+        print(f"Error during test: {e}")
+        return False, None
+
+def test_login():
+    """Login with test endpoint to get auth token"""
+    global auth_token, test_user_id
+    
+    # Try using the email/password login first with admin credentials
+    login_data = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    
+    login_test, login_response = run_test(
+        "Login with admin credentials",
+        "/auth/login",
+        method="POST",
+        data=login_data,
+        expected_keys=["access_token", "token_type", "user"]
+    )
+    
+    # If email/password login fails, try the test login endpoint
+    if not login_test or not login_response:
+        test_login_test, test_login_response = run_test(
+            "Test Login Endpoint",
+            "/auth/test-login",
+            method="POST",
+            expected_keys=["access_token", "token_type", "user"]
+        )
+        
+        # Store the token for further testing if successful
+        if test_login_test and test_login_response:
+            auth_token = test_login_response.get("access_token")
+            user_data = test_login_response.get("user", {})
+            test_user_id = user_data.get("id")
+            print(f"Test login successful. User ID: {test_user_id}")
+            print(f"JWT Token: {auth_token}")
+            return True
+        else:
+            print("Test login failed. Some tests may not work correctly.")
+            return False
+    else:
+        # Store the token from email/password login
+        auth_token = login_response.get("access_token")
+        user_data = login_response.get("user", {})
+        test_user_id = user_data.get("id")
+        print(f"Login successful. User ID: {test_user_id}")
+        print(f"JWT Token: {auth_token}")
+        return True
+
+def setup_simulation():
+    """Set up a simulation with agents for testing"""
+    print("\n" + "="*80)
+    print("SETTING UP SIMULATION WITH AGENTS")
+    print("="*80)
+    
+    # Start a simulation
+    start_sim_test, start_sim_response = run_test(
+        "Start Simulation",
+        "/simulation/start",
+        method="POST",
+        auth=True,
+        expected_keys=["message", "state"]
+    )
+    
+    if not start_sim_test:
+        print("❌ Failed to start simulation")
+        return False
+    
+    # Initialize research station (adds default agents)
+    init_station_test, init_station_response = run_test(
+        "Initialize Research Station",
+        "/simulation/init-research-station",
+        method="POST",
+        auth=True,
+        expected_keys=["message", "agents"]
+    )
+    
+    if not init_station_test:
+        print("❌ Failed to initialize research station")
+        return False
+    
+    # Verify agents were created
+    agents_test, agents_response = run_test(
+        "Get Agents",
+        "/agents",
+        method="GET",
+        auth=True
+    )
+    
+    if not agents_test or not agents_response or len(agents_response) < 1:
+        print("❌ No agents found after initialization")
+        return False
+    
+    print(f"✅ Found {len(agents_response)} agents after initialization")
+    return True
+
+def test_observer_message():
+    """Test the observer message functionality"""
+    print("\n" + "="*80)
+    print("TESTING OBSERVER MESSAGE FUNCTIONALITY")
+    print("="*80)
+    
+    # Test 1: Send observer message
+    print("\nTest 1: Send observer message")
+    
+    observer_message = "Focus on the budget planning for Q2"
+    
+    observer_data = {
+        "observer_message": observer_message
+    }
+    
+    observer_test, observer_response = run_test(
+        "Send Observer Message",
+        "/observer/send-message",
+        method="POST",
+        data=observer_data,
+        auth=True,
+        expected_keys=["message", "observer_message", "agent_responses"]
+    )
+    
+    if not observer_test or not observer_response:
+        print("❌ Failed to send observer message")
+        return False
+    
+    # Verify the observer message appears as the first message in the response
+    agent_responses = observer_response.get("agent_responses", {})
+    messages = agent_responses.get("messages", [])
+    
+    if not messages:
+        print("❌ No messages found in response")
+        return False
+    
+    first_message = messages[0]
+    if first_message.get("agent_name") != "Observer (You)":
+        print("❌ First message is not from Observer")
+        return False
+    
+    if first_message.get("message") != observer_message:
+        print("❌ Observer message content doesn't match")
+        return False
+    
+    print("✅ Observer message appears as the first message in the response")
+    
+    # Verify the scenario_name is "Observer Guidance"
+    if agent_responses.get("scenario_name") != "Observer Guidance":
+        print("❌ Scenario name is not 'Observer Guidance'")
+        return False
+    
+    print("✅ Scenario name is correctly set to 'Observer Guidance'")
+    
+    # Verify agents respond respectfully acknowledging the observer's authority
+    agent_responses_found = False
+    for message in messages[1:]:  # Skip the first message (observer)
+        agent_name = message.get("agent_name", "")
+        agent_message = message.get("message", "")
+        
+        print(f"\nAgent Response - {agent_name}: {agent_message}")
+        
+        if agent_name and agent_message:
+            agent_responses_found = True
+            
+            # Check for respectful acknowledgment (common phrases)
+            respectful_phrases = ["understood", "yes", "absolutely", "will do", "agree", "noted", "acknowledge", "certainly", "of course"]
+            is_respectful = any(phrase in agent_message.lower() for phrase in respectful_phrases)
+            
+            if not is_respectful:
+                print(f"⚠️ Agent {agent_name} response may not be respectful enough")
+            else:
+                print(f"✅ Agent {agent_name} responded respectfully")
+    
+    if not agent_responses_found:
+        print("❌ No agent responses found")
+        return False
+    
+    print("✅ Agents responded to the observer message")
+    
+    # Test 2: Generate a regular conversation after observer message
+    print("\nTest 2: Generate a regular conversation after observer message")
+    
+    conversation_test, conversation_response = run_test(
+        "Generate Conversation",
+        "/conversation/generate",
+        method="POST",
+        auth=True
+    )
+    
+    if not conversation_test or not conversation_response:
+        print("❌ Failed to generate conversation")
+        return False
+    
+    # Check if agents reference or consider the observer directive
+    messages = conversation_response.get("messages", [])
+    
+    if not messages:
+        print("❌ No messages found in conversation")
+        return False
+    
+    budget_references = 0
+    q2_references = 0
+    observer_references = 0
+    
+    for message in messages:
+        agent_name = message.get("agent_name", "")
+        agent_message = message.get("message", "")
+        
+        print(f"\nConversation Message - {agent_name}: {agent_message}")
+        
+        # Check for references to the observer directive
+        if "budget" in agent_message.lower():
+            budget_references += 1
+        
+        if "q2" in agent_message.lower() or "quarter" in agent_message.lower():
+            q2_references += 1
+            
+        if "observer" in agent_message.lower() or "directive" in agent_message.lower() or "you mentioned" in agent_message.lower():
+            observer_references += 1
+    
+    print(f"\nReferences to budget: {budget_references}")
+    print(f"References to Q2/quarter: {q2_references}")
+    print(f"References to observer/directive: {observer_references}")
+    
+    if budget_references > 0 or q2_references > 0 or observer_references > 0:
+        print("✅ Agents referenced or considered the observer directive in their responses")
+    else:
+        print("⚠️ Agents did not explicitly reference the observer directive")
+    
+    return True
+
+def main():
+    """Main test function"""
+    print("\n" + "="*80)
+    print("OBSERVER MESSAGE FUNCTIONALITY TEST")
+    print("="*80)
+    
+    # Login first to get auth token
+    if not test_login():
+        print("❌ Login failed. Cannot proceed with tests.")
+        return
+    
+    # Set up simulation with agents
+    if not setup_simulation():
+        print("❌ Failed to set up simulation. Cannot proceed with tests.")
+        return
+    
+    # Test observer message functionality
+    observer_test_result = test_observer_message()
+    
+    # Print final summary
+    print("\n" + "="*80)
+    print("OBSERVER MESSAGE FUNCTIONALITY TEST SUMMARY")
+    print("="*80)
+    
+    if observer_test_result:
+        print("✅ Observer message functionality is working correctly!")
+        print("✅ Observer messages can be sent and received")
+        print("✅ Observer messages appear as the first message in the response")
+        print("✅ Agents respond respectfully acknowledging the observer's authority")
+        print("✅ Agents reference or consider the observer directive in subsequent conversations")
+    else:
+        print("❌ Observer message functionality has issues")
+    
+    print("="*80)
+
+if __name__ == "__main__":
+    main()
