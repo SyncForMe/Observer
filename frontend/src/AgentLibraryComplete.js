@@ -1793,9 +1793,9 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               </button>
             </div>
             
-            {/* Team Builders list - conditionally rendered */}
+            {/* Team Builders list - modern design */}
             {isQuickTeamBuildersExpanded && (
-              <div className="space-y-2 mb-6">
+              <div className="space-y-3 mb-8">
                 {Object.entries(quickTeams).map(([key, team]) => (
                   <button
                     key={key}
@@ -1804,17 +1804,19 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                       setSelectedSector(null);
                       setSelectedCategory(null);
                     }}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    className={`w-full text-left p-4 rounded-xl transition-all duration-300 group ${
                       selectedQuickTeam === key
-                        ? 'bg-purple-100 text-purple-800 border-l-4 border-purple-600'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border border-purple-400/50 shadow-lg'
+                        : 'text-white hover:bg-white/10 border border-white/10 hover:border-blue-400/50'
                     }`}
                   >
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{team.icon}</span>
-                      <div>
-                        <div className="font-medium text-sm">{team.name}</div>
-                        <div className="text-xs text-gray-500">{team.description}</div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-xl flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform">
+                        {team.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate group-hover:text-blue-300 transition-colors">{team.name}</div>
+                        <div className="text-xs text-white/60 truncate">{team.description}</div>
                       </div>
                     </div>
                   </button>
