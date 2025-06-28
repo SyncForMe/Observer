@@ -2072,15 +2072,8 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
             ) : selectedSector && !selectedCategory ? (
               // Sector Categories View  
               <div>
-                {/* Back Button */}
-                <div className="flex items-center mb-6">
-                  <button
-                    onClick={() => setSelectedSector(null)}
-                    className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
-                  >
-                    ← Back to Sectors
-                  </button>
-                  <h3 className="text-xl font-bold text-gray-800">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white mb-4">
                     {sectors[selectedSector].icon} {sectors[selectedSector].name}
                   </h3>
                 </div>
