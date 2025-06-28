@@ -1086,6 +1086,8 @@ const AppContent = () => {
         }}
       />
 
+      {console.log('🔍 AppContent: Finished rendering AppContent')}
+
       {/* Analytics Modal */}
       {showAnalyticsModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
