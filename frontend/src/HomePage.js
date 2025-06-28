@@ -273,9 +273,16 @@ const HomePage = ({ onAuthenticated }) => {
                 onClick={async () => {
                   setLoading(true);
                   try {
-                    const response = await axios.post(`${API}/auth/test-login`);
-                    console.log('✅ TEST LOGIN SUCCESS:', response.data);
-                    onAuthenticated(response.data.access_token, response.data.user);
+                    console.log('🔍 TEST LOGIN DEBUG: Attempting guest login');
+                    const result = await testLogin();
+                    
+                    if (result.success) {
+                      console.log('✅ TEST LOGIN SUCCESS');
+                      // AuthContext will handle the state update automatically
+                    } else {
+                      console.error('❌ TEST LOGIN ERROR:', result.error);
+                      setError(result.error || 'Guest login failed. Please try again.');
+                    }
                   } catch (error) {
                     console.error('❌ TEST LOGIN ERROR:', error);
                     setError('Guest login failed. Please try again.');
