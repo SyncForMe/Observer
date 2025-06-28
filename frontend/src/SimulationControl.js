@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { useAuth } from './App';
+import { useAuth } from './AuthContext';
 import ScenarioCreator from './ScenarioCreator';
 import WeeklySummary from './WeeklySummary';
 
