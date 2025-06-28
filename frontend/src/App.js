@@ -779,8 +779,15 @@ const AppContent = () => {
                       </div>
                     </div>
 
-                    {/* Feature 3 - Optimized */}
-                    <div className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-green-400/50 transition-all duration-300 hover:-translate-y-2">
+                    {/* Feature 3 - Restored Animations */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      viewport={{ once: true }}
+                      whileHover={{ y: -10 }}
+                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-green-400/50 transition-all duration-500"
+                    >
                       <div className="absolute top-4 right-4 w-12 h-12 bg-green-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <span className="text-2xl">📊</span>
                       </div>
