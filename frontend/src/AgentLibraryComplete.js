@@ -2202,24 +2202,16 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 )}
               </div>
             ) : (
-              // Simple search box in main card
-              <div className="p-8">
-                <div className="relative max-w-2xl mx-auto">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Find agents by name, skill, role, or expertise..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-4 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                  />
+              // Default landing - no content needed, search is always at top
+              <div className="flex items-center justify-center h-full text-center">
+                <div className="text-white/60">
+                  <div className="text-4xl mb-4">🤖</div>
+                  <p className="text-lg">Use the search bar above or browse the sidebar to find agents</p>
                 </div>
               </div>
             )}
+            </div>
+          </div>
           </div>
         </div>
       </div>
