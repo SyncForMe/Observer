@@ -125,37 +125,36 @@ ai-agent-simulation/
 └── README.md            # This file
 ```
 
-## 🔧 Configuration
+## 🐛 Troubleshooting
 
-### Environment Variables
+### Common Issues
 
-#### Backend (.env)
+**Frontend won't start**
 ```bash
-# Database
-MONGO_URL=mongodb://localhost:27017/ai_agents
-
-# Authentication
-JWT_SECRET_KEY=your_jwt_secret_key
-JWT_ALGORITHM=HS256
-
-# AI Services
-OPENAI_API_KEY=your_openai_api_key
-FAL_API_KEY=your_fal_api_key
-
-# Server Configuration
-DEBUG=True
-CORS_ORIGINS=["http://localhost:3000"]
+# Clear node modules and reinstall
+rm -rf node_modules package-lock.json
+yarn install
 ```
 
-#### Frontend (.env)
+**Backend connection errors**
 ```bash
-# Backend API
-REACT_APP_BACKEND_URL=http://localhost:8001
+# Check MongoDB connection
+mongo --eval "db.adminCommand('ismaster')"
 
-# Feature Flags
-REACT_APP_ENABLE_ANALYTICS=true
-REACT_APP_ENABLE_AI_AVATARS=true
+# Verify environment variables
+echo $MONGO_URL
 ```
+
+**AI features not working**
+- Verify API keys in environment variables
+- Check API key permissions and quotas
+- Ensure network connectivity to AI services
+
+### Performance Issues
+
+- **Slow loading**: Check network tab in browser dev tools
+- **Memory leaks**: Monitor React component unmounting
+- **Database queries**: Review MongoDB query execution plans
 
 ---
 
