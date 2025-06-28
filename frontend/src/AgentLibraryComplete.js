@@ -1848,7 +1848,108 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
           {/* Main Content */}
           <div className="flex-1 p-6 overflow-y-auto">
-            {selectedQuickTeam ? (
+            {searchQuery && !selectedQuickTeam && !selectedSector ? (
+              // Search Results View
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    Search Results for "{searchQuery}"
+                  </h3>
+                  <span className="text-gray-500">
+                    {getFilteredAgents().length} agents found
+                  </span>
+                </div>
+                
+                {getFilteredAgents().length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-xl font-bold text-gray-600 mb-2">No agents found</h3>
+                    <p className="text-gray-500">Try adjusting your search terms or filters</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {getFilteredAgents().map((agent) => (
+                      <div key={agent.id} className="group bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-300 transition-all duration-300 hover:-translate-y-1">
+                        <div className="flex items-start space-x-4">
+                          <div className="relative">
+                            <img
+                              src={agent.avatar}
+                              alt={agent.name}
+                              className="w-16 h-16 rounded-full object-cover ring-2 ring-purple-100 group-hover:ring-purple-300 transition-all"
+                              onError={(e) => {
+                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="32" cy="32" r="32" fill="#E5E7EB"/>
+                                    <circle cx="32" cy="24" r="10" fill="#9CA3AF"/>
+                                    <path d="M10 56c0-12.15 9.85-22 22-22s22 9.85 22 22" fill="#9CA3AF"/>
+                                  </svg>
+                                `)}`;
+                              }}
+                            />
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white flex items-center justify-center">
+                              <span className="text-xs">✓</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-900 group-hover:text-purple-700 transition-colors truncate">{agent.name}</h4>
+                            <p className="text-sm text-gray-600 mb-1 truncate">{agent.title}</p>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 capitalize">
+                              {agent.archetypeDisplay || agent.archetype}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 space-y-2">
+                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                            <span>🏆</span>
+                            <span className="truncate">{agent.expertise.split(',')[0]}</span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                            <span>🎯</span>
+                            <span className="truncate">{agent.goal.substring(0, 50)}...</span>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-6 flex space-x-2">
+                          <button
+                            onClick={() => setSelectedAgentDetails(agent)}
+                            className="flex-1 bg-gray-100 text-gray-700 py-2 px-3 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+                          >
+                            👁️ Preview
+                          </button>
+                          {addedAgents.has(agent.id) ? (
+                            <div className="flex space-x-1">
+                              <div className="flex items-center justify-center w-10 h-8 bg-green-100 text-green-800 rounded text-sm font-medium">
+                                ✓
+                              </div>
+                              <button
+                                onClick={() => handleAddAgent(agent)}
+                                disabled={addingAgents.has(agent.id)}
+                                className="flex-1 py-2 px-2 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                              >
+                                {addingAgents.has(agent.id) ? '...' : '+ Again'}
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleAddAgent(agent)}
+                              disabled={addingAgents.has(agent.id)}
+                              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                                addingAgents.has(agent.id)
+                                  ? 'bg-gray-300 text-gray-500'
+                                  : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                              }`}
+                            >
+                              {addingAgents.has(agent.id) ? 'Adding...' : '➕ Add Agent'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : selectedQuickTeam ? (
               // Quick Team View
               <div>
                 {/* Back Button */}
