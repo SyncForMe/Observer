@@ -2297,12 +2297,12 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 <div className="text-6xl mb-6">🏛️</div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Agent Library</h3>
                 <p className="text-white max-w-lg mx-auto mb-6">
-                  Select a team from <strong>Quick Team Builders</strong> to see pre-configured agent teams, 
-                  or choose a sector from <strong>Sectors</strong> to browse agents by industry.
+                  Select a team from <strong>Quick Team Builders</strong> to see pre-configured agent teams<br/>
+                  or choose a sector from <strong>Industry Sectors</strong> to browse agents by industry.
                 </p>
                 <div className="space-y-2 text-sm text-white">
                   <p>🔬 Quick Team Builders: Pre-made teams for instant setup</p>
-                  <p>🏭 Sectors: Browse agents by healthcare, finance, and technology</p>
+                  <p>🏭 Industry Sectors: Browse agents by healthcare, finance, and technology</p>
                 </div>
               </div>
             )}
