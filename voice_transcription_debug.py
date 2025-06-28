@@ -282,16 +282,23 @@ def check_pydub_installation():
     
     try:
         import pydub
-        print(f"✅ pydub is installed (version: {pydub.__version__})")
+        print(f"✅ pydub is installed")
         
         # Check if ffmpeg is available
         try:
-            from pydub.utils import get_prober_name, get_encoder_name
-            prober = get_prober_name()
-            encoder = get_encoder_name()
-            print(f"✅ ffmpeg prober found: {prober}")
-            print(f"✅ ffmpeg encoder found: {encoder}")
-            return True
+            # Create a simple silent audio segment
+            silent_audio = pydub.AudioSegment.silent(duration=100)
+            print("✅ pydub can create audio segments")
+            
+            # Check if ffmpeg is available by running a command
+            import subprocess
+            result = subprocess.run(['which', 'ffmpeg'], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ ffmpeg found at: {result.stdout.strip()}")
+                return True
+            else:
+                print("❌ ffmpeg not found in PATH")
+                return False
         except Exception as e:
             print(f"❌ ffmpeg not properly configured: {e}")
             return False
