@@ -601,7 +601,7 @@ const AppContent = () => {
                           <div className="text-gray-400 text-sm">Uptime</div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                     
                     {/* Hero Visual - Optimized Loading */}
                     <div className="relative">
