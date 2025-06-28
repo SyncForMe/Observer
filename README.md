@@ -1170,26 +1170,34 @@ ai-agent-simulation/
     └── deploy.sh            # Deployment script
 ```
 
-## 🛠 Technology Stack
+## 📖 API Documentation
 
-### Frontend
-- **React** 19.0.0 - Modern UI library
-- **Tailwind CSS** - Utility-first styling
-- **Framer Motion** 12.18.1 - Smooth animations
-- **Axios** 1.8.4 - HTTP client
-- **JWT Decode** 4.0.0 - Authentication
+The platform provides a comprehensive REST API for all functionality:
 
-### Backend  
-- **FastAPI** 0.115.6 - High-performance API framework
-- **MongoDB** with Motor 3.3.2 - Async database driver
-- **PyJWT** 2.8.0 - JWT authentication
-- **OpenAI** 1.54.5 - AI integrations
-- **Emergent Integrations** - Platform-specific tools
+### Authentication Endpoints
+- `POST /api/auth/login` - User authentication
+- `POST /api/auth/register` - User registration  
+- `POST /api/auth/test-login` - Guest access
 
-### Infrastructure
-- **Docker** - Containerization
-- **Nginx** - Reverse proxy
-- **Kubernetes** - Orchestration (production)
+### Agent Management
+- `GET /api/agents` - List all agents
+- `POST /api/agents` - Create custom agent
+- `PUT /api/agents/{id}` - Update agent
+- `DELETE /api/agents/{id}` - Delete agent
+- `GET /api/agents/saved` - Get user's saved agents
+
+### Simulation Control
+- `POST /api/simulations` - Start new simulation
+- `GET /api/simulations/{id}` - Get simulation status
+- `POST /api/simulations/{id}/message` - Send observer message
+- `DELETE /api/simulations/{id}` - Stop simulation
+
+### Analytics & Reporting
+- `GET /api/analytics/dashboard` - Get dashboard metrics
+- `GET /api/analytics/usage` - Get usage statistics
+- `POST /api/reports/generate` - Generate conversation report
+
+For complete API documentation, visit `/docs` when running the backend server.
 
 ## 🔧 Environment Variables
 
