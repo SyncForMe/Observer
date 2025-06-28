@@ -816,12 +816,14 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           setAutoGenerating(true);
           
           // Silent generation - don't set loading state to avoid UI flash
-          await axios.post(`${API}/conversation/generate`, {}, {
+          const response = await axios.post(`${API}/conversation/generate`, {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
           
-          // Efficiently fetch and update only new conversations
-          await fetchNewConversations();
+          // Use staggered display for auto-generated conversations
+          if (response.data) {
+            await displayMessagesWithDelay(response.data);
+          }
           
         } catch (error) {
           // Silent failure for auto-generation - don't spam console or UI
@@ -834,7 +836,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       }, 4000); // Generate every 4 seconds
       return () => clearInterval(interval);
     }
-  }, [isRunning, isPaused, token, agents.length, conversations.length]);
+  }, [isRunning, isPaused, token, agents.length]);
 
   return (
     <div className="space-y-6">
