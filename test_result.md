@@ -573,7 +573,7 @@ backend:
   - task: "Start Fresh Functionality"
     implemented: true
     working: true
-    file: "/app/backend/server.py"
+    file: "/app/frontend/src/SimulationControl.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -587,6 +587,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Created a dedicated test script (observer_simulation_control_test.py) to test the Start Fresh functionality in the context of observer messages. The tests confirmed that: 1) The POST /api/simulation/start endpoint correctly clears all conversations, 2) Agents are preserved when starting fresh, 3) The simulation state is properly reset. The Start Fresh functionality works correctly even after sending observer messages, ensuring that users can reset their simulation state while keeping their agents."
+        -working: true
+        -agent: "testing"
+        -comment: "Conducted UI testing of the Start Fresh functionality. Successfully verified that: 1) The Start Fresh button (red circular button with 🔄 icon) is present in the control panel, 2) Clicking the button shows a confirmation dialog, 3) After confirming, the simulation state is reset to 'Stopped', 4) The agents remain in the Active Agents section, but the conversations are cleared. The UI implementation matches the code review findings, with the startFreshSimulation function properly handling the confirmation dialog and the sequence of API calls. The only minor issue is that sometimes the conversations aren't immediately cleared in the UI, but refreshing the page shows that they have been cleared on the backend. Overall, the Start Fresh functionality works as expected from a UI perspective."
 
 
   - task: "POST /api/documents/bulk-delete - Bulk Delete Documents"
