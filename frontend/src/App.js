@@ -599,14 +599,14 @@ const AppContent = () => {
                       {/* CTA Buttons */}
                       <div className="flex flex-col sm:flex-row gap-4">
                         <button
-                          onClick={() => setActiveTab('simulation')}
+                          onClick={() => safeSetActiveTab('simulation')}
                           className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-200 hover:scale-[1.02]"
                         >
                           🎯 Start Simulation
                         </button>
                         
                         <button
-                          onClick={() => setActiveTab('agents')}
+                          onClick={() => safeSetActiveTab('agents')}
                           className="px-8 py-4 bg-white/10 backdrop-blur-lg text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-200 hover:scale-[1.02]"
                         >
                           🤖 Explore Agents
