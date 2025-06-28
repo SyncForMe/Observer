@@ -1561,23 +1561,16 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         agent={editingAgent}
         onSave={handleSaveAgent}
       />
-
-      {/* Weekly Report Modal */}
-      <WeeklySummary
-        isOpen={showWeeklyReport}
-        onClose={() => setShowWeeklyReport(false)}
-      />
-
-      {/* Scenario Creator Modal */}
-      <ScenarioCreator
-        isOpen={showScenarioCreator}
-        onClose={() => setShowScenarioCreator(false)}
-        onScenarioCreated={async (scenarioData) => {
-          // When a scenario is created, refresh the simulation state
-          await fetchSimulationState();
-          setShowScenarioCreator(false);
-        }}
-      />
+      
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
