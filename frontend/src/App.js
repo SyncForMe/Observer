@@ -535,12 +535,22 @@ const AppContent = () => {
                 
                 <div className="relative max-w-7xl mx-auto">
                   <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    {/* Hero Content - Reduced Animation Complexity */}
-                    <div className="text-left space-y-8">
+                    {/* Hero Content - Restored Animations */}
+                    <motion.div 
+                      initial={{ opacity: 0, x: -50 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.8 }}
+                      className="text-left space-y-8"
+                    >
                       <div className="space-y-4">
-                        <div className="inline-flex items-center px-4 py-2 bg-purple-600/20 rounded-full border border-purple-400/30">
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.2 }}
+                          className="inline-flex items-center px-4 py-2 bg-purple-600/20 rounded-full border border-purple-400/30"
+                        >
                           <span className="text-purple-300 text-sm font-medium">🚀 Next-Gen AI Simulation Platform</span>
-                        </div>
+                        </motion.div>
                         
                         <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight">
                           Transform Ideas into{' '}
@@ -557,19 +567,23 @@ const AppContent = () => {
                       
                       {/* CTA Buttons */}
                       <div className="flex flex-col sm:flex-row gap-4">
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => safeSetActiveTab('simulation')}
-                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-200 hover:scale-[1.02]"
+                          className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300"
                         >
                           🎯 Start Simulation
-                        </button>
+                        </motion.button>
                         
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => safeSetActiveTab('agents')}
-                          className="px-8 py-4 bg-white/10 backdrop-blur-lg text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-200 hover:scale-[1.02]"
+                          className="px-8 py-4 bg-white/10 backdrop-blur-lg text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300"
                         >
                           🤖 Explore Agents
-                        </button>
+                        </motion.button>
                       </div>
                       
                       {/* Stats */}
