@@ -617,6 +617,7 @@ test_plan:
     - "Conversation Retrieval"
     - "Error Handling in Conversation Generation"
     - "Start Fresh Functionality"
+    - "Observer Message Functionality"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
