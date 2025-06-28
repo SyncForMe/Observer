@@ -1678,6 +1678,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   savedAgents.map((agent) => (
                     <div
                       key={agent.id}
+                      onClick={() => setSelectedAgentDetails(agent)}
                       className="group w-full text-left p-4 rounded-xl transition-all duration-300 text-white hover:bg-white/10 border border-white/10 hover:border-purple-400/50 cursor-pointer backdrop-blur-sm"
                     >
                       <div className="flex items-center space-x-3">
