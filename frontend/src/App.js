@@ -1467,7 +1467,9 @@ const AppWithAuth = () => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <App />
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+          <App />
+        </div>
       </AuthProvider>
     </ErrorBoundary>
   );
