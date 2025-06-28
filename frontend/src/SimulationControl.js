@@ -865,7 +865,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       await fetchSimulationState();
     } catch (error) {
       console.error('Failed to get random scenario:', error);
-      alert('Failed to get random scenario. Please try again.');
+      if (!confirm('Failed to get random scenario. Would you like to try again?')) {
+        setLoading(false);
+        return;
+      }
+      // Retry the operation
+      await getRandomScenario();
+      return;
     }
     setLoading(false);
   };
