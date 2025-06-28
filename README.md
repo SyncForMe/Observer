@@ -92,66 +92,37 @@ A sophisticated platform for creating, managing, and running AI agent simulation
    - Backend API: http://localhost:8001
    - API Documentation: http://localhost:8001/docs
 
----
+## 🏗️ Architecture
 
-## 🚀 **Quick Start Guide**
+### Technology Stack
 
-### **Prerequisites**
-- **Node.js** 18+ ([Download](https://nodejs.org/))
-- **Python** 3.8+ ([Download](https://python.org/))
-- **MongoDB** 4.4+ ([Download](https://mongodb.com/))
-- **Yarn** Package Manager (`npm install -g yarn`)
-- **Git** ([Download](https://git-scm.com/))
+- **Frontend**: React 18, Tailwind CSS, Framer Motion, Axios
+- **Backend**: FastAPI, Python 3.8+, Pydantic, JWT Authentication
+- **Database**: MongoDB with async motor driver
+- **AI Integration**: OpenAI GPT models, fal.ai for avatar generation
+- **Deployment**: Docker-ready, supervisor for process management
 
-### **1. Clone Repository**
-```bash
-git clone https://github.com/your-username/ai-agent-observatory.git
-cd ai-agent-observatory
+### Project Structure
+
 ```
-
-### **2. Environment Setup**
-
-#### **Backend Configuration**
-```bash
-cd backend
-cp .env.example .env
-```
-
-**Edit `backend/.env`:**
-```env
-# Database
-MONGO_URL=mongodb://localhost:27017/ai_agent_simulation
-
-# Authentication
-JWT_SECRET=your-super-secret-jwt-key-here
-JWT_ALGORITHM=HS256
-JWT_EXPIRATION_MINUTES=1440
-
-# AI Integration  
-GEMINI_API_KEY=your-gemini-api-key-here
-
-# FAL.AI (for avatar generation)
-FAL_KEY=your-fal-ai-key-here
-
-# Server Configuration
-HOST=0.0.0.0
-PORT=8001
-DEBUG=true
-```
-
-#### **Frontend Configuration**
-```bash
-cd ../frontend
-cp .env.example .env
-```
-
-**Edit `frontend/.env`:**
-```env
-# Backend API URL
-REACT_APP_BACKEND_URL=http://localhost:8001
-
-# Environment
-REACT_APP_ENVIRONMENT=development
+ai-agent-simulation/
+├── frontend/                 # React application
+│   ├── src/
+│   │   ├── components/      # Reusable React components
+│   │   ├── pages/          # Main application pages
+│   │   ├── utils/          # Utility functions and helpers
+│   │   └── styles/         # CSS and styling files
+│   ├── public/             # Static assets
+│   └── package.json        # Node.js dependencies
+├── backend/                # FastAPI application
+│   ├── server.py          # Main FastAPI server
+│   ├── models/            # Pydantic models and schemas
+│   ├── routes/            # API route handlers
+│   ├── services/          # Business logic and AI integrations
+│   └── requirements.txt   # Python dependencies
+├── scripts/               # Utility scripts and automation
+├── docs/                 # Additional documentation
+└── README.md            # This file
 ```
 
 ### **3. Installation**
