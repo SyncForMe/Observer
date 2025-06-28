@@ -684,9 +684,21 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         throw new Error('MediaRecorder not supported in this browser');
       }
       
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      // Try different formats for better compatibility
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/wav';
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ''; // Let browser decide
+          }
+        }
+      }
+      
+      console.log('🎵 Using MIME type:', mimeType);
+      
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       const audioChunks = [];
 
       mediaRecorder.ondataavailable = (event) => {
@@ -705,8 +717,9 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           return;
         }
         
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        console.log('📦 Audio blob created:', audioBlob.size, 'bytes');
+        // Use the recorded MIME type for the blob
+        const audioBlob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
+        console.log('📦 Audio blob created:', audioBlob.size, 'bytes', 'type:', audioBlob.type);
         
         if (audioBlob.size === 0) {
           console.error('❌ Audio blob is empty');
@@ -714,8 +727,17 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           return;
         }
         
+        // Create a simple test first - just log what we would send
+        console.log('🧪 Testing with minimal audio data...');
+        
         const formData = new FormData();
         formData.append('audio', audioBlob, 'scenario.webm');
+        
+        // Log the FormData contents
+        console.log('📋 FormData contents:');
+        for (let [key, value] of formData.entries()) {
+          console.log(`  ${key}:`, value);
+        }
 
         try {
           console.log('🚀 Sending audio for transcription...');
@@ -723,41 +745,55 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
             url: `${API}/speech/transcribe-scenario`,
             fileSize: audioBlob.size,
             fileName: 'scenario.webm',
-            mimeType: audioBlob.type
+            mimeType: audioBlob.type,
+            token: token ? 'Present' : 'Missing'
           });
           
           const response = await axios.post(`${API}/speech/transcribe-scenario`, formData, {
             headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
+              Authorization: `Bearer ${token}`
+              // Don't set Content-Type - let browser set it with boundary
             },
-            timeout: 30000 // 30 second timeout
+            timeout: 30000, // 30 second timeout
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              console.log('📤 Upload progress:', percentCompleted + '%');
+            }
           });
 
-          console.log('✅ Transcription response received:', response.data);
+          console.log('✅ Transcription response received:', response);
+          console.log('📋 Response status:', response.status);
+          console.log('📋 Response headers:', response.headers);
+          console.log('📋 Response data:', response.data);
           
           if (response.data && response.data.text) {
             console.log('📝 Setting transcribed text:', response.data.text);
             setCustomScenario(response.data.text);
             console.log('✅ Text successfully set in input field');
+            alert(`Voice transcription successful! Transcribed: "${response.data.text}"`);
           } else {
             console.log('❌ No text in transcription response:', response.data);
             alert('No speech was detected in the recording. Please speak clearly and try again.');
           }
         } catch (error) {
           console.error('❌ Failed to transcribe audio:', error);
-          console.error('Error details:', error.response?.data);
-          console.error('Error status:', error.response?.status);
-          console.error('Error message:', error.message);
+          console.error('Error response:', error.response);
+          console.error('Error config:', error.config);
+          
+          if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response data:', error.response.data);
+            console.error('Response headers:', error.response.headers);
+          }
           
           if (error.response?.status === 401) {
             alert('Authentication failed. Please refresh the page and try again.');
           } else if (error.response?.status === 400) {
-            alert('Invalid audio format. Please try recording again.');
+            alert(`Invalid request: ${error.response.data?.detail || 'Invalid audio format'}. Please try recording again.`);
           } else if (error.code === 'ECONNABORTED') {
             alert('Request timeout. Please try with a shorter recording.');
           } else {
-            alert(`Failed to transcribe audio: ${error.response?.data?.detail || error.message}. Please try again.`);
+            alert(`Failed to transcribe audio: ${error.response?.data?.detail || error.message}. Please check the console for details.`);
           }
         }
 
@@ -778,13 +814,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       console.log('🎬 Starting MediaRecorder...');
       mediaRecorder.start(1000); // Collect data every second
 
-      // Auto-stop after 30 seconds
+      // Auto-stop after 10 seconds for testing
       setTimeout(() => {
         if (mediaRecorder.state === 'recording') {
-          console.log('⏰ Auto-stopping recording after 30 seconds');
+          console.log('⏰ Auto-stopping recording after 10 seconds for testing');
           mediaRecorder.stop();
         }
-      }, 30000);
+      }, 10000);
 
     } catch (error) {
       console.error('❌ Failed to start recording:', error);
