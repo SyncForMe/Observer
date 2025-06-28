@@ -650,6 +650,105 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     }
   };
 
+  // Voice recording for scenario input
+  const handleVoiceInput = async () => {
+    if (!token) return;
+
+    if (isRecording) {
+      // Stop recording
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      setIsRecording(true);
+      
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'scenario.webm');
+
+        try {
+          const response = await axios.post(`${API}/speech/transcribe-scenario`, formData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+
+          if (response.data && response.data.text) {
+            setCustomScenario(response.data.text);
+          }
+        } catch (error) {
+          console.error('Failed to transcribe audio:', error);
+          if (!confirm('Failed to transcribe audio. Would you like to try again?')) {
+            return;
+          }
+          await handleVoiceInput();
+        }
+
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+      };
+
+      mediaRecorder.start();
+
+      // Auto-stop after 30 seconds
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, 30000);
+
+    } catch (error) {
+      console.error('Failed to access microphone:', error);
+      if (!confirm('Failed to access microphone. Please check permissions and try again.')) {
+        setIsRecording(false);
+        return;
+      }
+      setIsRecording(false);
+    }
+  };
+
+  // Set custom scenario
+  const handleSetScenario = async () => {
+    if (!token || !customScenario.trim()) return;
+
+    setLoading(true);
+    try {
+      await axios.post(`${API}/simulation/set-scenario`, {
+        scenario: customScenario.trim(),
+        scenario_name: customScenario.trim().substring(0, 50) + (customScenario.length > 50 ? '...' : '')
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log('✅ Custom scenario set');
+      setShowSetScenario(false);
+      setCustomScenario('');
+      await fetchSimulationState();
+    } catch (error) {
+      console.error('Failed to set scenario:', error);
+      if (!confirm('Failed to set scenario. Would you like to try again?')) {
+        setLoading(false);
+        return;
+      }
+      await handleSetScenario();
+      return;
+    }
+    setLoading(false);
+  };
+
   // Set simulation scenario
   const setSimulationScenario = async (scenarioText) => {
     if (!token) return;
