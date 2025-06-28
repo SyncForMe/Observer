@@ -23,6 +23,7 @@ print(f"Using API URL: {API_URL}")
 # Global variables for auth testing
 auth_token = None
 test_user_id = None
+created_agent_ids = []
 
 def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, auth=False, headers=None, params=None, measure_time=False):
     """Run a test against the specified endpoint"""
@@ -142,6 +143,60 @@ def test_login():
         print(f"JWT Token: {auth_token}")
         return True
 
+def create_test_agents():
+    """Create test agents for the simulation"""
+    global created_agent_ids
+    
+    print("\n" + "="*80)
+    print("CREATING TEST AGENTS")
+    print("="*80)
+    
+    # Create 3 test agents with different archetypes
+    agent_archetypes = ["scientist", "leader", "skeptic"]
+    
+    for i, archetype in enumerate(agent_archetypes):
+        agent_data = {
+            "name": f"Test {archetype.capitalize()} {i+1}",
+            "archetype": archetype,
+            "personality": {
+                "extroversion": 5,
+                "optimism": 5,
+                "curiosity": 5,
+                "cooperativeness": 5,
+                "energy": 5
+            },
+            "goal": f"Test the observer message functionality as a {archetype}",
+            "expertise": f"Expert in {archetype} tasks and responsibilities",
+            "background": f"Experienced {archetype} with a focus on testing"
+        }
+        
+        create_agent_test, create_agent_response = run_test(
+            f"Create {archetype.capitalize()} Agent",
+            "/agents",
+            method="POST",
+            data=agent_data,
+            auth=True,
+            expected_keys=["id", "name", "archetype"]
+        )
+        
+        if create_agent_test and create_agent_response:
+            agent_id = create_agent_response.get("id")
+            if agent_id:
+                print(f"✅ Created {archetype} agent with ID: {agent_id}")
+                created_agent_ids.append(agent_id)
+            else:
+                print(f"❌ Failed to get agent ID for {archetype} agent")
+        else:
+            print(f"❌ Failed to create {archetype} agent")
+    
+    # Verify agents were created
+    if len(created_agent_ids) > 0:
+        print(f"✅ Successfully created {len(created_agent_ids)} agents")
+        return True
+    else:
+        print(f"❌ Failed to create any agents")
+        return False
+
 def setup_simulation():
     """Set up a simulation with agents for testing"""
     print("\n" + "="*80)
@@ -161,17 +216,9 @@ def setup_simulation():
         print("❌ Failed to start simulation")
         return False
     
-    # Initialize research station (adds default agents)
-    init_station_test, init_station_response = run_test(
-        "Initialize Research Station",
-        "/simulation/init-research-station",
-        method="POST",
-        auth=True,
-        expected_keys=["message", "agents"]
-    )
-    
-    if not init_station_test:
-        print("❌ Failed to initialize research station")
+    # Create test agents
+    if not create_test_agents():
+        print("❌ Failed to create test agents")
         return False
     
     # Verify agents were created
@@ -183,10 +230,10 @@ def setup_simulation():
     )
     
     if not agents_test or not agents_response or len(agents_response) < 1:
-        print("❌ No agents found after initialization")
+        print("❌ No agents found after creation")
         return False
     
-    print(f"✅ Found {len(agents_response)} agents after initialization")
+    print(f"✅ Found {len(agents_response)} agents")
     return True
 
 def test_observer_message():
