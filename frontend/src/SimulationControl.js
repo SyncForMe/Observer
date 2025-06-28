@@ -432,7 +432,11 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       await fetchSimulationState();
     } catch (error) {
       console.error('Failed to clear agents:', error);
-      alert('Failed to clear agents. Please try again.');
+      if (!confirm('Failed to clear agents. Would you like to try again?')) {
+        return;
+      }
+      // Retry the operation
+      await clearAllAgents();
     }
     setLoading(false);
   };
