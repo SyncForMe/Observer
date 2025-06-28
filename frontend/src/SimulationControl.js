@@ -755,7 +755,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         return;
       }
       // Retry the operation
-      await fastForwardSimulation();
+      await toggleFastForward();
       return;
     }
     setLoading(false);
