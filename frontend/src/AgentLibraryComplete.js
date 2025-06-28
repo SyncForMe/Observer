@@ -1887,9 +1887,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate group-hover:text-green-300 transition-colors">{sector.name}</div>
-                        <div className="text-xs text-white/60 truncate">
-                          {Object.keys(sector.categories).length} categories
-                        </div>
                       </div>
                     </div>
                   </button>
