@@ -1249,31 +1249,25 @@ yarn test
 - **AWS/GCP**: Enterprise deployment with auto-scaling
 - **MongoDB Atlas**: Managed database hosting
 
-## 🚀 Deployment
+## 🤝 Contributing
 
-### Production Build
-```bash
-# Build frontend
-cd frontend && yarn build
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-# Production deployment
-./scripts/deploy.sh
-```
+### Development Workflow
 
-### Docker Deployment
-```bash
-docker-compose up -d
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes and add tests
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+### Code Standards
 
-## 📈 Key Metrics
-
-- **90+ AI Agents** across 3 sectors (Healthcare, Finance, Technology)
-- **38 Categories** with specialized agent types
-- **8 Simulation Scenarios** for different use cases
-- **Real-time Performance** with sub-500ms API responses
-- **Enterprise Security** with JWT and user isolation
+- **Frontend**: ESLint + Prettier configuration
+- **Backend**: Black + isort for Python formatting
+- **Documentation**: Updated README and API docs for new features
+- **Testing**: Comprehensive test coverage for new functionality
 
 ## 🎯 Use Cases
 
