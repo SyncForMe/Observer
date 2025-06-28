@@ -711,10 +711,15 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       
     } catch (error) {
       console.error('Failed to control simulation:', error);
-      alert('Failed to control simulation. Please try again.');
-      
-      // Reset local state on error
-      await fetchSimulationState();
+      if (!confirm('Failed to control simulation. Would you like to try again?')) {
+        // Reset local state on error
+        await fetchSimulationState();
+        setLoading(false);
+        return;
+      }
+      // Retry the operation
+      await toggleSimulation();
+      return;
     }
     setLoading(false);
   };
