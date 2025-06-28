@@ -230,9 +230,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const [agentsLoading, setAgentsLoading] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [showObserverChat, setShowObserverChat] = useState(false);
-  const [showScenarioCreator, setShowScenarioCreator] = useState(false);
   const [showSetScenario, setShowSetScenario] = useState(false);
   const [customScenario, setCustomScenario] = useState('');
   const [isRecording, setIsRecording] = useState(false);
