@@ -1592,13 +1592,116 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
   return (
     <div className="space-y-6">
-      {/* Agent Library Header */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-        <div className="flex justify-between items-center mb-2">
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-2">🤖 Agent Library</h2>
-            <p className="text-white/80">Choose from professionally crafted agent profiles</p>
+      {/* Modern Hero Section with Search */}
+      <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
+        <div className="text-center mb-8">
+          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
+            🤖 Agent{' '}
+            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              Library
+            </span>
+          </h2>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Build your perfect AI team from 200+ expert agents across all industries
+          </p>
+        </div>
+        
+        {/* Search and Filter Controls */}
+        <div className="max-w-4xl mx-auto space-y-4">
+          {/* Main Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Find agents by name, skill, role, or expertise..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-4 bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
+            />
           </div>
+          
+          {/* Filter Controls */}
+          <div className="flex flex-wrap gap-4 justify-center">
+            {/* Sector Filter */}
+            <select
+              value={selectedSector || 'all'}
+              onChange={(e) => {
+                setSelectedSector(e.target.value === 'all' ? null : e.target.value);
+                setSelectedCategory(null);
+                setSelectedQuickTeam(null);
+              }}
+              className="px-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+            >
+              <option value="all">All Sectors</option>
+              {Object.entries(sectors).map(([key, sector]) => (
+                <option key={key} value={key} className="bg-gray-800 text-white">
+                  {sector.icon} {sector.name}
+                </option>
+              ))}
+            </select>
+            
+            {/* Archetype Filter */}
+            <select
+              value={selectedArchetype}
+              onChange={(e) => setSelectedArchetype(e.target.value)}
+              className="px-4 py-2 bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+            >
+              <option value="all">All Archetypes</option>
+              {getUniqueArchetypes().map((archetype) => (
+                <option key={archetype} value={archetype} className="bg-gray-800 text-white capitalize">
+                  {archetype.charAt(0).toUpperCase() + archetype.slice(1)}
+                </option>
+              ))}
+            </select>
+            
+            {/* Quick Teams Toggle */}
+            <button
+              onClick={() => {
+                setShowQuickTeamsOnly(!showQuickTeamsOnly);
+                if (!showQuickTeamsOnly) {
+                  setSelectedSector(null);
+                  setSelectedCategory(null);
+                }
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                showQuickTeamsOnly
+                  ? 'bg-purple-600 text-white shadow-lg'
+                  : 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+              }`}
+            >
+              ⚡ Quick Teams
+            </button>
+            
+            {/* Clear Filters */}
+            {(searchQuery || selectedArchetype !== 'all' || selectedSector || showQuickTeamsOnly) && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedArchetype('all');
+                  setSelectedSector(null);
+                  setSelectedCategory(null);
+                  setSelectedQuickTeam(null);
+                  setShowQuickTeamsOnly(false);
+                }}
+                className="px-4 py-2 bg-red-600/20 text-red-300 border border-red-400/30 rounded-lg hover:bg-red-600/30 transition-all"
+              >
+                Clear All
+              </button>
+            )}
+          </div>
+          
+          {/* Results Counter */}
+          {searchQuery && (
+            <div className="text-center">
+              <span className="text-gray-300">
+                Found {getFilteredAgents().length} agents matching "{searchQuery}"
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
