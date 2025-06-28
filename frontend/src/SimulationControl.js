@@ -482,21 +482,37 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     
     setLoading(true);
     try {
+      console.log('🔍 Sending observer message:', newMessage);
       const response = await axios.post(`${API}/observer/send-message`, {
         observer_message: newMessage
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('✅ Observer message sent successfully:', response.data);
+      
       setNewMessage('');
-      await fetchConversations();
+      
+      // Add the new observer conversation directly to the existing conversations
+      // instead of refreshing everything
+      if (response.data && response.data.agent_responses) {
+        setConversations(prevConversations => {
+          const newConversations = [...prevConversations, response.data.agent_responses];
+          return newConversations;
+        });
+        
+        // Display messages one by one with staggered timing
+        await displayMessagesWithDelay(response.data.agent_responses);
+      }
       
       // Scroll to bottom after new message
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+      
     } catch (error) {
       console.error('Failed to send observer message:', error);
+      console.error('Error details:', error.response?.data);
       alert('Failed to send message. Please try again.');
     }
     setLoading(false);
