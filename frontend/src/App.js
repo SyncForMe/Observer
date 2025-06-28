@@ -908,7 +908,13 @@ const AppContent = () => {
                             <span className="text-green-400 text-sm font-medium">94%</span>
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-2">
-                            <div className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full w-[94%]" />
+                            <motion.div
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "94%" }}
+                              transition={{ delay: 0.5, duration: 1 }}
+                              viewport={{ once: true }}
+                              className="bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full"
+                            />
                           </div>
                         </div>
                         
@@ -918,7 +924,13 @@ const AppContent = () => {
                             <span className="text-blue-400 text-sm font-medium">87%</span>
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-2">
-                            <div className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full w-[87%]" />
+                            <motion.div
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "87%" }}
+                              transition={{ delay: 0.7, duration: 1 }}
+                              viewport={{ once: true }}
+                              className="bg-gradient-to-r from-blue-400 to-purple-400 h-2 rounded-full"
+                            />
                           </div>
                         </div>
                         
@@ -928,7 +940,13 @@ const AppContent = () => {
                             <span className="text-purple-400 text-sm font-medium">12</span>
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-2">
-                            <div className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full w-[80%]" />
+                            <motion.div
+                              initial={{ width: 0 }}
+                              whileInView={{ width: "80%" }}
+                              transition={{ delay: 0.9, duration: 1 }}
+                              viewport={{ once: true }}
+                              className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full"
+                            />
                           </div>
                         </div>
                         
