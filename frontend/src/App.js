@@ -7,7 +7,6 @@ import HomePage from './HomePage';
 import AgentLibrary from './AgentLibraryComplete';
 import ConversationViewer from './ConversationViewer';
 import AnalyticsDashboard from './AnalyticsDashboard';
-import FileCenter from './FileCenter';
 import AccountModals from './AccountModals';
 import { AuthProvider, useAuth } from './AuthContext';
 
