@@ -476,24 +476,6 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     setLoading(false);
   };
 
-  // Function to display messages with a delay
-  const displayMessagesWithDelay = async (messages) => {
-    for (const message of messages) {
-      await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay between messages
-      setConversations(prevConversations => {
-        const lastConversation = prevConversations[prevConversations.length - 1];
-        const updatedLastConversation = {
-          ...lastConversation,
-          messages: [...(lastConversation.messages || []), message]
-        };
-        return [
-          ...prevConversations.slice(0, -1),
-          updatedLastConversation
-        ];
-      });
-    }
-  };
-
   // Function to display messages with staggered timing for better UX
   const displayMessagesWithDelay = async (conversationData) => {
     if (!conversationData || !conversationData.messages) return;
