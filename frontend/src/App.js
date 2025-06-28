@@ -8,6 +8,7 @@ import AgentLibrary from './AgentLibraryComplete';
 import ConversationViewer from './ConversationViewer';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import AccountModals from './AccountModals';
+import SimulationControl from './SimulationControl';
 import { AuthProvider, useAuth } from './AuthContext';
 
 // Simple FileCenter Component
