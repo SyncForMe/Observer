@@ -666,6 +666,7 @@ test_plan:
     - "Error Handling in Conversation Generation"
     - "Start Fresh Functionality"
     - "Observer Message Functionality"
+    - "Login Authentication"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
