@@ -1984,20 +1984,10 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
             ) : selectedQuickTeam ? (
               // Quick Team View
               <div>
-                {/* Back Button */}
-                <div className="flex items-center mb-6">
-                  <button
-                    onClick={() => setSelectedQuickTeam(null)}
-                    className="text-purple-600 hover:text-purple-800 font-medium mr-4 flex items-center"
-                  >
-                    ← Back to Teams
-                  </button>
-                  <h3 className="text-xl font-bold text-gray-800">
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold text-white mb-4">
                     {quickTeams[selectedQuickTeam].icon} {quickTeams[selectedQuickTeam].name}
                   </h3>
-                </div>
-
-                <div className="mb-6">
                   <button
                     onClick={() => handleQuickTeamAdd(selectedQuickTeam)}
                     className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium"
