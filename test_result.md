@@ -366,7 +366,7 @@ backend:
   
   - task: "Agent User Association"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
@@ -378,6 +378,9 @@ backend:
         -working: true
         -agent: "testing"
         -comment: "Created a comprehensive test script to test the agent user association functionality. The tests confirmed that: 1) New agents are correctly created with the user_id of the authenticated user, 2) The GET /api/agents endpoint returns only the agents belonging to the current user, 3) Users cannot see or access other users' agents, 4) User data isolation is properly implemented. The agent user association functionality is working correctly and provides proper data isolation between users."
+        -working: false
+        -agent: "testing"
+        -comment: "Further testing revealed issues with agent user association in the observer message endpoint. While the GET /api/agents endpoint correctly filters agents by user_id, the observer message endpoint does not. When sending an observer message, the endpoint retrieves all agents from the database without filtering by user_id, which breaks user data isolation. This is a critical issue that needs to be fixed to ensure proper user data isolation."
   
   - task: "Agent Library Enhanced Button Functionality"
     implemented: true
