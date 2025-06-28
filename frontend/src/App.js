@@ -1246,20 +1246,15 @@ const AppContent = () => {
 
 // Main App Component
 const App = () => {
-  const { user, loading, handleExternalAuth } = useAuth();
+  const { user, loading } = useAuth();
 
   console.log('🔍 App: Rendering with user:', !!user, 'loading:', loading);
 
   // Handler for HomePage authentication
   const handleAuthentication = useCallback((token, userData) => {
     console.log('🔍 App: handleAuthentication called with token:', !!token, 'user:', !!userData);
-    const success = handleExternalAuth(token, userData);
-    if (success) {
-      console.log('✅ App: Authentication successful, state updated');
-    } else {
-      console.error('❌ App: Authentication failed');
-    }
-  }, [handleExternalAuth]);
+    // This will be handled by the AuthContext
+  }, []);
 
   if (loading) {
     console.log('🔍 App: Showing loading screen');
@@ -1286,4 +1281,15 @@ const App = () => {
   );
 };
 
-export default App;
+// Main App wrapper with AuthProvider
+const AppWithProvider = () => {
+  return (
+    <AuthProvider>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+        <App />
+      </div>
+    </AuthProvider>
+  );
+};
+
+export default AppWithProvider;
