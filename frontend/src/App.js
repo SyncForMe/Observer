@@ -884,7 +884,7 @@ const AppContent = () => {
                       </span>
                     </h2>
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                      From idea to insight in minutes. Our intuitive platform makes AI simulation accessible to everyone.
+                      From idea to insight in minutes.
                     </p>
                   </div>
                   
