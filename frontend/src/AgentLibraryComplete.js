@@ -2292,55 +2292,70 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 )}
               </div>
             ) : (
-              // Improved Version 1 - Clean & Simple
-              <div className="text-center py-24">
-                <div className="text-7xl mb-8">🤖</div>
-                <h3 className="text-3xl font-bold text-gray-900 mb-4">Welcome to Agent Library</h3>
-                <p className="text-lg text-gray-700 max-w-2xl mx-auto mb-12 leading-relaxed">
-                  Select a team from <strong className="text-gray-900">Quick Team Builders</strong> to see pre-configured agent teams, 
-                  or choose a sector from <strong className="text-gray-900">Sectors</strong> to browse agents by industry.
-                </p>
-                
-                <div className="max-w-lg mx-auto space-y-6">
+              // Visual AI Library Representation
+              <div className="max-w-5xl mx-auto py-12">
+                {/* Minimal Header */}
+                <div className="text-center mb-12">
+                  <h3 className="text-4xl font-bold text-gray-900 mb-3">Agent Library</h3>
+                  <p className="text-gray-600">{getAllAgents().length} experts across {Object.keys(sectors).length} industries</p>
+                </div>
+
+                {/* Visual Library Grid */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                  {/* Quick Teams */}
                   <div 
                     onClick={() => setShowQuickTeamsOnly(true)}
-                    className="cursor-pointer bg-white border border-gray-300 rounded-xl p-6 hover:border-gray-400 hover:shadow-lg transition-all duration-200"
+                    className="group cursor-pointer bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 text-center hover:shadow-lg transition-all duration-300 border border-gray-200"
                   >
-                    <div className="flex items-center space-x-4">
-                      <div className="text-3xl">⚡</div>
-                      <div className="text-left">
-                        <div className="font-semibold text-gray-900 text-lg">Quick Team Builders</div>
-                        <div className="text-gray-600">Pre-made teams for instant setup</div>
-                      </div>
-                    </div>
+                    <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">⚡</div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Quick Teams</h4>
+                    <div className="text-2xl font-bold text-purple-600 mb-1">{Object.keys(quickTeams).length}</div>
+                    <div className="text-xs text-gray-500">Ready teams</div>
                   </div>
-                  
-                  <div className="bg-white border border-gray-300 rounded-xl p-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="text-3xl">🏢</div>
-                      <div className="text-left">
-                        <div className="font-semibold text-gray-900 text-lg">Browse by Sectors</div>
-                        <div className="text-gray-600">Explore agents by healthcare, finance, and technology</div>
+
+                  {/* Sectors */}
+                  {getSectorStats().slice(0, 3).map((sector) => (
+                    <div 
+                      key={sector.key}
+                      onClick={() => setSelectedSector(sector.key)}
+                      className="group cursor-pointer bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-8 text-center hover:shadow-lg transition-all duration-300 border border-gray-200"
+                    >
+                      <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">{sector.icon}</div>
+                      <h4 className="font-semibold text-gray-900 mb-2">{sector.name}</h4>
+                      <div className="text-2xl font-bold text-blue-600 mb-1">{sector.count}</div>
+                      <div className="text-xs text-gray-500">Agents</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Agent Archetypes Preview */}
+                <div className="bg-white rounded-2xl border border-gray-200 p-8">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-6 text-center">Agent Types</h4>
+                  <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-9 gap-4">
+                    {getUniqueArchetypes().slice(0, 9).map((archetype) => (
+                      <div 
+                        key={archetype}
+                        onClick={() => {
+                          setSelectedArchetype(archetype);
+                          setSearchQuery('');
+                        }}
+                        className="group cursor-pointer text-center p-3 rounded-xl hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="w-12 h-12 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:from-purple-100 group-hover:to-blue-100 transition-all">
+                          <span className="text-lg">
+                            {archetype === 'scientist' ? '🔬' : 
+                             archetype === 'leader' ? '👑' : 
+                             archetype === 'mediator' ? '🤝' : 
+                             archetype === 'optimist' ? '😊' : 
+                             archetype === 'skeptic' ? '🤔' : 
+                             archetype === 'adventurer' ? '🎯' : 
+                             archetype === 'engineer' ? '⚙️' : 
+                             archetype === 'analyst' ? '📊' : '🤖'}
+                          </span>
+                        </div>
+                        <div className="text-xs text-gray-600 capitalize font-medium">{archetype}</div>
                       </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                      {getSectorStats().slice(0, 4).map((sector) => (
-                        <button
-                          key={sector.key}
-                          onClick={() => setSelectedSector(sector.key)}
-                          className="flex items-center justify-between py-3 px-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
-                        >
-                          <span className="flex items-center text-sm font-medium text-gray-800">
-                            <span className="mr-2 text-lg">{sector.icon}</span>
-                            {sector.name}
-                          </span>
-                          <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                            {sector.count}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
