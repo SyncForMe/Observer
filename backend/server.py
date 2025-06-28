@@ -4795,11 +4795,22 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Get recent observer messages for context (user-specific)
     recent_observer_messages = await db.observer_messages.find({"user_id": current_user.id}).sort("timestamp", -1).limit(3).to_list(3)
     
+    # Get recent observer messages for context 
+    recent_observer_messages = await db.observer_messages.find().sort("timestamp", -1).limit(3).to_list(3)
+    
     # Build context from previous conversations
     context = ""
     if existing_conversations:
         recent_conv = existing_conversations[0]
         context = f"In previous discussions: {'; '.join([msg.get('message', '') for msg in recent_conv.get('messages', [])][:2])}"
+    
+    # Add observer context if there are recent observer messages
+    observer_context = ""
+    if recent_observer_messages:
+        observer_context = "\n\n🎯 RECENT OBSERVER DIRECTIVES (CEO/PROJECT LEAD):\n"
+        for i, obs_msg in enumerate(recent_observer_messages[:2]):  # Last 2 observer messages
+            observer_context += f"Observer said: \"{obs_msg.get('message', '')}\"\n"
+        observer_context += "\nThe Observer is your project lead/CEO. Their guidance should heavily influence your approach, though you can politely suggest alternatives if needed.\n"
     
     # Add observer context if there are recent observer messages
     observer_context = ""
