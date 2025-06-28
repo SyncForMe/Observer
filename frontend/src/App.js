@@ -62,13 +62,7 @@ console.log('Environment variables loaded:', {
 // Authentication Context
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// useAuth hook is imported from AuthContext
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
