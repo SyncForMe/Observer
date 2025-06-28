@@ -807,14 +807,14 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
               <button
                 onClick={() => setShowScenarioCreator(true)}
                 disabled={loading || isRunning}
-                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
               >
                 📝 Create Custom
               </button>
               <button
                 onClick={getRandomScenario}
                 disabled={loading || isRunning}
-                className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
               >
                 {loading ? '⏳' : '🎲 Random'}
               </button>
