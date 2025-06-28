@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import jwt
 from jwt.exceptions import InvalidTokenError as JWTError
 import os
+import pymongo
 
 # Security
 security = HTTPBearer()
@@ -14,6 +15,11 @@ security = HTTPBearer()
 JWT_SECRET = os.environ.get('JWT_SECRET', 'your_super_secure_jwt_secret_key_here')
 JWT_ALGORITHM = "HS256"
 ADMIN_EMAIL = "dino@cytonic.com"  # Admin email for special privileges
+
+# MongoDB connection
+mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+client = pymongo.MongoClient(mongo_url)
+db = client[os.environ.get('DB_NAME', 'ai_simulation')]
 
 # User model
 class User(BaseModel):
@@ -53,9 +59,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             created_at=datetime.utcnow() - timedelta(days=3),
             last_login=datetime.utcnow()
         )
-    
-    # Import here to avoid circular imports
-    from server import db
     
     # Try to find user by ID first, then by email
     user = None
