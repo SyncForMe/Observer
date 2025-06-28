@@ -6,9 +6,6 @@ import './App.css';
 import HomePage from './HomePage';
 import AgentLibrary from './AgentLibraryComplete';
 import ConversationHistory from './ConversationHistory';
-import AnalyticsDashboard from './AnalyticsDashboard';
-import FileCenter from './FileCenter';
-import AccountModals from './AccountModals';
 import { AuthProvider, useAuth } from './AuthContext';
 
 // Error Boundary Component
