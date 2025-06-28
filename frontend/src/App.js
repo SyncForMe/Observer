@@ -5,8 +5,7 @@ import { motion, useAnimationControls } from 'framer-motion';
 import './App.css';
 import HomePage from './HomePage';
 import AgentLibrary from './AgentLibraryComplete';
-import ConversationHistory from './ConversationHistory';
-import { AuthProvider, useAuth } from './AuthContext';
+import ConversationViewer from './ConversationViewer';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
