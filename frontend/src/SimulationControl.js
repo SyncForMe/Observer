@@ -1032,18 +1032,19 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           </div>
         </div>
 
-        {/* Scenario Selection */}
+        {/* Set Scenario */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-white text-sm font-medium">Select or Create Scenario</label>
+            <button
+              onClick={() => setShowSetScenario(!showSetScenario)}
+              className="flex items-center space-x-2 text-white text-sm font-medium hover:text-blue-300 transition-colors"
+            >
+              <span>Set Scenario</span>
+              <span className={`transform transition-transform duration-200 ${showSetScenario ? 'rotate-180' : ''}`}>
+                ⬇️
+              </span>
+            </button>
             <div className="flex space-x-2">
-              <button
-                onClick={() => setShowScenarioCreator(true)}
-                disabled={loading || isRunning}
-                className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-              >
-                📝 Create Custom
-              </button>
               <button
                 onClick={getRandomScenario}
                 disabled={loading || isRunning}
@@ -1053,17 +1054,58 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
               </button>
             </div>
           </div>
-          <select
-            value={scenario}
-            onChange={(e) => setSimulationScenario(e.target.value)}
-            disabled={loading || isRunning}
-            className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-          >
-            <option value="" className="bg-gray-800">Select a predefined scenario...</option>
-            {scenarios.map((s) => (
-              <option key={s} value={s} className="bg-gray-800">{s}</option>
-            ))}
-          </select>
+          
+          {/* Expandable Scenario Input */}
+          {showSetScenario && (
+            <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
+              <div className="flex space-x-2">
+                <textarea
+                  value={customScenario}
+                  onChange={(e) => setCustomScenario(e.target.value)}
+                  placeholder="Enter your scenario here... (e.g., 'A team of researchers discovers an unexpected signal from deep space')"
+                  disabled={loading || isRunning || isRecording}
+                  className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
+                  rows="3"
+                />
+                <button
+                  onClick={handleVoiceInput}
+                  disabled={loading || isRunning}
+                  className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                    isRecording 
+                      ? 'bg-red-500 hover:bg-red-600 animate-pulse' 
+                      : 'bg-white/10 hover:bg-white/20'
+                  }`}
+                  title={isRecording ? 'Recording... Click to stop' : 'Click to record scenario with voice'}
+                >
+                  {isRecording ? '🛑' : '🎤'}
+                </button>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <button
+                  onClick={() => {
+                    setShowSetScenario(false);
+                    setCustomScenario('');
+                  }}
+                  disabled={loading || isRecording}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSetScenario}
+                  disabled={loading || isRunning || !customScenario.trim() || isRecording}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Set Scenario
+                </button>
+              </div>
+              {isRecording && (
+                <p className="text-yellow-300 text-xs">
+                  🎤 Recording... Speak clearly. Recording will auto-stop after 30 seconds.
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Compact Current Scenario Info */}
