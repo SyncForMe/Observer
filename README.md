@@ -1219,34 +1219,35 @@ yarn test
 ./scripts/run-tests.sh
 ```
 
-## 📚 Documentation
+## 🚢 Deployment
 
-- [**DEPLOYMENT.md**](DEPLOYMENT.md) - Production deployment guide
-- [**API.md**](API.md) - Complete API reference
-- [**FEATURES.md**](FEATURES.md) - Detailed feature documentation
-- [**backend/README.md**](backend/README.md) - Backend setup and development
-- [**frontend/README.md**](frontend/README.md) - Frontend setup and development
+### Production Deployment
 
-## 🧪 Development
+1. **Environment Setup**
+   ```bash
+   # Set production environment variables
+   export NODE_ENV=production
+   export MONGO_URL=your_production_mongodb_url
+   export OPENAI_API_KEY=your_production_openai_key
+   ```
 
-### Running Tests
-```bash
-# Backend tests
-cd backend && python -m pytest
+2. **Build Frontend**
+   ```bash
+   cd frontend
+   yarn build
+   ```
 
-# Frontend tests  
-cd frontend && yarn test
-```
+3. **Deploy with Docker**
+   ```bash
+   docker-compose up -d
+   ```
 
-### Development Mode
-```bash
-# Start both services in development
-./scripts/dev.sh
+### Cloud Deployment Options
 
-# Or start individually
-cd backend && python -m uvicorn server:app --reload
-cd frontend && yarn start
-```
+- **Vercel/Netlify**: Frontend deployment
+- **Heroku/Railway**: Full-stack deployment
+- **AWS/GCP**: Enterprise deployment with auto-scaling
+- **MongoDB Atlas**: Managed database hosting
 
 ## 🚀 Deployment
 
