@@ -661,7 +661,12 @@ const AppContent = () => {
               {/* 3. OPTIMIZED FEATURE SHOWCASE */}
               <section className="py-20 px-4">
                 <div className="max-w-7xl mx-auto">
-                  <div className="text-center mb-16">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="text-center mb-16"
+                  >
                     <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
                       Everything You Need to{' '}
                       <span className="bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent">
@@ -671,11 +676,18 @@ const AppContent = () => {
                     <p className="text-xl text-gray-300 max-w-3xl mx-auto">
                       Powerful tools designed for teams who want to explore possibilities, test strategies, and make better decisions.
                     </p>
-                  </div>
+                  </motion.div>
                   
                   <div className="grid md:grid-cols-3 gap-8">
-                    {/* Feature 1 - Optimized */}
-                    <div className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-purple-400/50 transition-all duration-300 hover:-translate-y-2">
+                    {/* Feature 1 - Restored Animations */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 }}
+                      viewport={{ once: true }}
+                      whileHover={{ y: -10 }}
+                      className="group relative bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl p-8 border border-white/10 hover:border-purple-400/50 transition-all duration-500"
+                    >
                       <div className="absolute top-4 right-4 w-12 h-12 bg-purple-600/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                         <span className="text-2xl">🤖</span>
                       </div>
