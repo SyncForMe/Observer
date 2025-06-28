@@ -503,7 +503,11 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       console.log('✅ Fresh state created - all conversations cleared, all agents removed, simulation paused');
     } catch (error) {
       console.error('Failed to create fresh state:', error);
-      alert('Failed to create fresh state. Please try again.');
+      if (!confirm('Failed to create fresh state. Would you like to try again?')) {
+        return;
+      }
+      // Retry the operation
+      await startFreshSimulation();
     }
     setLoading(false);
   };
