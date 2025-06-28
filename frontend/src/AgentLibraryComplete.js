@@ -1459,6 +1459,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const [isQuickTeamBuildersExpanded, setIsQuickTeamBuildersExpanded] = useState(false);
   const [savedAgents, setSavedAgents] = useState([]);
   const [loadingSavedAgents, setLoadingSavedAgents] = useState(false);
+  
+  // Modern search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedArchetype, setSelectedArchetype] = useState('all');
+  const [showQuickTeamsOnly, setShowQuickTeamsOnly] = useState(false);
 
   // Fetch saved agents on mount
   useEffect(() => {
