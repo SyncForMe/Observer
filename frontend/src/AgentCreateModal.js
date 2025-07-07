@@ -293,6 +293,10 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
       alert('Please fill in at least the name and goal fields.');
       return;
     }
+    if (recordingField) {
+      alert('Please wait for voice recording to complete before creating the agent.');
+      return;
+    }
     onCreate(formData);
   };
 
