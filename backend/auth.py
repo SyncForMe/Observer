@@ -7,6 +7,7 @@ import jwt
 from jwt.exceptions import InvalidTokenError as JWTError
 import os
 import pymongo
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # Security
 security = HTTPBearer()
