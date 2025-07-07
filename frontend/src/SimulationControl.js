@@ -630,6 +630,32 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     setLoading(false);
   };
 
+  // Create new agent
+  const handleCreateAgent = async (agentData) => {
+    if (!token) return;
+    
+    setLoading(true);
+    try {
+      const response = await axios.post(`${API}/agents`, agentData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('✅ Agent created successfully');
+      setShowCreateAgentModal(false);
+      await fetchAgents();
+      await fetchSimulationState();
+    } catch (error) {
+      console.error('Failed to create agent:', error);
+      if (!confirm('Failed to create agent. Would you like to try again?')) {
+        setLoading(false);
+        return;
+      }
+      await handleCreateAgent(agentData);
+      return;
+    }
+    setLoading(false);
+  };
+
   // Save agent
   const handleSaveAgent = async (agentId, formData) => {
     if (!token) return;
