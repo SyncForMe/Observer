@@ -59,6 +59,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
     goal: '',
     expertise: '',
     background: '',
+    memories: '',
     avatar_prompt: '',
     avatar_url: '',
     personality: {
