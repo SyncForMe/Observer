@@ -178,200 +178,234 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
         onClick={handleClose}
       >
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-gradient-to-br from-gray-900 to-black rounded-xl p-6 w-full max-w-7xl h-[90vh] overflow-y-auto"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[85vh] overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-white">🤖 Create New Agent</h2>
-            <button
-              onClick={handleClose}
-              disabled={loading || avatarGenerating}
-              className="text-white/60 hover:text-white transition-colors text-2xl disabled:opacity-50"
-            >
-              ✕
-            </button>
+          {/* Header */}
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">🤖 Create New Agent</h2>
+                <p className="text-white/80 mt-1">Design your agent's personality, expertise, and appearance</p>
+              </div>
+              <button
+                onClick={handleClose}
+                disabled={loading || avatarGenerating}
+                className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="h-full">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+          {/* Content */}
+          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
+            <div className="grid grid-cols-12 gap-6 h-full">
               
-              {/* Left Column - Basic Info & Professional Details */}
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white border-b border-white/20 pb-2">Basic Information</h3>
+              {/* Left Column - Basic Info (15%) */}
+              <div className="col-span-2 space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Basic Information</h3>
                   
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Agent Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="e.g., Dr. Sarah Chen"
-                      disabled={loading}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                      required
-                    />
-                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Agent Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        placeholder="e.g., Dr. Sarah Chen"
+                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                        required
+                      />
+                    </div>
 
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Archetype
-                    </label>
-                    <select
-                      value={formData.archetype}
-                      onChange={(e) => handleArchetypeChange(e.target.value)}
-                      disabled={loading}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                    >
-                      {Object.entries(AGENT_ARCHETYPES).map(([key, archetype]) => (
-                        <option key={key} value={key} className="bg-gray-800">
-                          {archetype.name} - {archetype.description}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Archetype
+                      </label>
+                      <select
+                        value={formData.archetype}
+                        onChange={(e) => handleArchetypeChange(e.target.value)}
+                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                      >
+                        {Object.entries(AGENT_ARCHETYPES).map(([key, archetype]) => (
+                          <option key={key} value={key}>
+                            {archetype.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Primary Goal *
-                    </label>
-                    <textarea
-                      value={formData.goal}
-                      onChange={(e) => handleInputChange('goal', e.target.value)}
-                      placeholder="e.g., To advance medical research through innovative treatments"
-                      disabled={loading}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
-                      rows="3"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white border-b border-white/20 pb-2">Professional Details</h3>
-                  
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Expertise
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.expertise}
-                      onChange={(e) => handleInputChange('expertise', e.target.value)}
-                      placeholder="e.g., Oncology, Drug Development, Clinical Trials"
-                      disabled={loading}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Background
-                    </label>
-                    <textarea
-                      value={formData.background}
-                      onChange={(e) => handleInputChange('background', e.target.value)}
-                      placeholder="e.g., 15 years experience in pharmaceutical research, former head of oncology at major hospital"
-                      disabled={loading}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
-                      rows="4"
-                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Primary Goal *
+                      </label>
+                      <textarea
+                        value={formData.goal}
+                        onChange={(e) => handleInputChange('goal', e.target.value)}
+                        placeholder="What is this agent trying to achieve?"
+                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                        rows="3"
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Middle Column - Avatar Generation */}
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white border-b border-white/20 pb-2">Avatar Generation</h3>
+              {/* Center Column - Professional Details (65%) */}
+              <div className="col-span-8 space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4 h-full">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Professional Details</h3>
                   
-                  <div>
-                    <label className="block text-white/80 text-sm font-medium mb-2">
-                      Avatar Description
-                    </label>
-                    <textarea
-                      value={formData.avatar_prompt}
-                      onChange={(e) => handleInputChange('avatar_prompt', e.target.value)}
-                      placeholder="e.g., professional medical doctor, lab coat, friendly smile, middle-aged Asian woman"
-                      disabled={loading || avatarGenerating}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
-                      rows="3"
-                    />
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Expertise
+                      </label>
+                      <textarea
+                        value={formData.expertise}
+                        onChange={(e) => handleInputChange('expertise', e.target.value)}
+                        placeholder="Areas of expertise (e.g., Oncology, Drug Development, Clinical Trials, Biomarker Research, Precision Medicine)"
+                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                        rows="4"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Professional Background
+                      </label>
+                      <textarea
+                        value={formData.background}
+                        onChange={(e) => handleInputChange('background', e.target.value)}
+                        placeholder="Detailed professional background (e.g., 15 years experience in pharmaceutical research, former head of oncology at major hospital, published 50+ research papers, led clinical trials for breakthrough cancer treatments)"
+                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                        rows="8"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Career Achievements
+                      </label>
+                      <textarea
+                        placeholder="Notable achievements, awards, publications, or career milestones (e.g., Nobel Prize nominee, developed breakthrough treatment protocol, founded medical research institute)"
+                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                        rows="4"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Current Projects & Research
+                      </label>
+                      <textarea
+                        placeholder="Current research projects, ongoing studies, or active initiatives (e.g., leading Phase III clinical trial for new immunotherapy, developing AI-powered diagnostic tools)"
+                        disabled={loading}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                        rows="4"
+                      />
+                    </div>
                   </div>
+                </div>
+              </div>
 
-                  <button
-                    type="button"
-                    onClick={generateAvatar}
-                    disabled={loading || avatarGenerating || !formData.avatar_prompt.trim()}
-                    className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
-                  >
-                    {avatarGenerating ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Generating Avatar...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>🎨</span>
-                        <span>Generate Avatar</span>
-                      </>
+              {/* Right Column - Avatar & Personality (15%) */}
+              <div className="col-span-2 space-y-4">
+                {/* Avatar Generation (7.5%) */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Avatar</h3>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                      </label>
+                      <textarea
+                        value={formData.avatar_prompt}
+                        onChange={(e) => handleInputChange('avatar_prompt', e.target.value)}
+                        placeholder="professional doctor, lab coat, friendly"
+                        disabled={loading || avatarGenerating}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none text-sm"
+                        rows="2"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={generateAvatar}
+                      disabled={loading || avatarGenerating || !formData.avatar_prompt.trim()}
+                      className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 text-sm"
+                    >
+                      {avatarGenerating ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🎨</span>
+                          <span>Generate</span>
+                        </>
+                      )}
+                    </button>
+
+                    {avatarError && (
+                      <p className="text-red-600 text-xs">{avatarError}</p>
                     )}
-                  </button>
 
-                  {avatarError && (
-                    <p className="text-red-400 text-sm">{avatarError}</p>
-                  )}
-
-                  {/* Avatar Preview */}
-                  <div className="bg-white/5 rounded-lg p-4 min-h-[300px] flex items-center justify-center">
-                    {formData.avatar_url ? (
-                      <div className="text-center">
+                    {/* Avatar Preview */}
+                    <div className="bg-white border-2 border-gray-200 rounded-lg p-2 flex items-center justify-center min-h-[120px]">
+                      {formData.avatar_url ? (
                         <img
                           src={formData.avatar_url}
                           alt="Generated Avatar"
-                          className="w-48 h-48 object-cover rounded-lg border-2 border-white/20 mx-auto mb-2"
+                          className="w-20 h-20 object-cover rounded-lg"
                           onError={(e) => {
                             e.target.style.display = 'none';
-                            setAvatarError('Failed to load generated avatar');
+                            setAvatarError('Failed to load avatar');
                           }}
                         />
-                        <p className="text-white/60 text-sm">Avatar Preview</p>
-                      </div>
-                    ) : (
-                      <div className="text-center text-white/40">
-                        <div className="w-48 h-48 bg-white/10 rounded-lg border-2 border-dashed border-white/20 flex items-center justify-center mx-auto mb-2">
-                          <span className="text-4xl">👤</span>
+                      ) : (
+                        <div className="text-center text-gray-400">
+                          <div className="w-20 h-20 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                            <span className="text-2xl">👤</span>
+                          </div>
                         </div>
-                        <p className="text-sm">Avatar will appear here after generation</p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column - Personality Traits */}
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-white border-b border-white/20 pb-2">Personality Traits</h3>
-                  <p className="text-white/60 text-sm">Adjust the sliders to customize your agent's personality</p>
+                {/* Personality Traits (7.5%) */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Personality</h3>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-3">
                     {Object.entries(formData.personality).map(([trait, value]) => (
-                      <div key={trait} className="space-y-2">
+                      <div key={trait} className="space-y-1">
                         <div className="flex justify-between items-center">
-                          <label className="text-white/80 text-sm font-medium capitalize">
+                          <label className="text-gray-700 text-xs font-medium capitalize">
                             {trait}
                           </label>
-                          <span className="text-white text-sm font-semibold bg-white/10 px-2 py-1 rounded">
+                          <span className="text-gray-600 text-xs font-semibold bg-gray-200 px-2 py-0.5 rounded">
                             {value}/10
                           </span>
                         </div>
@@ -382,45 +416,41 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                           value={value}
                           onChange={(e) => handlePersonalityChange(trait, e.target.value)}
                           disabled={loading}
-                          className="w-full h-3 bg-white/20 rounded-lg appearance-none cursor-pointer disabled:opacity-50 slider"
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 slider"
                         />
-                        <div className="flex justify-between text-xs text-white/40">
-                          <span>Low</span>
-                          <span>High</span>
-                        </div>
                       </div>
                     ))}
                   </div>
-                </div>
 
-                {/* Actions at bottom of right column */}
-                <div className="flex flex-col space-y-3 pt-4 border-t border-white/20">
-                  <button
-                    type="submit"
-                    disabled={loading || avatarGenerating || !formData.name.trim() || !formData.goal.trim()}
-                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span>Creating Agent...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>➕</span>
-                        <span>Create Agent</span>
-                      </>
-                    )}
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    disabled={loading || avatarGenerating}
-                    className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
+                  {/* Actions */}
+                  <div className="flex flex-col space-y-2 pt-4 border-t border-gray-200 mt-4">
+                    <button
+                      type="submit"
+                      disabled={loading || avatarGenerating || !formData.name.trim() || !formData.goal.trim()}
+                      className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 text-sm"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          <span>Creating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>➕</span>
+                          <span>Create Agent</span>
+                        </>
+                      )}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      disabled={loading || avatarGenerating}
+                      className="w-full px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -429,32 +459,32 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
           <style jsx>{`
             .slider::-webkit-slider-thumb {
               appearance: none;
-              height: 24px;
-              width: 24px;
+              height: 16px;
+              width: 16px;
               border-radius: 50%;
-              background: #10b981;
+              background: #7c3aed;
               cursor: pointer;
-              border: 3px solid #ffffff;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              border: 2px solid #ffffff;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.3);
             }
             .slider::-moz-range-thumb {
-              height: 24px;
-              width: 24px;
+              height: 16px;
+              width: 16px;
               border-radius: 50%;
-              background: #10b981;
+              background: #7c3aed;
               cursor: pointer;
-              border: 3px solid #ffffff;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              border: 2px solid #ffffff;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.3);
             }
             .slider::-webkit-slider-track {
-              height: 12px;
-              border-radius: 6px;
-              background: rgba(255,255,255,0.2);
+              height: 8px;
+              border-radius: 4px;
+              background: #e5e7eb;
             }
             .slider::-moz-range-track {
-              height: 12px;
-              border-radius: 6px;
-              background: rgba(255,255,255,0.2);
+              height: 8px;
+              border-radius: 4px;
+              background: #e5e7eb;
             }
           `}</style>
         </motion.div>
