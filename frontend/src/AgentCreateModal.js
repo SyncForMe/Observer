@@ -677,19 +677,6 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
               </div>
             )}
           </form>
-            {/* Recording Status */}
-            {recordingField && (
-              <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse">
-                🎤 Recording {recordingField}... Click microphone to stop
-              </div>
-            )}
-            {/* Recording Status */}
-            {recordingField && (
-              <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse">
-                🎤 Recording {recordingField}... Click microphone to stop
-              </div>
-            )}
-          </form>
 
           <style jsx>{`
             .slider-custom::-webkit-slider-thumb {
