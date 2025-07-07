@@ -234,6 +234,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const [showSetScenario, setShowSetScenario] = useState(false);
   const [customScenario, setCustomScenario] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [conversationLoading, setConversationLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
