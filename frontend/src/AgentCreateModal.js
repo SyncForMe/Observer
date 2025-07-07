@@ -365,8 +365,8 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
           <form onSubmit={handleSubmit} className="flex-1 p-6 overflow-y-auto">
             <div className="grid grid-cols-10 gap-4 min-h-full">
               
-              {/* Left Column - Basic Info (25%) - Wider */}
-              <div className="col-span-2.5 space-y-3">
+              {/* Left Column - Basic Info (30%) - WIDER */}
+              <div className="col-span-3.5 space-y-3">
                 <div className="bg-gray-50 rounded-lg p-3 h-full">
                   <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Basic Info</h3>
                   
