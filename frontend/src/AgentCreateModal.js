@@ -369,6 +369,58 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                   <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Basic Info</h3>
                   
                   <div className="space-y-3">
+                    {/* Avatar Preview - Large Circle Above Agent Name */}
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center border-2 border-gray-300 overflow-hidden">
+                        {formData.avatar_url ? (
+                          <img
+                            src={formData.avatar_url}
+                            alt="Generated Avatar"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              setAvatarError('Failed to load avatar');
+                            }}
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-2xl">👤</span>
+                        )}
+                      </div>
+                      
+                      {/* Simple Avatar Generation */}
+                      <div className="w-full space-y-1">
+                        <input
+                          type="text"
+                          value={formData.avatar_prompt}
+                          onChange={(e) => handleInputChange('avatar_prompt', e.target.value)}
+                          placeholder="describe your avatar"
+                          disabled={loading || avatarGenerating}
+                          className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50 text-center"
+                        />
+                        <button
+                          type="button"
+                          onClick={generateAvatar}
+                          disabled={loading || avatarGenerating || !formData.avatar_prompt.trim()}
+                          className="w-full px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
+                        >
+                          {avatarGenerating ? (
+                            <>
+                              <div className="animate-spin rounded-full h-2 w-2 border-b border-white"></div>
+                              <span>Creating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>🎨</span>
+                              <span>Generate</span>
+                            </>
+                          )}
+                        </button>
+                        {avatarError && (
+                          <p className="text-red-600 text-xs text-center">{avatarError}</p>
+                        )}
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Agent Name *
@@ -432,71 +484,6 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                             <rect x="10" y="20" width="4" height="2" rx="1"/>
                           </svg>
                         </button>
-                      </div>
-                    </div>
-
-                    {/* Avatar Generation Section */}
-                    <div className="border-t border-gray-200 pt-3 mt-3">
-                      <h4 className="text-xs font-semibold text-gray-800 mb-2">Avatar Generation</h4>
-                      
-                      <div className="space-y-2">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Avatar Description
-                          </label>
-                          <textarea
-                            value={formData.avatar_prompt}
-                            onChange={(e) => handleInputChange('avatar_prompt', e.target.value)}
-                            placeholder="professional doctor, lab coat, friendly"
-                            disabled={loading || avatarGenerating}
-                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                            rows="2"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={generateAvatar}
-                          disabled={loading || avatarGenerating || !formData.avatar_prompt.trim()}
-                          className="w-full px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
-                        >
-                          {avatarGenerating ? (
-                            <>
-                              <div className="animate-spin rounded-full h-2 w-2 border-b border-white"></div>
-                              <span>Generating...</span>
-                            </>
-                          ) : (
-                            <>
-                              <span>🎨</span>
-                              <span>Generate Avatar</span>
-                            </>
-                          )}
-                        </button>
-
-                        {avatarError && (
-                          <p className="text-red-600 text-xs">{avatarError}</p>
-                        )}
-
-                        {/* Avatar Preview */}
-                        <div className="bg-white border border-gray-200 rounded p-1 flex items-center justify-center h-16">
-                          {formData.avatar_url ? (
-                            <img
-                              src={formData.avatar_url}
-                              alt="Generated Avatar"
-                              className="w-12 h-12 object-cover rounded"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                setAvatarError('Failed to load avatar');
-                              }}
-                            />
-                          ) : (
-                            <div className="text-center text-gray-400">
-                              <div className="w-12 h-12 bg-gray-100 rounded border border-dashed border-gray-300 flex items-center justify-center">
-                                <span className="text-lg">👤</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
                   </div>
