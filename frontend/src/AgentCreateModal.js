@@ -608,6 +608,72 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
               {/* Right Column - Personality Traits (15%) */}
               <div className="col-span-3 space-y-3">
                 {/* Personality Traits with Sliders */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Personality Traits</h3>
+                  
+                  <div className="space-y-4">
+                    {Object.entries(formData.personality).map(([trait, value]) => (
+                      <div key={trait} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="text-gray-700 text-sm font-medium capitalize">
+                            {trait}
+                          </label>
+                          <span className="text-gray-600 text-sm font-semibold bg-purple-100 px-2 py-1 rounded">
+                            {value}/10
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={value}
+                          onChange={(e) => handlePersonalityChange(trait, e.target.value)}
+                          disabled={loading}
+                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 slider-custom"
+                          style={{
+                            background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(value-1)*11.11}%, #e5e7eb ${(value-1)*11.11}%, #e5e7eb 100%)`
+                          }}
+                        />
+                        <div className="flex justify-between text-xs text-gray-400 px-1">
+                          <span>Low</span>
+                          <span>High</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col space-y-3 pt-4 border-t border-gray-200 mt-4">
+                    <button
+                      type="submit"
+                      disabled={loading || avatarGenerating || recordingField || !formData.name.trim() || !formData.goal.trim()}
+                      className="w-full px-3 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 text-sm font-semibold"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Creating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>➕</span>
+                          <span>Create Agent</span>
+                        </>
+                      )}
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={handleClose}
+                      disabled={loading || avatarGenerating || recordingField}
+                      className="w-full px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+                {/* Personality Traits with Sliders */}
                 <div className="bg-gray-50 rounded-lg p-3 h-full">
                   <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Personality Traits</h3>
                   
