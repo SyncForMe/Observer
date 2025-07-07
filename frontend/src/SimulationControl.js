@@ -1277,6 +1277,14 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
               <div className="flex items-center space-x-2">
                 <span className="text-white/60 text-xs">{agents.length}</span>
                 <button
+                  onClick={() => setShowCreateAgentModal(true)}
+                  disabled={loading}
+                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors disabled:opacity-50"
+                  title="Add New Agent"
+                >
+                  ➕
+                </button>
+                <button
                   onClick={fetchAgents}
                   disabled={agentsLoading || loading}
                   className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors disabled:opacity-50"
