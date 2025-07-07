@@ -355,40 +355,40 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
             </div>
           </div>
 
-          {/* Content */}
-          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
-            <div className="grid grid-cols-12 gap-6 h-full">
+          {/* Content - Fixed height to fit screen */}
+          <form onSubmit={handleSubmit} className="flex-1 p-6 overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 h-full">
               
               {/* Left Column - Basic Info (15%) */}
-              <div className="col-span-2 space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Basic Information</h3>
+              <div className="col-span-2 space-y-3">
+                <div className="bg-gray-50 rounded-lg p-3 h-full">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Basic Info</h3>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Agent Name *
                       </label>
                       <input
                         type="text"
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder="e.g., Dr. Sarah Chen"
+                        placeholder="Dr. Sarah Chen"
                         disabled={loading}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Archetype
                       </label>
                       <select
                         value={formData.archetype}
                         onChange={(e) => handleArchetypeChange(e.target.value)}
                         disabled={loading}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50"
                       >
                         {Object.entries(AGENT_ARCHETYPES).map(([key, archetype]) => (
                           <option key={key} value={key}>
@@ -399,7 +399,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Primary Goal *
                       </label>
                       <textarea
@@ -407,8 +407,8 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                         onChange={(e) => handleInputChange('goal', e.target.value)}
                         placeholder="What is this agent trying to achieve?"
                         disabled={loading}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                        rows="3"
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                        rows="4"
                         required
                       />
                     </div>
@@ -416,76 +416,156 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                 </div>
               </div>
 
-              {/* Center Column - Professional Details (65%) */}
-              <div className="col-span-8 space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4 h-full">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Professional Details</h3>
+              {/* Center Column - Professional Details (65%) - DOMINANT SECTION */}
+              <div className="col-span-7 space-y-3">
+                <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 h-full border-2 border-blue-200">
+                  <h3 className="text-lg font-bold text-purple-800 mb-4 border-b-2 border-purple-300 pb-2 text-center">
+                    🎓 Professional Details - The Core of Your Agent
+                  </h3>
                   
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Expertise
-                      </label>
-                      <textarea
-                        value={formData.expertise}
-                        onChange={(e) => handleInputChange('expertise', e.target.value)}
-                        placeholder="Areas of expertise (e.g., Oncology, Drug Development, Clinical Trials, Biomarker Research, Precision Medicine)"
-                        disabled={loading}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                        rows="4"
-                      />
+                  <div className="grid grid-cols-2 gap-4 h-full">
+                    {/* Left side of Professional Details */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
+                          <span>💼 Areas of Expertise</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            value={formData.expertise}
+                            onChange={(e) => handleInputChange('expertise', e.target.value)}
+                            placeholder="e.g., Oncology, Drug Development, Clinical Trials, Biomarker Research, Precision Medicine..."
+                            disabled={loading || recordingField === 'expertise'}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="3"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceInput('expertise')}
+                            disabled={loading || recordingField}
+                            className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
+                              recordingField === 'expertise' 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                            }`}
+                            title={recordingField === 'expertise' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                              <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
+                          <span>🎯 Current Projects & Research</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            placeholder="e.g., Leading Phase III clinical trial for new immunotherapy, developing AI-powered diagnostic tools..."
+                            disabled={loading || recordingField === 'projects'}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="3"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceInput('projects')}
+                            disabled={loading || recordingField}
+                            className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
+                              recordingField === 'projects' 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                            }`}
+                            title={recordingField === 'projects' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                              <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Professional Background
-                      </label>
-                      <textarea
-                        value={formData.background}
-                        onChange={(e) => handleInputChange('background', e.target.value)}
-                        placeholder="Detailed professional background (e.g., 15 years experience in pharmaceutical research, former head of oncology at major hospital, published 50+ research papers, led clinical trials for breakthrough cancer treatments)"
-                        disabled={loading}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                        rows="8"
-                      />
-                    </div>
+                    {/* Right side of Professional Details */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
+                          <span>📚 Professional Background</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            value={formData.background}
+                            onChange={(e) => handleInputChange('background', e.target.value)}
+                            placeholder="e.g., 15 years experience in pharmaceutical research, former head of oncology at major hospital, published 50+ research papers..."
+                            disabled={loading || recordingField === 'background'}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="3"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceInput('background')}
+                            disabled={loading || recordingField}
+                            className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
+                              recordingField === 'background' 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                            }`}
+                            title={recordingField === 'background' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                              <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Career Achievements
-                      </label>
-                      <textarea
-                        placeholder="Notable achievements, awards, publications, or career milestones (e.g., Nobel Prize nominee, developed breakthrough treatment protocol, founded medical research institute)"
-                        disabled={loading}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                        rows="4"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Current Projects & Research
-                      </label>
-                      <textarea
-                        placeholder="Current research projects, ongoing studies, or active initiatives (e.g., leading Phase III clinical trial for new immunotherapy, developing AI-powered diagnostic tools)"
-                        disabled={loading}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                        rows="4"
-                      />
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
+                          <span>🏆 Career Achievements</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            placeholder="e.g., Nobel Prize nominee, developed breakthrough treatment protocol, founded medical research institute..."
+                            disabled={loading || recordingField === 'achievements'}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="3"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceInput('achievements')}
+                            disabled={loading || recordingField}
+                            className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
+                              recordingField === 'achievements' 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                            }`}
+                            title={recordingField === 'achievements' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                              <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Right Column - Avatar & Personality (15%) */}
-              <div className="col-span-2 space-y-4">
-                {/* Avatar Generation (7.5%) */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Avatar</h3>
+              <div className="col-span-3 space-y-3">
+                {/* Avatar Generation */}
+                <div className="bg-gray-50 rounded-lg p-3 h-2/5">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Avatar</h3>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
                         Description
                       </label>
                       <textarea
@@ -493,7 +573,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                         onChange={(e) => handleInputChange('avatar_prompt', e.target.value)}
                         placeholder="professional doctor, lab coat, friendly"
                         disabled={loading || avatarGenerating}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none text-sm"
+                        className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50 resize-none"
                         rows="2"
                       />
                     </div>
@@ -502,11 +582,11 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                       type="button"
                       onClick={generateAvatar}
                       disabled={loading || avatarGenerating || !formData.avatar_prompt.trim()}
-                      className="w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 text-sm"
+                      className="w-full px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
                     >
                       {avatarGenerating ? (
                         <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          <div className="animate-spin rounded-full h-2 w-2 border-b border-white"></div>
                           <span>Generating...</span>
                         </>
                       ) : (
@@ -522,12 +602,12 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                     )}
 
                     {/* Avatar Preview */}
-                    <div className="bg-white border-2 border-gray-200 rounded-lg p-2 flex items-center justify-center min-h-[120px]">
+                    <div className="bg-white border border-gray-200 rounded p-1 flex items-center justify-center h-16">
                       {formData.avatar_url ? (
                         <img
                           src={formData.avatar_url}
                           alt="Generated Avatar"
-                          className="w-20 h-20 object-cover rounded-lg"
+                          className="w-12 h-12 object-cover rounded"
                           onError={(e) => {
                             e.target.style.display = 'none';
                             setAvatarError('Failed to load avatar');
@@ -535,8 +615,8 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                         />
                       ) : (
                         <div className="text-center text-gray-400">
-                          <div className="w-20 h-20 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                            <span className="text-2xl">👤</span>
+                          <div className="w-12 h-12 bg-gray-100 rounded border border-dashed border-gray-300 flex items-center justify-center">
+                            <span className="text-lg">👤</span>
                           </div>
                         </div>
                       )}
@@ -544,18 +624,18 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                   </div>
                 </div>
 
-                {/* Personality Traits (7.5%) */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">Personality</h3>
+                {/* Personality Traits with Sliders */}
+                <div className="bg-gray-50 rounded-lg p-3 h-3/5">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">Personality</h3>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {Object.entries(formData.personality).map(([trait, value]) => (
                       <div key={trait} className="space-y-1">
                         <div className="flex justify-between items-center">
                           <label className="text-gray-700 text-xs font-medium capitalize">
                             {trait}
                           </label>
-                          <span className="text-gray-600 text-xs font-semibold bg-gray-200 px-2 py-0.5 rounded">
+                          <span className="text-gray-600 text-xs font-semibold bg-gray-200 px-1 py-0.5 rounded">
                             {value}/10
                           </span>
                         </div>
@@ -566,22 +646,22 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                           value={value}
                           onChange={(e) => handlePersonalityChange(trait, e.target.value)}
                           disabled={loading}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 slider"
+                          className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:opacity-50 slider"
                         />
                       </div>
                     ))}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex flex-col space-y-2 pt-4 border-t border-gray-200 mt-4">
+                  {/* Action Buttons */}
+                  <div className="flex flex-col space-y-2 pt-3 border-t border-gray-200 mt-3">
                     <button
                       type="submit"
-                      disabled={loading || avatarGenerating || !formData.name.trim() || !formData.goal.trim()}
-                      className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center space-x-2 text-sm"
+                      disabled={loading || avatarGenerating || recordingField || !formData.name.trim() || !formData.goal.trim()}
+                      className="w-full px-2 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1 text-sm font-medium"
                     >
                       {loading ? (
                         <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-white"></div>
                           <span>Creating...</span>
                         </>
                       ) : (
@@ -595,8 +675,8 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                     <button
                       type="button"
                       onClick={handleClose}
-                      disabled={loading || avatarGenerating}
-                      className="w-full px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors disabled:opacity-50 text-sm"
+                      disabled={loading || avatarGenerating || recordingField}
+                      className="w-full px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors disabled:opacity-50 text-sm"
                     >
                       Cancel
                     </button>
@@ -604,6 +684,13 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                 </div>
               </div>
             </div>
+            
+            {/* Recording Status */}
+            {recordingField && (
+              <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse">
+                🎤 Recording {recordingField}... Click microphone to stop
+              </div>
+            )}
           </form>
 
           <style jsx>{`
