@@ -72,6 +72,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
 
   const [avatarGenerating, setAvatarGenerating] = useState(false);
   const [avatarError, setAvatarError] = useState('');
+  const [recordingField, setRecordingField] = useState(null); // Track which field is being recorded
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
