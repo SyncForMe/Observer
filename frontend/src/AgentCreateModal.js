@@ -540,6 +540,8 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                         </label>
                         <div className="relative">
                           <textarea
+                            value={formData.memories}
+                            onChange={(e) => handleInputChange('memories', e.target.value)}
                             placeholder="e.g., Important cases, breakthrough discoveries, memorable patients, key research findings, critical lessons learned..."
                             disabled={loading || recordingField === 'memories'}
                             className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
