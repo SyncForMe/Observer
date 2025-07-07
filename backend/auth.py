@@ -19,7 +19,7 @@ ADMIN_EMAIL = "dino@cytonic.com"  # Admin email for special privileges
 
 # MongoDB connection
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-client = pymongo.MongoClient(mongo_url)
+client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'ai_simulation')]
 
 # User model
