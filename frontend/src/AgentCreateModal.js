@@ -351,7 +351,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
               </div>
               <button
                 onClick={handleClose}
-                disabled={loading || avatarGenerating}
+                disabled={loading || avatarGenerating || recordingField}
                 className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
               >
                 ✕
