@@ -673,6 +673,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                   </div>
                 </div>
               </div>
+            </div>
             
             {/* Recording Status */}
             {recordingField && (
