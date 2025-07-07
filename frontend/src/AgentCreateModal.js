@@ -406,15 +406,98 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                       <label className="block text-xs font-medium text-gray-700 mb-1">
                         Primary Goal *
                       </label>
-                      <textarea
-                        value={formData.goal}
-                        onChange={(e) => handleInputChange('goal', e.target.value)}
-                        placeholder="What is this agent trying to achieve?"
-                        disabled={loading}
-                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                        rows="4"
-                        required
-                      />
+                      <div className="relative">
+                        <textarea
+                          value={formData.goal}
+                          onChange={(e) => handleInputChange('goal', e.target.value)}
+                          placeholder="What is this agent trying to achieve?"
+                          disabled={loading || recordingField === 'goal'}
+                          className="w-full px-2 py-1 pr-8 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                          rows="3"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleVoiceInput('goal')}
+                          disabled={loading || recordingField}
+                          className={`absolute right-1 top-1 p-1 rounded transition-colors disabled:opacity-50 ${
+                            recordingField === 'goal' 
+                              ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                              : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                          }`}
+                          title={recordingField === 'goal' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                            <rect x="10" y="20" width="4" height="2" rx="1"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Avatar Generation Section */}
+                    <div className="border-t border-gray-200 pt-3 mt-3">
+                      <h4 className="text-xs font-semibold text-gray-800 mb-2">Avatar Generation</h4>
+                      
+                      <div className="space-y-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Avatar Description
+                          </label>
+                          <textarea
+                            value={formData.avatar_prompt}
+                            onChange={(e) => handleInputChange('avatar_prompt', e.target.value)}
+                            placeholder="professional doctor, lab coat, friendly"
+                            disabled={loading || avatarGenerating}
+                            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="2"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={generateAvatar}
+                          disabled={loading || avatarGenerating || !formData.avatar_prompt.trim()}
+                          className="w-full px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors disabled:opacity-50 flex items-center justify-center space-x-1"
+                        >
+                          {avatarGenerating ? (
+                            <>
+                              <div className="animate-spin rounded-full h-2 w-2 border-b border-white"></div>
+                              <span>Generating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>🎨</span>
+                              <span>Generate Avatar</span>
+                            </>
+                          )}
+                        </button>
+
+                        {avatarError && (
+                          <p className="text-red-600 text-xs">{avatarError}</p>
+                        )}
+
+                        {/* Avatar Preview */}
+                        <div className="bg-white border border-gray-200 rounded p-1 flex items-center justify-center h-16">
+                          {formData.avatar_url ? (
+                            <img
+                              src={formData.avatar_url}
+                              alt="Generated Avatar"
+                              className="w-12 h-12 object-cover rounded"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                setAvatarError('Failed to load avatar');
+                              }}
+                            />
+                          ) : (
+                            <div className="text-center text-gray-400">
+                              <div className="w-12 h-12 bg-gray-100 rounded border border-dashed border-gray-300 flex items-center justify-center">
+                                <span className="text-lg">👤</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
