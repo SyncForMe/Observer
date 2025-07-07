@@ -497,72 +497,106 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                     🎓 Professional Details - The Core of Your Agent
                   </h3>
                   
-                  <div className="space-y-4 h-full">
-                    
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
-                        <span>💼 Areas of Expertise</span>
-                      </label>
-                      <div className="relative">
-                        <textarea
-                          value={formData.expertise}
-                          onChange={(e) => handleInputChange('expertise', e.target.value)}
-                          placeholder="e.g., Oncology, Drug Development, Clinical Trials, Biomarker Research, Precision Medicine..."
-                          disabled={loading || recordingField === 'expertise'}
-                          className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                          rows="4"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleVoiceInput('expertise')}
-                          disabled={loading || recordingField}
-                          className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
-                            recordingField === 'expertise' 
-                              ? 'bg-red-500/20 text-red-500 animate-pulse' 
-                              : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
-                          }`}
-                          title={recordingField === 'expertise' ? 'Recording... Click to stop' : 'Click to record with voice'}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
-                            <rect x="10" y="20" width="4" height="2" rx="1"/>
-                          </svg>
-                        </button>
+                  <div className="grid grid-cols-2 gap-4 h-full">
+                    {/* Left Column */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
+                          <span>💼 Areas of Expertise</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            value={formData.expertise}
+                            onChange={(e) => handleInputChange('expertise', e.target.value)}
+                            placeholder="e.g., Oncology, Drug Development, Clinical Trials, Biomarker Research, Precision Medicine..."
+                            disabled={loading || recordingField === 'expertise'}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="3"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceInput('expertise')}
+                            disabled={loading || recordingField}
+                            className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
+                              recordingField === 'expertise' 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                            }`}
+                            title={recordingField === 'expertise' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                              <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
+                          <span>🧠 Key Memories & Knowledge</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            placeholder="e.g., Important cases, breakthrough discoveries, memorable patients, key research findings, critical lessons learned..."
+                            disabled={loading || recordingField === 'memories'}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="3"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceInput('memories')}
+                            disabled={loading || recordingField}
+                            className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
+                              recordingField === 'memories' 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                            }`}
+                            title={recordingField === 'memories' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                              <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
-                        <span>📚 Professional Background</span>
-                      </label>
-                      <div className="relative">
-                        <textarea
-                          value={formData.background}
-                          onChange={(e) => handleInputChange('background', e.target.value)}
-                          placeholder="e.g., 15 years experience in pharmaceutical research, former head of oncology at major hospital, published 50+ research papers..."
-                          disabled={loading || recordingField === 'background'}
-                          className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
-                          rows="6"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleVoiceInput('background')}
-                          disabled={loading || recordingField}
-                          className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
-                            recordingField === 'background' 
-                              ? 'bg-red-500/20 text-red-500 animate-pulse' 
-                              : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
-                          }`}
-                          title={recordingField === 'background' ? 'Recording... Click to stop' : 'Click to record with voice'}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
-                            <rect x="10" y="20" width="4" height="2" rx="1"/>
-                          </svg>
-                        </button>
+                    {/* Right Column */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center space-x-2">
+                          <span>📚 Professional Background</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            value={formData.background}
+                            onChange={(e) => handleInputChange('background', e.target.value)}
+                            placeholder="e.g., 15 years experience in pharmaceutical research, former head of oncology at major hospital, published 50+ research papers..."
+                            disabled={loading || recordingField === 'background'}
+                            className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 disabled:opacity-50 resize-none"
+                            rows="6"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceInput('background')}
+                            disabled={loading || recordingField}
+                            className={`absolute right-2 top-2 p-1 rounded transition-colors disabled:opacity-50 ${
+                              recordingField === 'background' 
+                                ? 'bg-red-500/20 text-red-500 animate-pulse' 
+                                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                            }`}
+                            title={recordingField === 'background' ? 'Recording... Click to stop' : 'Click to record with voice'}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                              <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
-
                   </div>
                 </div>
               </div>
