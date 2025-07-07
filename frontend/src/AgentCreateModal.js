@@ -139,6 +139,154 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
     setAvatarGenerating(false);
   };
 
+  // Voice input functionality (reused from SimulationControl)
+  const handleVoiceInput = async (fieldName) => {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      alert('Please login to use voice input functionality.');
+      return;
+    }
+
+    if (recordingField === fieldName) {
+      // Stop recording immediately when clicked again
+      console.log('🛑 User requested to stop recording');
+      setRecordingField(null);
+      if (window.currentMediaRecorder && window.currentMediaRecorder.state === 'recording') {
+        window.currentMediaRecorder.stop();
+      }
+      return;
+    }
+
+    if (recordingField) {
+      alert('Another field is currently being recorded. Please wait or stop the current recording.');
+      return;
+    }
+
+    try {
+      console.log(`🎤 Starting voice input for ${fieldName}...`);
+      setRecordingField(fieldName);
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100
+        } 
+      });
+
+      console.log('🎵 Microphone access granted, audio stream obtained');
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      window.currentMediaRecorder = mediaRecorder;
+
+      const audioChunks = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        console.log('🎵 Audio data chunk received:', event.data.size, 'bytes');
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        console.log('🛑 MediaRecorder stopped, processing audio...');
+        
+        if (audioChunks.length === 0) {
+          console.log('⚠️ No audio data recorded');
+          alert('No audio was recorded. Please try again.');
+          setRecordingField(null);
+          return;
+        }
+
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        console.log(`📦 Audio blob created: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
+
+        const formData = new FormData();
+        const fileName = `voice_input_${fieldName}_${Date.now()}.webm`;
+        formData.append('file', audioBlob, fileName);
+
+        try {
+          console.log('🚀 Sending transcription request...');
+          const response = await axios.post(`${API}/speech/transcribe-scenario`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${token}`
+            },
+            timeout: 30000
+          });
+
+          console.log('✅ Transcription response received:', response);
+          
+          if (response.data && response.data.text) {
+            console.log(`📝 Setting transcribed text for ${fieldName}:`, response.data.text);
+            handleInputChange(fieldName, response.data.text);
+            console.log('✅ Text successfully set in input field');
+          } else {
+            console.log('❌ No text in transcription response:', response.data);
+            alert('No speech was detected in the recording. Please speak clearly and try again.');
+          }
+        } catch (error) {
+          console.error('❌ Failed to transcribe audio:', error);
+          
+          if (error.response?.status === 401) {
+            alert('Authentication failed. Please refresh the page and try again.');
+          } else if (error.response?.status === 400) {
+            const errorMsg = error.response.data?.detail || 'Invalid audio format';
+            alert(`Invalid request: ${errorMsg}. Try a different browser or check microphone settings.`);
+          } else if (error.code === 'ECONNABORTED') {
+            alert('Request timeout. Please try with a shorter recording.');
+          } else {
+            alert(`Failed to transcribe audio: ${error.response?.data?.detail || error.message}. Please check the console for details.`);
+          }
+        }
+
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.log('🔇 Microphone track stopped');
+        });
+        setRecordingField(null);
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error('❌ MediaRecorder error:', event.error);
+        alert('Recording error occurred. Please try again.');
+        window.currentMediaRecorder = null;
+        setRecordingField(null);
+      };
+
+      console.log('🎬 Starting MediaRecorder...');
+      console.log('💡 Click the microphone button again to stop recording');
+      mediaRecorder.start(1000);
+
+      // Backup auto-stop after 60 seconds
+      setTimeout(() => {
+        if (mediaRecorder.state === 'recording') {
+          console.log('⏰ Safety auto-stop after 60 seconds');
+          mediaRecorder.stop();
+        }
+      }, 60000);
+
+    } catch (error) {
+      console.error('❌ Failed to start recording:', error);
+      setRecordingField(null);
+      window.currentMediaRecorder = null;
+      
+      if (error.name === 'NotAllowedError') {
+        alert('Microphone access denied. Please allow microphone access and try again.');
+      } else if (error.name === 'NotFoundError') {
+        alert('No microphone found. Please connect a microphone and try again.');
+      } else if (error.name === 'NotSupportedError') {
+        alert('Voice recording is not supported in this browser. Please use Chrome, Firefox, or Safari.');
+      } else {
+        alert(`Failed to access microphone: ${error.message}. Please check your browser settings and try again.`);
+      }
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.goal.trim()) {
