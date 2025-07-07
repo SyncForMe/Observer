@@ -297,7 +297,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
   };
 
   const handleClose = () => {
-    if (!loading && !avatarGenerating) {
+    if (!loading && !avatarGenerating && !recordingField) {
       setFormData({
         name: '',
         archetype: 'scientist',
@@ -315,6 +315,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
         }
       });
       setAvatarError('');
+      setRecordingField(null);
       onClose();
     }
   };
