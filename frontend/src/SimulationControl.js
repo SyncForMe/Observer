@@ -1737,6 +1737,14 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         onSave={handleSaveAgent}
       />
       
+      {/* Agent Create Modal */}
+      <AgentCreateModal
+        isOpen={showCreateAgentModal}
+        onClose={() => setShowCreateAgentModal(false)}
+        onCreate={handleCreateAgent}
+        loading={loading}
+      />
+      
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
