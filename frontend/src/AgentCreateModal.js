@@ -48,7 +48,7 @@ const AGENT_ARCHETYPES = {
   "researcher": {
     "name": "The Researcher",
     "description": "Investigative, detail-oriented, systematic",
-    "default_traits": {"extroversion": 3, "optimism": 6, "curiosity": 9, "cooperativeness": 7, "energy": 5}
+    "default_traits": {"extroversion": 3, "optimism": 6, "curiosity": 10, "cooperativeness": 7, "energy": 6}
   }
 };
 
@@ -93,17 +93,11 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
   };
 
   const handleArchetypeChange = (archetype) => {
-    const defaultTraits = AGENT_ARCHETYPES[archetype]?.default_traits || {};
+    const selectedArchetype = AGENT_ARCHETYPES[archetype];
     setFormData(prev => ({
       ...prev,
       archetype,
-      personality: {
-        extroversion: defaultTraits.extroversion || 5,
-        optimism: defaultTraits.optimism || 5,
-        curiosity: defaultTraits.curiosity || 5,
-        cooperativeness: defaultTraits.cooperativeness || 5,
-        energy: defaultTraits.energy || 5
-      }
+      personality: selectedArchetype ? selectedArchetype.default_traits : prev.personality
     }));
   };
 
@@ -288,19 +282,6 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
     }
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.goal.trim()) {
-      alert('Please fill in at least the name and goal fields.');
-      return;
-    }
-    if (recordingField) {
-      alert('Please wait for voice recording to complete before creating the agent.');
-      return;
-    }
-    onCreate(formData);
-  };
-
   const handleClose = () => {
     if (!loading && !avatarGenerating && !recordingField) {
       setFormData({
@@ -326,15 +307,25 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.goal.trim()) {
+      alert('Please fill in at least the name and goal fields.');
+      return;
+    }
+    if (recordingField) {
+      alert('Please wait for voice recording to complete before creating the agent.');
+      return;
+    }
+    onCreate(formData);
+  };
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
         onClick={handleClose}
       >
         <motion.div
@@ -345,12 +336,17 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold">🤖 Create New Agent</h2>
-                <p className="text-white/80 mt-1">Design your agent's personality, expertise, and appearance</p>
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                <span className="text-lg">➕</span>
               </div>
+              <div>
+                <h2 className="text-xl font-bold">Create New Agent</h2>
+                <p className="text-purple-100 text-sm">Design your perfect AI assistant</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
               <button
                 onClick={handleClose}
                 disabled={loading || avatarGenerating || recordingField}
@@ -560,7 +556,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
-                            <rect x="10" y="20" width="4" height="2" rx="1"/>
+                            <rect x="10" y "20" width="4" height="2" rx="1"/>
                           </svg>
                         </button>
                       </div>
@@ -602,7 +598,8 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                 </div>
               </div>
 
-                {/* Personality Traits with Sliders */}
+              {/* Right Column - Personality Traits (20%) - NARROWER */}
+              <div className="col-span-2 space-y-3">
                 <div className="bg-gray-50 rounded-lg p-3">
                   <h3 className="text-sm font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">Personality Traits</h3>
                   
@@ -712,7 +709,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
             }
           `}</style>
         </motion.div>
-      </motion.div>
+      </div>
     </AnimatePresence>
   );
 };
