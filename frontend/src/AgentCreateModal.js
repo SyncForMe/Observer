@@ -556,7 +556,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
-                            <rect x="10" y "20" width="4" height="2" rx="1"/>
+                            <rect x="10" y="20" width="4" height="2" rx="1"/>
                           </svg>
                         </button>
                       </div>
