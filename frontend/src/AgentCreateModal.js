@@ -659,34 +659,36 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
           </form>
 
           <style jsx>{`
-            .slider::-webkit-slider-thumb {
+            .slider-custom::-webkit-slider-thumb {
               appearance: none;
-              height: 16px;
-              width: 16px;
+              height: 20px;
+              width: 20px;
               border-radius: 50%;
-              background: #7c3aed;
+              background: #8b5cf6;
               cursor: pointer;
               border: 2px solid #ffffff;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
             }
-            .slider::-moz-range-thumb {
-              height: 16px;
-              width: 16px;
+            .slider-custom::-moz-range-thumb {
+              height: 20px;
+              width: 20px;
               border-radius: 50%;
-              background: #7c3aed;
+              background: #8b5cf6;
               cursor: pointer;
               border: 2px solid #ffffff;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              border: none;
             }
-            .slider::-webkit-slider-track {
+            .slider-custom::-webkit-slider-track {
               height: 8px;
               border-radius: 4px;
-              background: #e5e7eb;
+              background: transparent;
             }
-            .slider::-moz-range-track {
+            .slider-custom::-moz-range-track {
               height: 8px;
               border-radius: 4px;
-              background: #e5e7eb;
+              background: transparent;
+              border: none;
             }
           `}</style>
         </motion.div>
