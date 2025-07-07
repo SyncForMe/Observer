@@ -339,7 +339,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white rounded-xl shadow-2xl w-full h-[90vh] overflow-hidden flex flex-col"
+          className="bg-white rounded-xl shadow-2xl w-4/5 max-w-5xl h-[80vh] overflow-hidden flex flex-col mt-8"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
