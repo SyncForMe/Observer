@@ -96,9 +96,9 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
             <div>
               <div className="flex items-center space-x-4 mb-6">
                 <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                  {agent?.avatar_url ? (
+                  {formData.avatar_url ? (
                     <img 
-                      src={agent.avatar_url} 
+                      src={formData.avatar_url} 
                       alt={formData.name}
                       className="w-full h-full rounded-full object-cover"
                     />
