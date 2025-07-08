@@ -652,7 +652,7 @@ def test_simulation_control():
         "/simulation/pause",
         method="POST",
         auth=True,
-        expected_keys=["message", "state"]
+        expected_keys=["message", "is_active", "success"]
     )
     
     if pause_sim_test and pause_sim_response:
