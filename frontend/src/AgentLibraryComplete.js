@@ -1774,7 +1774,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate group-hover:text-purple-300 transition-colors">Created Agents</div>
-                        <div className="text-xs text-white/60 truncate">Agents you've created ({savedAgents.length})</div>
+                        <div className="text-xs text-white/60 truncate">Agents you've created ({savedAgents.filter(agent => !agent.is_favorite).length})</div>
                       </div>
                     </div>
                   </button>
