@@ -1259,7 +1259,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
 
         </div>
 
-      {/* Combined Active Agents, Scenario Setup, and Live Conversations Section */}
+      {/* Combined Active Agents, Live Conversations, and Scenario Setup Section */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Active Agents Section - 25% width on large screens */}
         <div className="lg:col-span-1">
@@ -1372,118 +1372,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           </div>
         </div>
 
-        {/* Scenario Setup Section - 25% width on large screens */}
-        <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">📝 Scenario Setup</h3>
-              <button
-                onClick={() => setShowSetScenario(!showSetScenario)}
-                className="flex items-center space-x-2 text-white text-sm font-medium hover:text-blue-300 transition-colors"
-              >
-                <span className={`transform transition-transform duration-200 ${showSetScenario ? 'rotate-180' : ''}`}>
-                  ⬇️
-                </span>
-              </button>
-            </div>
-            
-            {/* Expandable Scenario Input */}
-            {showSetScenario && (
-              <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-white/60 text-sm">Enter custom scenario or generate random:</span>
-                  <button
-                    onClick={getRandomScenario}
-                    disabled={loading || isRunning}
-                    className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {loading ? '⏳' : '🎲 Random'}
-                  </button>
-                </div>
-                <div className="relative">
-                  <textarea
-                    value={customScenario}
-                    onChange={(e) => setCustomScenario(e.target.value)}
-                    placeholder="Enter your scenario here... (e.g., 'A team of researchers discovers an unexpected signal from deep space')"
-                    disabled={loading || isRunning || isRecording}
-                    className="w-full px-3 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
-                    rows="6"
-                  />
-                  <button
-                    onClick={handleVoiceInput}
-                    disabled={loading || isRunning}
-                    className={`absolute right-2 top-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                      isRecording 
-                        ? 'bg-red-500/20 text-red-400 animate-pulse' 
-                        : 'text-white/60 hover:text-white hover:bg-white/10'
-                    }`}
-                    title={isRecording ? 'Recording... Click to stop' : 'Click to record scenario with voice'}
-                  >
-                    <svg 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="currentColor"
-                      className="w-4 h-4"
-                    >
-                      <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
-                      <rect x="10" y="20" width="4" height="2" rx="1"/>
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => {
-                      setShowSetScenario(false);
-                      setCustomScenario('');
-                    }}
-                    disabled={loading || isRecording}
-                    className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSetScenario}
-                    disabled={loading || isRunning || !customScenario.trim() || isRecording}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Set Scenario
-                  </button>
-                </div>
-                {isRecording && (
-                  <p className="text-yellow-300 text-xs">
-                    🎤 Recording... Speak clearly. Recording will auto-stop after 30 seconds.
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Show current scenario if exists */}
-            {!showSetScenario && scenario && (
-              <div className="bg-white/5 rounded-lg p-4">
-                <p className="text-white/60 text-sm mb-2">Current Scenario:</p>
-                <p className="text-white text-sm">{scenario}</p>
-              </div>
-            )}
-
-            {/* Default expanded state with instructions */}
-            {!showSetScenario && !scenario && (
-              <div className="text-center py-8">
-                <div className="text-3xl mb-2">📝</div>
-                <h4 className="text-white font-medium mb-2 text-sm">No Scenario Set</h4>
-                <p className="text-white/60 text-xs mb-3">Set a scenario to guide your simulation</p>
-                <button 
-                  onClick={() => setShowSetScenario(true)}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-                >
-                  Set Scenario
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Live Conversations Section - 50% width on large screens */}
+        {/* Live Conversations Section - 50% width on large screens (Middle Position) */}
         <div className="lg:col-span-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
             <div className="flex justify-between items-center mb-4">
