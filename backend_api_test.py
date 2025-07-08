@@ -391,6 +391,8 @@ def test_agent_management():
     # Test 3: Update an agent
     print("\nTest 3: Update an agent")
     
+    update_agent_test = False  # Initialize to False
+    
     # Fix for the agent update endpoint
     if created_agent_ids:
         agent_id = created_agent_ids[0]
