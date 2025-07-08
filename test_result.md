@@ -1464,15 +1464,15 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Agent Persistence Across Tabs"
-    - "Fixed Simulation Workflow"
-    - "Gemini Integration"
-    - "Complete User Workflow"
+    - "Authentication Endpoints"
+    - "Agent Management Endpoints"
+    - "Simulation Control Endpoints"
+    - "Scenario Management Endpoints"
+    - "Conversation Endpoints"
   stuck_tasks:
-    - "Complete User Workflow"
+    - ""
   test_all: false
   test_priority: "high_first"
-  test_all: false
   test_priority: "high_first"
 
 agent_communication:
