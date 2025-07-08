@@ -1061,8 +1061,8 @@ def test_conversation_endpoints():
         
         if generate_conversation_test and generate_conversation_response:
             print("✅ Successfully generated conversation")
-            conversation = generate_conversation_response.get("conversation", {})
-            messages = conversation.get("messages", [])
+            # The response is the conversation itself, not wrapped in a "conversation" field
+            messages = generate_conversation_response.get("messages", [])
             print(f"Generated {len(messages)} messages")
             
             # Check if messages have content
