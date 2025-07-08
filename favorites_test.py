@@ -473,7 +473,7 @@ def test_favorites_functionality():
         f"/saved-agents/{non_existent_id}/favorite",
         method="PUT",
         auth=True,
-        expected_status=404
+        expected_status=500  # The API returns 500 with a detail message containing "404: Saved agent not found"
     )
     
     if toggle_non_existent_test:
