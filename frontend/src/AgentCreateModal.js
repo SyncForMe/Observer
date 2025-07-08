@@ -357,8 +357,8 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
             </div>
           </div>
 
-          {/* Content - Fixed height with scroll */}
-          <form onSubmit={handleSubmit} className="flex-1 p-6 overflow-y-auto">
+          {/* Content - Match edit modal height */}
+          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
             <div className="grid grid-cols-10 gap-4 min-h-full">
               
               {/* Left Column - Basic Info (30%) - WIDER */}
