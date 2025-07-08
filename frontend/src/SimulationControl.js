@@ -656,6 +656,32 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
       });
       
       console.log('✅ Agent created successfully');
+      
+      // AUTO-SAVE: Also save the agent to user's library
+      try {
+        const savedAgentData = {
+          name: agentData.name,
+          archetype: agentData.archetype,
+          personality: agentData.personality,
+          goal: agentData.goal,
+          expertise: agentData.expertise || '',
+          background: agentData.background || '',
+          memory_summary: agentData.memories || '',
+          avatar_url: agentData.avatar_url || '',
+          avatar_prompt: agentData.avatar_prompt || '',
+          is_favorite: false // Default to not favorite
+        };
+        
+        await axios.post(`${API}/saved-agents`, savedAgentData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        console.log('✅ Agent auto-saved to My Agents library');
+      } catch (error) {
+        console.error('Failed to auto-save agent to library:', error);
+        // Don't fail the main creation if auto-save fails
+      }
+      
       setShowCreateAgentModal(false);
       await fetchAgents();
       await fetchSimulationState();
