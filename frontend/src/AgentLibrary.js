@@ -1545,7 +1545,43 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
   }, [token]);
 
-  // Handle using a saved agent
+  // Toggle agent favorite status
+  const toggleAgentFavorite = async (agentId, currentStatus) => {
+    if (!token) return;
+    
+    try {
+      const response = await axios.put(`${API}/saved-agents/${agentId}/favorite`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        // Update saved agents list
+        setSavedAgents(prev => 
+          prev.map(agent => 
+            agent.id === agentId 
+              ? { ...agent, is_favorite: response.data.is_favorite }
+              : agent
+          )
+        );
+        
+        // Update favorites list
+        const updatedAgent = response.data.agent;
+        if (updatedAgent.is_favorite) {
+          setFavoriteAgents(prev => {
+            const exists = prev.find(agent => agent.id === agentId);
+            return exists ? prev : [...prev, updatedAgent];
+          });
+        } else {
+          setFavoriteAgents(prev => prev.filter(agent => agent.id !== agentId));
+        }
+        
+        console.log(`✅ Agent ${updatedAgent.is_favorite ? 'added to' : 'removed from'} favorites`);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      alert('Failed to update favorite status.');
+    }
+  };
   const handleUseSavedAgent = async (agent) => {
     try {
       const agentData = {
