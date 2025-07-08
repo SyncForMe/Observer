@@ -1,336 +1,323 @@
 # Contributing to AI Agent Simulation Platform
 
-First off, thank you for considering contributing to the AI Agent Simulation Platform! It's people like you that make this platform such a great tool for AI research and simulation.
+We love your input! We want to make contributing to the AI Agent Simulation Platform as easy and transparent as possible, whether it's:
 
-## 🌟 Code of Conduct
+- Reporting a bug
+- Discussing the current state of the code
+- Submitting a fix
+- Proposing new features
+- Becoming a maintainer
 
-This project and everyone participating in it is governed by our Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to [conduct@yourdomain.com](mailto:conduct@yourdomain.com).
+## Development Process
 
-## 🚀 How Can I Contribute?
+We use GitHub to host code, to track issues and feature requests, as well as accept pull requests.
 
-### Reporting Bugs
+### Pull Request Process
 
-This section guides you through submitting a bug report. Following these guidelines helps maintainers and the community understand your report, reproduce the behavior, and find related reports.
+1. **Fork the repository** and create your branch from `main`
+2. **Make your changes** following our coding standards
+3. **Add tests** for any new functionality
+4. **Update documentation** if needed
+5. **Ensure the test suite passes**
+6. **Submit a pull request**
 
-**Before Submitting A Bug Report:**
-- Check the debugging guide for common issues
-- Check the existing issues to see if the problem has already been reported
+### Branch Naming Convention
 
-**How Do I Submit A Bug Report?**
+- `feature/agent-library-enhancement` - New features
+- `fix/favorites-api-bug` - Bug fixes
+- `docs/api-documentation` - Documentation updates
+- `refactor/database-optimization` - Code refactoring
+- `test/agent-creation-workflow` - Test improvements
 
-Bugs are tracked as [GitHub issues](https://github.com/your-username/ai-agent-simulation/issues). Create an issue and provide the following information:
+## Code Standards
 
-- **Use a clear and descriptive title** for the issue
-- **Describe the exact steps which reproduce the problem**
-- **Provide specific examples to demonstrate the steps**
-- **Describe the behavior you observed after following the steps**
-- **Explain which behavior you expected to see instead and why**
-- **Include screenshots and animated GIFs** which show you following the described steps
+### Python (Backend)
 
-### Suggesting Enhancements
-
-Enhancement suggestions are tracked as [GitHub issues](https://github.com/your-username/ai-agent-simulation/issues). When creating an enhancement suggestion, please include:
-
-- **Use a clear and descriptive title** for the issue
-- **Provide a step-by-step description of the suggested enhancement**
-- **Provide specific examples to demonstrate the steps**
-- **Describe the current behavior and explain which behavior you expected to see instead**
-- **Explain why this enhancement would be useful**
-
-### Pull Requests
-
-The process described here has several goals:
-
-- Maintain the project's quality
-- Fix problems that are important to users
-- Engage the community in working toward the best possible AI simulation platform
-- Enable a sustainable system for maintainers to review contributions
-
-Please follow these steps to have your contribution considered by the maintainers:
-
-1. Follow all instructions in the [template](PULL_REQUEST_TEMPLATE.md)
-2. Follow the [styleguides](#styleguides)
-3. After you submit your pull request, verify that all [status checks](https://help.github.com/articles/about-status-checks/) are passing
-
-## 📋 Development Process
-
-### Getting Started
-
-1. **Fork the repository** and clone your fork
-2. **Install dependencies** for both frontend and backend
-3. **Set up your development environment** with the required tools
-4. **Create a topic branch** from the main branch for your changes
-5. **Make your changes** following our coding standards
-6. **Test your changes** thoroughly
-7. **Submit a pull request**
-
-### Development Setup
-
-#### Prerequisites
-- Node.js 16.0+ and yarn
-- Python 3.8+ and pip
-- MongoDB 4.4+
-- Git
-
-#### Environment Setup
-```bash
-# Clone your fork
-git clone https://github.com/YOUR-USERNAME/ai-agent-simulation.git
-cd ai-agent-simulation
-
-# Install backend dependencies
-cd backend
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # Development dependencies
-
-# Install frontend dependencies
-cd ../frontend
-yarn install
-
-# Set up environment variables
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-# Edit the .env files with your configuration
-```
-
-#### Running Tests
-```bash
-# Backend tests
-cd backend
-python -m pytest tests/ -v
-
-# Frontend tests
-cd frontend
-yarn test
-
-# Run all tests
-./scripts/run-all-tests.sh
-```
-
-## 📝 Styleguides
-
-### Git Commit Messages
-
-- Use the present tense ("Add feature" not "Added feature")
-- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-- Limit the first line to 72 characters or less
-- Reference issues and pull requests liberally after the first line
-- Consider starting the commit message with an applicable emoji:
-  - 🎨 `:art:` when improving the format/structure of the code
-  - 🐎 `:racehorse:` when improving performance
-  - 🚱 `:non-potable_water:` when plugging memory leaks
-  - 📝 `:memo:` when writing docs
-  - 🐧 `:penguin:` when fixing something on Linux
-  - 🍎 `:apple:` when fixing something on macOS
-  - 🏁 `:checkered_flag:` when fixing something on Windows
-  - 🐛 `:bug:` when fixing a bug
-  - 🔥 `:fire:` when removing code or files
-  - 💚 `:green_heart:` when fixing the CI build
-  - ✅ `:white_check_mark:` when adding tests
-  - 🔒 `:lock:` when dealing with security
-  - ⬆️ `:arrow_up:` when upgrading dependencies
-  - ⬇️ `:arrow_down:` when downgrading dependencies
-
-### Python Styleguide
-
-- Follow [PEP 8](https://pep8.org/)
-- Use [Black](https://github.com/psf/black) for code formatting
-- Use [isort](https://github.com/PyCQA/isort) for import sorting
-- Add type hints to all function signatures
-- Write docstrings for all public functions and classes
-- Maximum line length is 88 characters (Black default)
-
-#### Example:
 ```python
-from typing import List, Optional
-
-def create_agent(
-    name: str,
-    archetype: str,
-    expertise: List[str],
-    background: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Create a new AI agent with specified characteristics.
+# Use type hints
+def create_agent(agent_data: dict) -> dict:
+    """Create a new agent with the provided data.
     
     Args:
-        name: The agent's display name
-        archetype: The personality archetype (e.g., 'scientist', 'leader')
-        expertise: List of expertise areas
-        background: Optional background story
+        agent_data: Dictionary containing agent information
         
     Returns:
-        Dictionary containing the created agent's information
+        Dictionary with created agent data
         
     Raises:
-        ValueError: If name or archetype is empty
+        ValueError: If agent_data is invalid
     """
-    if not name or not archetype:
-        raise ValueError("Name and archetype are required")
-        
-    return {
-        "name": name,
-        "archetype": archetype,
-        "expertise": expertise,
-        "background": background or f"Expert in {', '.join(expertise)}",
-    }
+    pass
+
+# Follow PEP 8
+# Use meaningful variable names
+# Write comprehensive docstrings
+# Handle errors appropriately
 ```
 
-### JavaScript/React Styleguide
+### JavaScript/React (Frontend)
 
-- Use [Prettier](https://prettier.io/) for code formatting
-- Use [ESLint](https://eslint.org/) for linting
-- Use functional components with hooks
-- Use TypeScript for type safety
-- Follow React best practices for performance
-- Use meaningful component and variable names
-
-#### Example:
 ```javascript
-import React, { useState, useEffect, useCallback } from 'react';
-import PropTypes from 'prop-types';
-
-const AgentCard = ({ agent, onSelect, isSelected }) => {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSelect = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      await onSelect(agent.id);
-    } catch (error) {
-      console.error('Failed to select agent:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [agent.id, onSelect]);
-
+// Use ES6+ features
+const AgentCard = ({ agent, onFavorite }) => {
+  const [isFavorite, setIsFavorite] = useState(false);
+  
+  // Use meaningful component names
+  // Implement proper error handling
+  // Use React hooks appropriately
+  // Follow consistent naming conventions
+  
   return (
-    <div 
-      className={`
-        agent-card p-4 rounded-lg border transition-all duration-300
-        ${isSelected ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-gray-300'}
-        ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-      `}
-      onClick={handleSelect}
-    >
-      <h3 className="font-semibold text-gray-900">{agent.name}</h3>
-      <p className="text-sm text-gray-600">{agent.archetype}</p>
-      <p className="text-xs text-gray-500 mt-2">{agent.expertise.join(', ')}</p>
+    <div className="agent-card">
+      {/* Component JSX */}
     </div>
   );
-};
-
-AgentCard.propTypes = {
-  agent: PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    archetype: PropTypes.string.isRequired,
-    expertise: PropTypes.arrayOf(PropTypes.string).isRequired,
-  }).isRequired,
-  onSelect: PropTypes.func.isRequired,
-  isSelected: PropTypes.bool,
-};
-
-AgentCard.defaultProps = {
-  isSelected: false,
 };
 
 export default AgentCard;
 ```
 
-### CSS/Tailwind Styleguide
+### Git Commit Messages
 
-- Use Tailwind CSS utility classes
-- Create custom components for repeated patterns
-- Use semantic class names for custom CSS
-- Follow mobile-first responsive design
-- Maintain consistent spacing and typography scales
+We use [Conventional Commits](https://www.conventionalcommits.org/) format:
 
-## 🧪 Testing Guidelines
+```
+feat: add star icons to agent cards
+fix: resolve favorites API authentication issue
+docs: update API documentation for saved agents
+style: improve agent card hover effects
+refactor: optimize database queries for agent library
+test: add comprehensive tests for favorites system
+```
 
-### Frontend Testing
-- Write unit tests for utility functions
-- Write component tests for React components
-- Write integration tests for complex user flows
-- Use React Testing Library for component testing
-- Aim for 80%+ test coverage
+## Testing
 
-### Backend Testing
-- Write unit tests for all functions
-- Write integration tests for API endpoints
-- Write end-to-end tests for critical user flows
-- Use pytest for Python testing
-- Mock external dependencies
-- Aim for 90%+ test coverage
+### Running Tests
 
-### Test Structure
+```bash
+# Backend tests
+cd backend
+python -m pytest tests/ -v --cov=server
+
+# Frontend tests
+cd frontend
+yarn test --coverage
+
+# Integration tests
+./scripts/run-integration-tests.sh
+```
+
+### Writing Tests
+
+#### Backend Tests (pytest)
 ```python
-# backend/tests/test_agents.py
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+from server import app
 
 client = TestClient(app)
 
-class TestAgentEndpoints:
-    def test_create_agent_success(self):
-        """Test successful agent creation."""
-        agent_data = {
-            "name": "Test Agent",
-            "archetype": "scientist",
-            "expertise": ["AI", "ML"],
-        }
-        response = client.post("/api/agents", json=agent_data)
-        
-        assert response.status_code == 201
-        assert response.json()["name"] == "Test Agent"
-        
-    def test_create_agent_invalid_data(self):
-        """Test agent creation with invalid data."""
-        invalid_data = {"name": ""}  # Missing required fields
-        response = client.post("/api/agents", json=invalid_data)
-        
-        assert response.status_code == 422
+def test_create_agent():
+    """Test agent creation endpoint."""
+    agent_data = {
+        "name": "Test Agent",
+        "archetype": "scientist",
+        "goal": "Test goal"
+    }
+    
+    response = client.post("/api/agents", json=agent_data)
+    assert response.status_code == 200
+    assert response.json()["name"] == "Test Agent"
 ```
 
-## 📚 Documentation
+#### Frontend Tests (Jest/React Testing Library)
+```javascript
+import { render, screen, fireEvent } from '@testing-library/react';
+import AgentCard from './AgentCard';
 
-- Update documentation for any new features or changes
-- Use clear, concise language
-- Include code examples where appropriate
-- Update API documentation for backend changes
-- Update component documentation for frontend changes
+describe('AgentCard', () => {
+  const mockAgent = {
+    id: '1',
+    name: 'Test Agent',
+    archetype: 'scientist'
+  };
 
-## 🏷️ Issue and Pull Request Labels
+  test('renders agent information', () => {
+    render(<AgentCard agent={mockAgent} />);
+    expect(screen.getByText('Test Agent')).toBeInTheDocument();
+  });
 
-### Issue Labels
-- `bug` - Something isn't working
-- `enhancement` - New feature or request
-- `documentation` - Improvements or additions to documentation
-- `good first issue` - Good for newcomers
-- `help wanted` - Extra attention is needed
-- `question` - Further information is requested
+  test('calls onFavorite when star is clicked', () => {
+    const mockOnFavorite = jest.fn();
+    render(<AgentCard agent={mockAgent} onFavorite={mockOnFavorite} />);
+    
+    fireEvent.click(screen.getByRole('button', { name: /favorite/i }));
+    expect(mockOnFavorite).toHaveBeenCalledWith(mockAgent);
+  });
+});
+```
 
-### Pull Request Labels
-- `work in progress` - Pull request is not ready for review
-- `needs review` - Pull request is ready for review
-- `needs changes` - Pull request needs changes before merging
-- `ready to merge` - Pull request has been approved and is ready to merge
+## Documentation
 
-## 📞 Getting Help
+### API Documentation
+- Use OpenAPI/Swagger annotations
+- Provide clear examples
+- Document all parameters and responses
+- Include error codes and messages
 
-If you need help with anything related to contributing:
+### Code Documentation
+- Write clear, concise comments
+- Document complex logic
+- Use meaningful variable names
+- Include usage examples
 
-1. Check the [documentation](https://github.com/your-username/ai-agent-simulation/wiki)
-2. Search [existing issues](https://github.com/your-username/ai-agent-simulation/issues)
-3. Ask in [GitHub Discussions](https://github.com/your-username/ai-agent-simulation/discussions)
-4. Join our [Discord community](https://discord.gg/yourinvite)
-5. Email us at [dev@yourdomain.com](mailto:dev@yourdomain.com)
+### README Updates
+- Keep installation instructions current
+- Update feature lists
+- Add new API endpoints
+- Include troubleshooting tips
 
-## 🙏 Recognition
+## Issue Reporting
 
-Contributors who make significant contributions will be:
-- Added to the Contributors section in the README
-- Mentioned in release notes
-- Invited to join the core team (for exceptional contributors)
+### Bug Reports
 
-Thank you for contributing to the AI Agent Simulation Platform! 🚀
+When reporting bugs, please include:
+
+1. **Environment details**
+   - Operating system
+   - Python/Node.js versions
+   - Browser (if frontend issue)
+
+2. **Steps to reproduce**
+   - Clear, numbered steps
+   - Expected vs actual behavior
+   - Screenshots if applicable
+
+3. **Error messages**
+   - Full error logs
+   - Stack traces
+   - Console output
+
+### Feature Requests
+
+For new features, please provide:
+
+1. **Use case description**
+   - Who would use this feature?
+   - What problem does it solve?
+   - How would it work?
+
+2. **Implementation suggestions**
+   - Possible approaches
+   - Technical considerations
+   - UI/UX mockups if applicable
+
+3. **Priority and impact**
+   - How important is this feature?
+   - What's the expected user impact?
+
+## Development Setup
+
+### Prerequisites
+- Python 3.8+
+- Node.js 16+
+- MongoDB 4.4+
+- Git
+
+### Local Development
+```bash
+# Clone the repository
+git clone https://github.com/your-username/ai-agent-simulation.git
+cd ai-agent-simulation
+
+# Set up backend
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+# Configure your .env file
+
+# Set up frontend
+cd ../frontend
+yarn install
+cp .env.example .env
+# Configure your .env file
+
+# Start development servers
+# Terminal 1: Backend
+cd backend && uvicorn server:app --reload
+
+# Terminal 2: Frontend
+cd frontend && yarn start
+```
+
+### Development Database
+For development, use a local MongoDB instance:
+```bash
+# Start MongoDB
+mongod
+
+# Or use Docker
+docker run -d -p 27017:27017 mongo:latest
+```
+
+## Code Review Process
+
+### Review Checklist
+
+- [ ] Code follows project style guidelines
+- [ ] Tests are included and passing
+- [ ] Documentation is updated
+- [ ] No unnecessary dependencies added
+- [ ] Error handling is appropriate
+- [ ] Performance impact is considered
+- [ ] Security implications are addressed
+
+### Review Guidelines
+
+1. **Be constructive** - Provide specific, actionable feedback
+2. **Be respectful** - Focus on the code, not the person
+3. **Be thorough** - Check functionality, style, and documentation
+4. **Be timely** - Respond to reviews within 2-3 business days
+
+## Community
+
+### Communication Channels
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: General questions and community discussion
+- **Pull Requests**: Code contributions and reviews
+
+### Code of Conduct
+We are committed to providing a welcoming and inspiring community for all. Please read our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+### Recognition
+Contributors will be recognized in:
+- README.md contributor section
+- Release notes
+- Project documentation
+
+## Getting Help
+
+### Documentation
+- [README.md](README.md) - Project overview and setup
+- [API Documentation](http://localhost:8001/docs) - Backend API reference
+- [Wiki](https://github.com/your-username/ai-agent-simulation/wiki) - Detailed guides
+
+### Support Channels
+- **GitHub Issues**: Technical problems and bugs
+- **GitHub Discussions**: Questions and community help
+- **Email**: maintainers@ai-agent-simulation.com
+
+### Common Issues
+- **Setup Problems**: Check [Troubleshooting](README.md#-troubleshooting)
+- **API Issues**: Refer to [API Documentation](README.md#-api-reference)
+- **UI/UX Questions**: See [Component Documentation](docs/components.md)
+
+---
+
+## Thank You! 🙏
+
+Your contributions make this project better for everyone. Whether you're fixing a bug, adding a feature, or improving documentation, every contribution is valuable and appreciated.
+
+**Happy coding!** 🚀
