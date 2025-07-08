@@ -2241,6 +2241,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {/* Create button card for Created Agents section */}
+                      {selectedMyAgentsSection === 'created' && (
+                        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-green-400 transition-colors">
+                          <button
+                            onClick={() => setShowCreateAgentModal(true)}
+                            className="w-full p-8 flex flex-col items-center justify-center text-gray-500 hover:text-green-600 transition-colors group"
+                          >
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+                              <span className="text-2xl font-bold text-green-600">+</span>
+                            </div>
+                            <h4 className="font-semibold text-gray-800 mb-2">Create Agent</h4>
+                            <p className="text-sm text-gray-600 text-center">Design a new custom agent</p>
+                          </button>
+                        </div>
+                      )}
+                      
                       {filteredAgents.map((agent) => (
                         <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                           <div className="p-4">
