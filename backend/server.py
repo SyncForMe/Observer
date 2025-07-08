@@ -146,6 +146,7 @@ class SavedAgent(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_template: bool = False  # User can mark agents as templates
     usage_count: int = 0  # How many times used in simulations
+    is_favorite: bool = False  # NEW: Mark agent as favorite
 
 class SavedAgentCreate(BaseModel):
     name: str
