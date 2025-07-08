@@ -1613,6 +1613,24 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
   };
 
+  const handleDeleteSavedAgent = async (agentId) => {
+    if (!token) return;
+    
+    try {
+      const response = await axios.delete(`${API}/saved-agents/${agentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.status === 200) {
+        setSavedAgents(prev => prev.filter(agent => agent.id !== agentId));
+        console.log('Saved agent deleted successfully');
+      }
+    } catch (error) {
+      console.error('Failed to delete saved agent:', error);
+      alert('Failed to delete agent. Please try again.');
+    }
+  };
+
   const currentSector = sectors[selectedSector];
   const currentCategory = selectedCategory ? currentSector?.categories[selectedCategory] : null;
 
