@@ -3064,6 +3064,24 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                               </button>
                             </div>
                           )}
+                          
+                          {/* Star icon for favorites - always visible on regular agents */}
+                          {!addedAgents.has(agent.id) && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // For now, show a message that agent needs to be saved first
+                                  alert('Add this agent to your simulation first, then it will appear in "My Agents" where you can mark it as favorite!');
+                                }}
+                                className="bg-white/90 hover:bg-white text-gray-400 hover:text-yellow-500 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-md border border-gray-200"
+                                title="Add to favorites (save to My Agents first)"
+                              >
+                                ☆
+                              </button>
+                            </div>
+                          )}
+                          
                           <div className="p-4">
                             <div className="flex items-start space-x-3">
                               <img
