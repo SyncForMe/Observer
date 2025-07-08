@@ -2255,7 +2255,19 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 {sectors[selectedSector].categories[selectedCategory].agents.length > 0 ? (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                     {sectors[selectedSector].categories[selectedCategory].agents.map((agent) => (
-                      <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                      <div key={agent.id} className="relative bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                        {/* Star icon in top-right corner */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFavorite(agent);
+                          }}
+                          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                          title="Add to favorites"
+                        >
+                          <span className="text-lg text-gray-400 hover:text-yellow-500 transition-colors">☆</span>
+                        </button>
+                        
                         <div className="p-4">
                           <div className="flex items-start space-x-3">
                             <img
