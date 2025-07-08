@@ -1631,6 +1631,60 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
   };
 
+  const handleToggleFavorite = async (agent) => {
+    if (!token) {
+      alert('Please log in to save favorites');
+      return;
+    }
+    
+    try {
+      // Check if agent is already saved
+      const existingSaved = savedAgents.find(saved => saved.name === agent.name);
+      
+      if (existingSaved) {
+        // If already saved, toggle favorite status
+        const response = await axios.put(`${API}/saved-agents/${existingSaved.id}/favorite`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.status === 200) {
+          setSavedAgents(prev => 
+            prev.map(saved => 
+              saved.id === existingSaved.id 
+                ? { ...saved, is_favorite: !saved.is_favorite }
+                : saved
+            )
+          );
+          console.log('Favorite status toggled');
+        }
+      } else {
+        // If not saved, save the agent first
+        const agentData = {
+          name: agent.name,
+          archetype: agent.archetype,
+          goal: agent.goal,
+          background: agent.background,
+          expertise: agent.expertise,
+          avatar_prompt: `Professional ${agent.name}`,
+          avatar_url: agent.avatar,
+          is_favorite: true
+        };
+        
+        const response = await axios.post(`${API}/saved-agents`, agentData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.status === 201) {
+          setSavedAgents(prev => [...prev, response.data]);
+          console.log('Agent saved as favorite');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      alert('Failed to update favorite. Please try again.');
+    }
+  };
+
   const currentSector = sectors[selectedSector];
   const currentCategory = selectedCategory ? currentSector?.categories[selectedCategory] : null;
 
