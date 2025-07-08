@@ -2674,6 +2674,14 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
           </div>
         </div>
       )}
+      
+      {/* Agent Create Modal */}
+      <AgentCreateModal
+        isOpen={showCreateAgentModal}
+        onClose={() => setShowCreateAgentModal(false)}
+        onCreate={handleCreateAgent}
+        loading={false}
+      />
     </div>
   );
 };
