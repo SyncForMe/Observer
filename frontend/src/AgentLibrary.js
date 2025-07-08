@@ -1988,10 +1988,10 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                         key={agent.id}
                         className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100 border cursor-pointer"
                         onClick={() => {
-                          // Show agent in right card area, not as detailed view
-                          setSelectedSector('myagents');
-                          setSelectedCategory('saved');
-                          setSelectedQuickTeam(null);
+                          // Show saved agents in right card area like Quick Teams
+                          setSelectedQuickTeam('myagents');
+                          setSelectedSector(null);
+                          setSelectedCategory(null);
                           setSelectedMyAgent(null);
                           setSelectedFavoriteAgent(null);
                         }}
