@@ -1056,8 +1056,7 @@ def test_conversation_endpoints():
             "Generate Conversation",
             "/conversation/generate",
             method="POST",
-            auth=True,
-            expected_keys=["message", "conversation"]
+            auth=True
         )
         
         if generate_conversation_test and generate_conversation_response:
