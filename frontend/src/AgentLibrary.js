@@ -1477,10 +1477,13 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const [isSectorsExpanded, setIsSectorsExpanded] = useState(true);
   const [isQuickTeamBuildersExpanded, setIsQuickTeamBuildersExpanded] = useState(false);
   const [isMyAgentsExpanded, setIsMyAgentsExpanded] = useState(true); // My Agents expanded by default
+  const [isFavoritesExpanded, setIsFavoritesExpanded] = useState(true); // Favorites expanded by default
   const [selectedQuickTeam, setSelectedQuickTeam] = useState(null); // New state for quick team selection
   const [savedAgents, setSavedAgents] = useState([]);
+  const [favoriteAgents, setFavoriteAgents] = useState([]);
   const [loadingSavedAgents, setLoadingSavedAgents] = useState(false);
   const [selectedMyAgent, setSelectedMyAgent] = useState(null);
+  const [selectedFavoriteAgent, setSelectedFavoriteAgent] = useState(null);
   const [quickTeams, setQuickTeams] = useState({
     research: {
       name: "Research Team",
