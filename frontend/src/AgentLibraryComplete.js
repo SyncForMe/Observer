@@ -1468,6 +1468,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
   // MY AGENTS section states
   const [selectedMyAgentsSection, setSelectedMyAgentsSection] = useState(null); // 'created' or 'favorites'
+  const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
 
   // Fetch saved agents on mount
   useEffect(() => {
