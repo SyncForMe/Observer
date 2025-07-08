@@ -1706,6 +1706,71 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
   };
 
+  const handleCreateAgent = async (agentData) => {
+    if (!token) {
+      alert('Please log in to create agents');
+      return;
+    }
+    
+    try {
+      console.log('🔍 Creating agent:', agentData.name);
+      
+      // Create the agent (similar to SimulationControl)
+      const backendData = {
+        name: agentData.name,
+        archetype: agentData.archetype,
+        personality: agentData.personality,
+        goal: agentData.goal,
+        background: agentData.background,
+        expertise: agentData.expertise,
+        memory_summary: agentData.memories,
+        avatar_url: agentData.avatar_url,
+        avatar_prompt: agentData.avatar_prompt
+      };
+      
+      const response = await axios.post(`${API}/agents`, backendData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('✅ Agent created successfully');
+      
+      // AUTO-SAVE: Also save the agent to user's library
+      try {
+        const savedAgentData = {
+          name: agentData.name,
+          archetype: agentData.archetype,
+          personality: agentData.personality,
+          goal: agentData.goal,
+          expertise: agentData.expertise || '',
+          background: agentData.background || '',
+          memory_summary: agentData.memories || '',
+          avatar_url: agentData.avatar_url || '',
+          avatar_prompt: agentData.avatar_prompt || '',
+          is_favorite: false // Default to not favorite
+        };
+        
+        const saveResponse = await axios.post(`${API}/saved-agents`, savedAgentData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (saveResponse.status === 200 || saveResponse.status === 201) {
+          setSavedAgents(prev => [...prev, saveResponse.data]);
+          console.log('✅ Agent auto-saved to My Agents library');
+        }
+        
+      } catch (error) {
+        console.error('Failed to auto-save agent to library:', error);
+        // Don't fail the main creation if auto-save fails
+      }
+      
+      setShowCreateAgentModal(false);
+      
+    } catch (error) {
+      console.error('Failed to create agent:', error);
+      alert('Failed to create agent. Please try again.');
+    }
+  };
+
   const currentSector = sectors[selectedSector];
   const currentCategory = selectedCategory ? currentSector?.categories[selectedCategory] : null;
 
