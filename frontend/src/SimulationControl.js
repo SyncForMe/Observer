@@ -1693,13 +1693,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
       </div>
 
-      {/* Control Buttons - Centered across all three columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Empty space to match Active Agents column */}
+      {/* Control Buttons - Centered across all columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Empty space to match Active Agents and Scenario Setup columns */}
         <div className="lg:col-span-1"></div>
         
-        {/* Control Buttons centered */}
-        <div className="lg:col-span-1 flex justify-center">
+        {/* Control Buttons centered across Live Conversations area */}
+        <div className="lg:col-span-2 flex justify-center">
           <div className="flex space-x-6">
             {/* Play/Pause Button */}
             <div className="group relative">
