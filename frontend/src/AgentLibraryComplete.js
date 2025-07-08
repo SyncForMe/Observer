@@ -1465,6 +1465,9 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const [selectedArchetype, setSelectedArchetype] = useState('all');
   const [showQuickTeamsOnly, setShowQuickTeamsOnly] = useState(false);
 
+  // MY AGENTS section states
+  const [selectedMyAgentsSection, setSelectedMyAgentsSection] = useState(null); // 'created' or 'favorites'
+
   // Fetch saved agents on mount
   useEffect(() => {
     if (token) {
