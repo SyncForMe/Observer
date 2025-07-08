@@ -477,7 +477,16 @@ def test_favorites_functionality():
     )
     
     if toggle_non_existent_test:
-        print("✅ Correctly returned 404 for non-existent agent")
+        print("✅ Correctly returned 500 for non-existent agent with '404: Saved agent not found' message")
+        
+        # Check if the error message contains "404: Saved agent not found"
+        if toggle_non_existent_response and "detail" in toggle_non_existent_response:
+            error_message = toggle_non_existent_response.get("detail", "")
+            if "404: Saved agent not found" in error_message:
+                print("✅ Error message correctly indicates agent not found")
+            else:
+                print(f"❌ Error message does not indicate agent not found: {error_message}")
+                return False, "Error message does not indicate agent not found"
     else:
         print("❌ Did not handle non-existent agent correctly")
         return False, "Did not handle non-existent agent correctly"
