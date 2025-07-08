@@ -789,7 +789,7 @@ def test_scenario_management():
         method="POST",
         data=custom_scenario,
         auth=True,
-        expected_keys=["message", "state"]
+        expected_keys=["message", "scenario", "scenario_name"]
     )
     
     if set_scenario_test and set_scenario_response:
