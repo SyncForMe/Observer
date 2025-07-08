@@ -2138,7 +2138,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   const filteredAgents = selectedMyAgentsSection === 'favorites' 
                     ? savedAgents.filter(agent => agent.is_favorite)
                     : selectedMyAgentsSection === 'created'
-                    ? savedAgents
+                    ? savedAgents.filter(agent => !agent.is_favorite) // Only non-favorite agents
                     : savedAgents;
                   
                   return filteredAgents.length === 0 ? (
