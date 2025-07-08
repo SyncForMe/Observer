@@ -158,6 +158,7 @@ class SavedAgentCreate(BaseModel):
     avatar_url: str = ""
     avatar_prompt: str = ""
     is_template: bool = False
+    is_favorite: bool = False
 
 # Conversation History Models
 class ConversationHistory(BaseModel):
