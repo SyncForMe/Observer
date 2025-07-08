@@ -695,7 +695,7 @@ def test_simulation_control():
         "/simulation/resume",
         method="POST",
         auth=True,
-        expected_keys=["message", "state"]
+        expected_keys=["message", "is_active", "success"]
     )
     
     if resume_sim_test and resume_sim_response:
