@@ -1455,7 +1455,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const [selectedQuickTeam, setSelectedQuickTeam] = useState(null);
   const [addingAgents, setAddingAgents] = useState(new Set());
   const [addedAgents, setAddedAgents] = useState(new Set());
-  const [isSectorsExpanded, setIsSectorsExpanded] = useState(true);
+  const [isSectorsExpanded, setIsSectorsExpanded] = useState(false);
   const [isMyAgentsExpanded, setIsMyAgentsExpanded] = useState(false);
   const [isQuickTeamBuildersExpanded, setIsQuickTeamBuildersExpanded] = useState(false);
   const [savedAgents, setSavedAgents] = useState([]);
