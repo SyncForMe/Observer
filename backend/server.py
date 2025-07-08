@@ -3342,15 +3342,18 @@ async def update_saved_agent(agent_id: str, agent_data: SavedAgentCreate, curren
         update_data = {
             "name": agent_data.name,
             "archetype": agent_data.archetype,
-            "personality": agent_data.personality.dict() if agent_data.personality else {},
+            "personality": agent_data.personality.dict() if agent_data.personality else None,
             "goal": agent_data.goal,
+            "expertise": agent_data.expertise,
             "background": agent_data.background,
+            "memory_summary": agent_data.memory_summary,
             "avatar_url": agent_data.avatar_url,
             "avatar_prompt": agent_data.avatar_prompt,
-            "updated_at": datetime.utcnow()
+            "is_template": agent_data.is_template,
+            "is_favorite": agent_data.is_favorite  # Include is_favorite field
         }
         
-        # Update the saved agent
+        # Update in database
         result = await db.saved_agents.update_one(
             {"id": agent_id, "user_id": current_user.id},
             {"$set": update_data}
@@ -3366,6 +3369,35 @@ async def update_saved_agent(agent_id: str, agent_data: SavedAgentCreate, curren
     except Exception as e:
         logging.error(f"Error updating saved agent: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update saved agent: {str(e)}")
+
+@api_router.put("/saved-agents/{agent_id}/favorite")
+async def toggle_agent_favorite(agent_id: str, current_user: User = Depends(get_current_user)):
+    """Toggle favorite status of a saved agent"""
+    try:
+        # Get current agent
+        agent = await db.saved_agents.find_one({"id": agent_id, "user_id": current_user.id})
+        if not agent:
+            raise HTTPException(status_code=404, detail="Saved agent not found")
+        
+        # Toggle favorite status
+        new_favorite_status = not agent.get('is_favorite', False)
+        
+        # Update in database
+        result = await db.saved_agents.update_one(
+            {"id": agent_id, "user_id": current_user.id},
+            {"$set": {"is_favorite": new_favorite_status}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Saved agent not found")
+        
+        # Return updated agent
+        updated_agent = await db.saved_agents.find_one({"id": agent_id, "user_id": current_user.id})
+        return {"success": True, "is_favorite": new_favorite_status, "agent": SavedAgent(**updated_agent)}
+        
+    except Exception as e:
+        logging.error(f"Error toggling agent favorite: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to toggle favorite: {str(e)}")
 
 # Conversation History Endpoints
 @api_router.get("/conversation-history", response_model=List[ConversationHistory])
