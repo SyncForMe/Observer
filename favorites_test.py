@@ -537,25 +537,75 @@ def test_favorites_functionality():
         
         print(f"✅ Successfully registered second user with ID: {second_user_id}")
         
-        # Try to toggle first user's agent with second user's token
-        toggle_other_user_test, toggle_other_user_response = run_test(
-            "Toggle Other User's Agent",
-            f"/saved-agents/{agent_id}/favorite",
-            method="PUT",
+        # Create an agent for the second user
+        second_agent_data = {
+            "name": f"Second User Agent {uuid.uuid4().hex[:8]}",
+            "archetype": "leader",
+            "goal": "Test goal for second user",
+            "background": "Test background for second user",
+            "expertise": "Test expertise for second user",
+            "avatar_prompt": "Professional leader for second user",
+            "avatar_url": "https://example.com/avatar2.png",
+            "is_favorite": False
+        }
+        
+        create_second_agent_test, create_second_agent_response = run_test(
+            "Create Agent for Second User",
+            "/saved-agents",
+            method="POST",
+            data=second_agent_data,
             auth=True,
             headers={"Authorization": f"Bearer {second_user_token}"},
-            expected_status=500  # The API returns 500 with a detail message containing "404: Saved agent not found"
+            expected_keys=["id", "name", "is_favorite"]
         )
         
-        if toggle_other_user_test:
-            error_message = toggle_other_user_response.get("detail", "")
-            if "404: Saved agent not found" in error_message:
-                print("✅ Second user correctly received 500 with '404: Saved agent not found' when trying to toggle first user's agent")
+        if create_second_agent_test and create_second_agent_response:
+            second_agent_id = create_second_agent_response.get("id")
+            print(f"✅ Created agent for second user with ID: {second_agent_id}")
+            
+            # Try to toggle first user's agent with second user's token
+            toggle_other_user_test, toggle_other_user_response = run_test(
+                "Toggle Other User's Agent",
+                f"/saved-agents/{agent_id}/favorite",
+                method="PUT",
+                auth=True,
+                headers={"Authorization": f"Bearer {second_user_token}"},
+                expected_status=500  # The API returns 500 with a detail message containing "404: Saved agent not found"
+            )
+            
+            if toggle_other_user_test:
+                error_message = toggle_other_user_response.get("detail", "")
+                if "404: Saved agent not found" in error_message:
+                    print("✅ Second user correctly received 500 with '404: Saved agent not found' when trying to toggle first user's agent")
+                else:
+                    print(f"❌ Second user received unexpected error: {error_message}")
+                    return False, "Second user received unexpected error"
             else:
-                print(f"❌ Second user received unexpected error: {error_message}")
+                print("❌ Did not handle other user's agent correctly")
+                return False, "Did not handle other user's agent correctly"
+            
+            # Try to toggle second user's agent with first user's token
+            toggle_second_user_test, toggle_second_user_response = run_test(
+                "Toggle Second User's Agent",
+                f"/saved-agents/{second_agent_id}/favorite",
+                method="PUT",
+                auth=True,
+                expected_status=500  # The API returns 500 with a detail message containing "404: Saved agent not found"
+            )
+            
+            if toggle_second_user_test:
+                error_message = toggle_second_user_response.get("detail", "")
+                if "404: Saved agent not found" in error_message:
+                    print("✅ First user correctly received 500 with '404: Saved agent not found' when trying to toggle second user's agent")
+                else:
+                    print(f"❌ First user received unexpected error: {error_message}")
+                    return False, "First user received unexpected error"
+            else:
+                print("❌ Did not handle second user's agent correctly")
+                return False, "Did not handle second user's agent correctly"
         else:
-            print("❌ Did not handle other user's agent correctly")
-            return False, "Did not handle other user's agent correctly"
+            print("❌ Failed to create agent for second user")
+            return False, "Failed to create agent for second user"
     else:
         print("❌ Failed to register second user")
         return False, "Failed to register second user"
