@@ -1528,6 +1528,10 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSavedAgents(response.data);
+      
+      // Filter favorite agents
+      const favorites = response.data.filter(agent => agent.is_favorite);
+      setFavoriteAgents(favorites);
     } catch (error) {
       console.error('Error fetching saved agents:', error);
     }
