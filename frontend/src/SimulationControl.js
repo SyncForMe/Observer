@@ -676,7 +676,15 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     if (!token) return;
     
     try {
-      await axios.put(`${API}/agents/${agentId}`, formData, {
+      // Transform the data to match backend expectations
+      const backendData = {
+        ...formData,
+        memory_summary: formData.memories || '', // Map memories to memory_summary
+      };
+      // Remove the frontend-specific field
+      delete backendData.memories;
+      
+      await axios.put(`${API}/agents/${agentId}`, backendData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
