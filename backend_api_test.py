@@ -848,7 +848,7 @@ def test_scenario_management():
             method="POST",
             data=random_scenario,
             auth=True,
-            expected_keys=["message", "state"]
+            expected_keys=["message", "scenario", "scenario_name"]
         )
         
         if set_random_test and set_random_response:
