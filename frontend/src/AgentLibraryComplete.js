@@ -1794,6 +1794,36 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               </div>
             )}
             
+            {/* FAVOURITES section - only show if there are favorites */}
+            {savedAgents.some(agent => agent.is_favorite) && (
+              <div className="mb-8">
+                <div className="flex items-center space-x-2 mb-4 px-3">
+                  <span className="text-yellow-400 text-lg">⭐</span>
+                  <h4 className="text-xs font-bold text-white/80 uppercase tracking-wider">FAVOURITES</h4>
+                </div>
+                <div className="space-y-2">
+                  {savedAgents.filter(agent => agent.is_favorite).map((agent) => (
+                    <div
+                      key={agent.id}
+                      onClick={() => setSelectedAgentDetails(agent)}
+                      className="group w-full text-left p-3 rounded-lg transition-all duration-300 text-white hover:bg-white/10 border border-yellow-400/20 hover:border-yellow-400/50 cursor-pointer backdrop-blur-sm"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                          {agent.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-xs truncate group-hover:text-yellow-300 transition-colors">{agent.name}</div>
+                          <div className="text-xs text-white/50 capitalize truncate">{agent.archetype}</div>
+                        </div>
+                        <span className="text-yellow-400 text-sm">⭐</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* QUICK TEAM BUILDERS header with modern styling */}
             <div 
               className="flex justify-between items-center cursor-pointer hover:bg-white/10 p-3 rounded-xl transition-all mb-6 group"
