@@ -1775,6 +1775,9 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
             </div>
           </div>
         </div>
+        
+        {/* Empty space to balance the layout */}
+        <div className="lg:col-span-1"></div>
       </div>
 
       {/* Agent Edit Modal */}
