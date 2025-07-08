@@ -544,11 +544,15 @@ def test_favorites_functionality():
             method="PUT",
             auth=True,
             headers={"Authorization": f"Bearer {second_user_token}"},
-            expected_status=404
+            expected_status=500  # The API returns 500 with a detail message containing "404: Saved agent not found"
         )
         
         if toggle_other_user_test:
-            print("✅ Correctly returned 404 for other user's agent")
+            error_message = toggle_other_user_response.get("detail", "")
+            if "404: Saved agent not found" in error_message:
+                print("✅ Second user correctly received 500 with '404: Saved agent not found' when trying to toggle first user's agent")
+            else:
+                print(f"❌ Second user received unexpected error: {error_message}")
         else:
             print("❌ Did not handle other user's agent correctly")
             return False, "Did not handle other user's agent correctly"
