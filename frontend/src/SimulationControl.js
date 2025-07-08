@@ -1260,8 +1260,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         </div>
 
       {/* Combined Active Agents, Scenario Setup, and Live Conversations Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Agents Section - 33% width on large screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Active Agents Section - 25% width on large screens */}
         <div className="lg:col-span-1">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
             <div className="flex justify-between items-center mb-4">
@@ -1372,7 +1372,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           </div>
         </div>
 
-        {/* Scenario Setup Section - 33% width on large screens */}
+        {/* Scenario Setup Section - 25% width on large screens */}
         <div className="lg:col-span-1">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
             <div className="flex justify-between items-center mb-4">
@@ -1483,8 +1483,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
           </div>
         </div>
 
-        {/* Live Conversations Section - 33% width on large screens */}
-        <div className="lg:col-span-1">
+        {/* Live Conversations Section - 50% width on large screens */}
+        <div className="lg:col-span-2">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-white">💬 Live Conversations</h3>
