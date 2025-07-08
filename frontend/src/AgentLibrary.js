@@ -1957,6 +1957,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   setSelectedCategory(null); // Clear category selection  
                   setSelectedQuickTeam(null); // Clear quick team selection
                   setSelectedMyAgent(null); // Clear selected agent
+                  setSelectedFavoriteAgent(null); // Clear favorite agent
                 }}
               >
                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">MY AGENTS</h3>
@@ -1987,10 +1988,12 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                         key={agent.id}
                         className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100 border cursor-pointer"
                         onClick={() => {
-                          setSelectedMyAgent(agent);
+                          // Show agent in right card area, not as detailed view
+                          setSelectedSector('myagents');
+                          setSelectedCategory('saved');
                           setSelectedQuickTeam(null);
-                          setSelectedSector(null);
-                          setSelectedCategory(null);
+                          setSelectedMyAgent(null);
+                          setSelectedFavoriteAgent(null);
                         }}
                       >
                         <div className="flex items-center space-x-2">
@@ -1998,6 +2001,126 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                             <img 
                               src={agent.avatar_url} 
                               alt={agent.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">
+                                {agent.name?.[0] || '🤖'}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">{agent.name}</p>
+                              {/* Star icon for favorites */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleAgentFavorite(agent.id, agent.is_favorite);
+                                }}
+                                className="text-lg hover:scale-110 transition-transform"
+                                title={agent.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                              >
+                                {agent.is_favorite ? '⭐' : '☆'}
+                              </button>
+                            </div>
+                            <p className="text-xs text-gray-500 truncate">{agent.archetype}</p>
+                          </div>
+                          {/* Delete button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSavedAgent(agent.id);
+                            }}
+                            className="text-red-500 hover:text-red-700 text-sm p-1"
+                            title="Delete agent"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {/* FAVOURITES section */}
+              {isMyAgentsExpanded && (
+                <div 
+                  className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
+                  onClick={() => {
+                    setIsFavoritesExpanded(!isFavoritesExpanded);
+                  }}
+                >
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">FAVOURITES</h3>
+                  <button
+                    type="button"
+                    className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
+                    style={{ transform: isFavoritesExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              
+              {/* Favourites list */}
+              {isMyAgentsExpanded && isFavoritesExpanded && (
+                <div className="space-y-2 mb-6 max-h-48 overflow-y-auto">
+                  {favoriteAgents.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      No favorite agents yet.<br/>
+                      Click the star ⭐ to add favorites.
+                    </div>
+                  ) : (
+                    favoriteAgents.map((agent) => (
+                      <div
+                        key={agent.id}
+                        className="w-full text-left p-3 rounded-lg transition-colors text-gray-700 hover:bg-gray-100 border cursor-pointer border-yellow-200 bg-yellow-50"
+                        onClick={() => {
+                          // Show agent in right card area
+                          setSelectedSector('favorites');
+                          setSelectedCategory('starred');
+                          setSelectedQuickTeam(null);
+                          setSelectedMyAgent(null);
+                          setSelectedFavoriteAgent(null);
+                        }}
+                      >
+                        <div className="flex items-center space-x-2">
+                          {agent.avatar_url ? (
+                            <img 
+                              src={agent.avatar_url} 
+                              alt={agent.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">
+                                {agent.name?.[0] || '🤖'}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">{agent.name}</p>
+                              <span className="text-lg">⭐</span>
+                            </div>
+                            <p className="text-xs text-gray-500 truncate">{agent.archetype}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
                               className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                             />
                           ) : (
