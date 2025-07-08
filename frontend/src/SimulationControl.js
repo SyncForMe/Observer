@@ -14,6 +14,7 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
     expertise: '',
     background: '',
     goal: '',
+    memories: '',
     avatar_url: '',
     avatar_prompt: '',
     personality: {
