@@ -2174,19 +2174,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                      'Your saved and favorite agents'}
                   </p>
                   
-                  {/* Create button for Created Agents section */}
-                  {selectedMyAgentsSection === 'created' && (
-                    <div className="mb-6">
-                      <button
-                        onClick={() => setShowCreateAgentModal(true)}
-                        className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
-                      >
-                        <span className="text-lg">+</span>
-                        <span>Create</span>
-                      </button>
-                    </div>
-                  )}
-                  
                   {/* Section selector if no specific section is selected */}
                   {!selectedMyAgentsSection && (
                     <div className="flex space-x-4 mb-6">
