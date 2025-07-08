@@ -391,14 +391,24 @@ def test_agent_management():
     # Test 3: Update an agent
     print("\nTest 3: Update an agent")
     
+    # Fix for the agent update endpoint
     if created_agent_ids:
         agent_id = created_agent_ids[0]
         
-        # Update agent data
+        # Update agent data - include all required fields
         update_data = {
             "name": f"Updated {agent_name}",
+            "archetype": "scientist",  # Include archetype
+            "personality": {  # Include complete personality
+                "extroversion": 5,
+                "optimism": 7,
+                "curiosity": 9,
+                "cooperativeness": 6,
+                "energy": 8
+            },
             "goal": "Updated goal for testing",
-            "expertise": "Updated expertise in API Testing"
+            "expertise": "Updated expertise in API Testing",
+            "background": "Updated background information"  # Include background
         }
         
         update_agent_test, update_agent_response = run_test(
