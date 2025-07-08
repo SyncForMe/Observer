@@ -1952,10 +1952,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               <div 
                 className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors mb-4"
                 onClick={() => {
+                  // Toggle expansion and also show agents in right area
                   setIsMyAgentsExpanded(!isMyAgentsExpanded);
+                  setSelectedQuickTeam('myagents'); // Show agents in right card area
                   setSelectedSector(null); // Clear sector selection
                   setSelectedCategory(null); // Clear category selection  
-                  setSelectedQuickTeam(null); // Clear quick team selection
                   setSelectedMyAgent(null); // Clear selected agent
                   setSelectedFavoriteAgent(null); // Clear favorite agent
                 }}
