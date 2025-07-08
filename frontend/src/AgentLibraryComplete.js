@@ -2347,9 +2347,15 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                             handleToggleFavorite(agent);
                           }}
                           className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-                          title="Add to favorites"
+                          title={savedAgents.some(saved => saved.name === agent.name && saved.is_favorite) ? "Remove from favorites" : "Add to favorites"}
                         >
-                          <span className="text-lg text-gray-400 hover:text-yellow-500 transition-colors">☆</span>
+                          <span className={`text-lg transition-colors ${
+                            savedAgents.some(saved => saved.name === agent.name && saved.is_favorite)
+                              ? 'text-yellow-500' 
+                              : 'text-gray-400 hover:text-yellow-500'
+                          }`}>
+                            {savedAgents.some(saved => saved.name === agent.name && saved.is_favorite) ? '⭐' : '☆'}
+                          </span>
                         </button>
                         
                         <div className="p-4">
