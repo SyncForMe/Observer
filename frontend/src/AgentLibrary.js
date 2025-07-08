@@ -1961,7 +1961,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   setSelectedFavoriteAgent(null); // Clear favorite agent
                 }}
               >
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">MY AGENTS</h3>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">MY AGENTS (UPDATED)</h3>
                 <button
                   type="button"
                   className="text-gray-500 hover:text-gray-700 transition-transform duration-200"
