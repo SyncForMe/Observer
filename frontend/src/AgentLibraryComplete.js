@@ -1729,88 +1729,82 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
         <div className="flex h-[700px]">
           {/* Modern Sidebar */}
           <div className="w-72 bg-gradient-to-b from-white/20 to-white/10 backdrop-blur-lg border-r border-white/20 p-6 overflow-y-auto" style={{ overscrollBehavior: 'contain' }}>
-            {/* MY AGENTS section with two subsections */}
-            <div className="space-y-0 mb-8">
-              {/* Main MY AGENTS header */}
-              <div className="mb-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2 px-3 py-2">
+            {/* MY AGENTS section - expandable like Industry Sectors */}
+            <div className="mb-8">
+              {/* MY AGENTS header with expand/collapse */}
+              <div 
+                className="flex justify-between items-center cursor-pointer hover:bg-white/10 p-3 rounded-xl transition-all mb-6 group"
+                onClick={() => setIsMyAgentsExpanded(!isMyAgentsExpanded)}
+              >
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center space-x-2">
                   <span>⭐</span>
                   <span>MY AGENTS</span>
                 </h3>
-              </div>
-              
-              {/* Created Agents section */}
-              <div className="mb-4">
-                <button
-                  onClick={() => {
-                    setSelectedQuickTeam('myagents');
-                    setSelectedMyAgentsSection('created');
-                    setSelectedSector(null);
-                    setSelectedCategory(null);
-                  }}
-                  className={`w-full text-left p-3 rounded-lg transition-all duration-300 group ${
-                    selectedQuickTeam === 'myagents' && selectedMyAgentsSection === 'created'
-                      ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border border-purple-400/50 shadow-lg'
-                      : 'text-white hover:bg-white/10 border border-white/10 hover:border-purple-400/50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center text-white text-sm group-hover:scale-110 transition-transform">
-                      🛠️
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate group-hover:text-purple-300 transition-colors">Created Agents</div>
-                      <div className="text-xs text-white/60 truncate">Agents you've created ({savedAgents.length})</div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              
-              {/* Favourites section */}
-              <div className="mb-4">
-                <button
-                  onClick={() => {
-                    setSelectedQuickTeam('myagents');
-                    setSelectedMyAgentsSection('favorites');
-                    setSelectedSector(null);
-                    setSelectedCategory(null);
-                  }}
-                  className={`w-full text-left p-3 rounded-lg transition-all duration-300 group ${
-                    selectedQuickTeam === 'myagents' && selectedMyAgentsSection === 'favorites'
-                      ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-white border border-yellow-400/50 shadow-lg'
-                      : 'text-white hover:bg-white/10 border border-white/10 hover:border-yellow-400/50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg flex items-center justify-center text-white text-sm group-hover:scale-110 transition-transform">
-                      ⭐
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate group-hover:text-yellow-300 transition-colors">Favourites</div>
-                      <div className="text-xs text-white/60 truncate">Starred agents ({savedAgents.filter(agent => agent.is_favorite).length})</div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              
-              {/* Expand/collapse toggle for sidebar list */}
-              <div 
-                className="flex justify-between items-center cursor-pointer hover:bg-white/10 p-2 rounded-lg transition-all group"
-                onClick={() => setIsMyAgentsExpanded(!isMyAgentsExpanded)}
-              >
-                <span className="text-xs font-medium text-white/70 uppercase tracking-wider">
-                  {isMyAgentsExpanded ? 'Hide Quick List' : 'Show Quick List'}
-                </span>
                 <button
                   type="button"
                   className="text-white/60 hover:text-white transition-all duration-200 group-hover:scale-110"
                   style={{ transform: isMyAgentsExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
               </div>
+              
+              {/* MY AGENTS subsections - show when expanded */}
+              {isMyAgentsExpanded && (
+                <div className="space-y-3 mb-8">
+                  {/* Created Agents subsection */}
+                  <button
+                    onClick={() => {
+                      setSelectedQuickTeam('myagents');
+                      setSelectedMyAgentsSection('created');
+                      setSelectedSector(null);
+                      setSelectedCategory(null);
+                    }}
+                    className={`w-full text-left p-4 rounded-xl transition-all duration-300 group ${
+                      selectedQuickTeam === 'myagents' && selectedMyAgentsSection === 'created'
+                        ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border border-purple-400/50 shadow-lg'
+                        : 'text-white hover:bg-white/10 border border-white/10 hover:border-purple-400/50'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-400 rounded-xl flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform">
+                        🛠️
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate group-hover:text-purple-300 transition-colors">Created Agents</div>
+                        <div className="text-xs text-white/60 truncate">Agents you've created ({savedAgents.length})</div>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Favourites subsection */}
+                  <button
+                    onClick={() => {
+                      setSelectedQuickTeam('myagents');
+                      setSelectedMyAgentsSection('favorites');
+                      setSelectedSector(null);
+                      setSelectedCategory(null);
+                    }}
+                    className={`w-full text-left p-4 rounded-xl transition-all duration-300 group ${
+                      selectedQuickTeam === 'myagents' && selectedMyAgentsSection === 'favorites'
+                        ? 'bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-white border border-yellow-400/50 shadow-lg'
+                        : 'text-white hover:bg-white/10 border border-white/10 hover:border-yellow-400/50'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-xl flex items-center justify-center text-white text-lg group-hover:scale-110 transition-transform">
+                        ⭐
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate group-hover:text-yellow-300 transition-colors">Favourites</div>
+                        <div className="text-xs text-white/60 truncate">Starred agents ({savedAgents.filter(agent => agent.is_favorite).length})</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              )}
             </div>
             
             {/* My Agents list - modern design */}
