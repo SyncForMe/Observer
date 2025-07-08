@@ -2168,13 +2168,38 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 </div>
               </div>
             ) : selectedQuickTeam === 'myagents' ? (
-              // MY AGENTS View
+              // MY AGENTS View - with subsections
               <div>
                 <div className="mb-6">
                   <h3 className="text-xl font-bold text-white mb-4">
-                    ⭐ My Agents
+                    {selectedMyAgentsSection === 'created' ? '🛠️ Created Agents' : 
+                     selectedMyAgentsSection === 'favorites' ? '⭐ Favourite Agents' : '⭐ My Agents'}
                   </h3>
-                  <p className="text-white/70 mb-4">Your saved and favorite agents</p>
+                  <p className="text-white/70 mb-4">
+                    {selectedMyAgentsSection === 'created' ? 'Agents you have created and saved' : 
+                     selectedMyAgentsSection === 'favorites' ? 'Agents you have starred as favorites' : 
+                     'Your saved and favorite agents'}
+                  </p>
+                  
+                  {/* Section selector if no specific section is selected */}
+                  {!selectedMyAgentsSection && (
+                    <div className="flex space-x-4 mb-6">
+                      <button
+                        onClick={() => setSelectedMyAgentsSection('created')}
+                        className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                      >
+                        <span>🛠️</span>
+                        <span>Created Agents ({savedAgents.length})</span>
+                      </button>
+                      <button
+                        onClick={() => setSelectedMyAgentsSection('favorites')}
+                        className="flex items-center space-x-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+                      >
+                        <span>⭐</span>
+                        <span>Favourites ({savedAgents.filter(agent => agent.is_favorite).length})</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {loadingSavedAgents ? (
@@ -2182,85 +2207,113 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                     <div className="animate-spin w-8 h-8 border-2 border-white/30 border-t-white rounded-full mx-auto mb-4"></div>
                     <span className="text-white/80">Loading your agents...</span>
                   </div>
-                ) : savedAgents.length === 0 ? (
-                  <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
-                    <div className="text-6xl mb-4">👤</div>
-                    <h4 className="text-xl font-bold text-white mb-2">No Saved Agents Yet</h4>
-                    <p className="text-white/60 mb-6">
-                      Create and save agents from the library to see them here.<br/>
-                      <span className="text-white/40">Browse the industry sectors or use Quick Teams to get started.</span>
-                    </p>
-                    <button
-                      onClick={() => {
-                        setSelectedQuickTeam(null);
-                        setSelectedSector(null);
-                        setSelectedCategory(null);
-                      }}
-                      className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium transition-colors"
-                    >
-                      Browse Agent Library
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {savedAgents.map((agent) => (
-                      <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-                        <div className="p-4">
-                          <div className="flex items-start space-x-3">
-                            <img
-                              src={agent.avatar_url || `data:image/svg+xml,${encodeURIComponent(`
-                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                  <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                  <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                </svg>
-                              `)}`}
-                              alt={agent.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                              onError={(e) => {
-                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                ) : (() => {
+                  // Filter agents based on selected section
+                  const filteredAgents = selectedMyAgentsSection === 'favorites' 
+                    ? savedAgents.filter(agent => agent.is_favorite)
+                    : selectedMyAgentsSection === 'created'
+                    ? savedAgents
+                    : savedAgents;
+                  
+                  return filteredAgents.length === 0 ? (
+                    <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
+                      <div className="text-6xl mb-4">
+                        {selectedMyAgentsSection === 'favorites' ? '⭐' : 
+                         selectedMyAgentsSection === 'created' ? '🛠️' : '👤'}
+                      </div>
+                      <h4 className="text-xl font-bold text-white mb-2">
+                        {selectedMyAgentsSection === 'favorites' ? 'No Favourite Agents Yet' : 
+                         selectedMyAgentsSection === 'created' ? 'No Created Agents Yet' : 
+                         'No Saved Agents Yet'}
+                      </h4>
+                      <p className="text-white/60 mb-6">
+                        {selectedMyAgentsSection === 'favorites' ? 
+                          'Click the star icons on agent cards to add them to your favorites.' : 
+                          selectedMyAgentsSection === 'created' ? 
+                          'Create and save agents from the library to see them here.' : 
+                          'Create and save agents from the library to see them here.'}<br/>
+                        <span className="text-white/40">Browse the industry sectors or use Quick Teams to get started.</span>
+                      </p>
+                      <button
+                        onClick={() => {
+                          setSelectedQuickTeam(null);
+                          setSelectedMyAgentsSection(null);
+                          setSelectedSector(null);
+                          setSelectedCategory(null);
+                        }}
+                        className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium transition-colors"
+                      >
+                        Browse Agent Library
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {filteredAgents.map((agent) => (
+                        <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                          <div className="p-4">
+                            <div className="flex items-start space-x-3">
+                              <img
+                                src={agent.avatar_url || `data:image/svg+xml,${encodeURIComponent(`
                                   <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
                                     <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
                                     <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
                                   </svg>
-                                `)}`;
-                              }}
-                            />
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-800">{agent.name}</h4>
-                              <p className="text-sm text-gray-600">{agent.goal || 'Saved Agent'}</p>
-                              <p className="text-xs text-purple-600 mt-1 capitalize">{agent.archetype}</p>
+                                `)}`}
+                                alt={agent.name}
+                                className="w-12 h-12 rounded-full object-cover"
+                                onError={(e) => {
+                                  e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
+                                      <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
+                                      <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
+                                    </svg>
+                                  `)}`;
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <h4 className="font-semibold text-gray-800">{agent.name}</h4>
+                                    <p className="text-sm text-gray-600">{agent.goal || 'Saved Agent'}</p>
+                                    <p className="text-xs text-purple-600 mt-1 capitalize">{agent.archetype}</p>
+                                  </div>
+                                  {agent.is_favorite && (
+                                    <span className="text-yellow-500 text-lg" title="Favourite">⭐</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="mt-3 space-y-2">
-                            <button
-                              onClick={() => setSelectedAgentDetails(agent)}
-                              className="w-full bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200 transition-colors"
-                            >
-                              View Details
-                            </button>
-                            <div className="flex space-x-2">
+                            <div className="mt-3 space-y-2">
                               <button
-                                onClick={() => handleAddAgent(agent)}
-                                className="flex-1 py-2 px-3 rounded text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                                onClick={() => setSelectedAgentDetails(agent)}
+                                className="w-full bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200 transition-colors"
                               >
-                                Add to Simulation
+                                View Details
                               </button>
-                              <button
-                                onClick={() => handleDeleteSavedAgent(agent.id)}
-                                className="px-3 py-2 bg-red-100 text-red-800 rounded text-sm font-medium hover:bg-red-200 transition-colors"
-                                title="Delete saved agent"
-                              >
-                                🗑️
-                              </button>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleAddAgent(agent)}
+                                  className="flex-1 py-2 px-3 rounded text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                                >
+                                  Add to Simulation
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteSavedAgent(agent.id)}
+                                  className="px-3 py-2 bg-red-100 text-red-800 rounded text-sm font-medium hover:bg-red-200 transition-colors"
+                                  title="Delete saved agent"
+                                >
+                                  🗑️
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             ) : selectedQuickTeam ? (
               // Quick Team View
