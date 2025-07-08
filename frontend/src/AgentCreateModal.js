@@ -336,17 +336,12 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                <span className="text-lg">➕</span>
-              </div>
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6">
+            <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-bold">Create New Agent</h2>
-                <p className="text-purple-100 text-sm">Design your perfect AI assistant</p>
+                <h2 className="text-2xl font-bold">➕ Create New Agent</h2>
+                <p className="text-white/80 mt-1">Design your perfect AI assistant</p>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
               <button
                 onClick={handleClose}
                 disabled={loading || avatarGenerating || recordingField}
