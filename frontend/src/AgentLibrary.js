@@ -2340,6 +2340,94 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                     </div>
                   </div>
                 </div>
+              ) : selectedQuickTeam === 'myagents' ? (
+                // My Agents View (using Quick Team pattern)
+                <div>
+                  {/* Back Button */}
+                  <div className="mb-4">
+                    <button
+                      onClick={() => {
+                        setSelectedQuickTeam(null);
+                      }}
+                      className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      <span>Back to Library</span>
+                    </button>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-gray-800 mb-6">
+                    👤 My Agents
+                  </h3>
+                  <p className="text-gray-600 mb-6">Your saved agents collection</p>
+                  
+                  {savedAgents.length > 0 ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 agent-grid">
+                      {savedAgents.map((agent) => (
+                        <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow relative">
+                          {/* Star and Delete buttons in top right */}
+                          <div className="absolute top-2 right-2 z-10 flex items-center space-x-1">
+                            <button
+                              onClick={() => toggleAgentFavorite(agent.id, agent.is_favorite)}
+                              className="text-lg hover:scale-110 transition-transform bg-white/80 rounded-full p-1"
+                              title={agent.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+                            >
+                              {agent.is_favorite ? '⭐' : '☆'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSavedAgent(agent.id)}
+                              className="bg-red-500 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                              title="Delete agent"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          
+                          <div className="p-4">
+                            <div className="flex items-start space-x-3">
+                              {agent.avatar_url ? (
+                                <img
+                                  src={agent.avatar_url}
+                                  alt={agent.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-sm font-bold">
+                                    {agent.name?.[0] || '🤖'}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 text-sm">{agent.name}</h4>
+                                <p className="text-xs text-gray-600 mt-1">{agent.archetype}</p>
+                                <p className="text-xs text-gray-500 mt-2 line-clamp-2">{agent.goal}</p>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex justify-between items-center">
+                              <button
+                                onClick={() => handleUseSavedAgent(agent)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded-md transition-colors font-medium"
+                              >
+                                Add to Simulation
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No saved agents yet.</p>
+                      <p className="text-sm mt-1">Create agents to see them here.</p>
+                    </div>
+                  )}
+                </div>
               ) : selectedQuickTeam ? (
                 // Quick Team View
                 <div>
