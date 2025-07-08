@@ -1638,14 +1638,20 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
     
     try {
+      console.log('🔍 Toggling favorite for agent:', agent.name);
+      
       // Check if agent is already saved
       const existingSaved = savedAgents.find(saved => saved.name === agent.name);
+      console.log('🔍 Existing saved agent:', existingSaved);
       
       if (existingSaved) {
         // If already saved, toggle favorite status
+        console.log('🔍 Toggling existing agent favorite status');
         const response = await axios.put(`${API}/saved-agents/${existingSaved.id}/favorite`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        
+        console.log('🔍 Toggle response:', response.status, response.data);
         
         if (response.status === 200) {
           setSavedAgents(prev => 
@@ -1655,10 +1661,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 : saved
             )
           );
-          console.log('Favorite status toggled');
+          console.log('✅ Favorite status toggled successfully');
         }
       } else {
         // If not saved, save the agent first
+        console.log('🔍 Saving new agent as favorite');
         const agentData = {
           name: agent.name,
           archetype: agent.archetype,
@@ -1670,17 +1677,26 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
           is_favorite: true
         };
         
+        console.log('🔍 Agent data to save:', agentData);
+        
         const response = await axios.post(`${API}/saved-agents`, agentData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
-        if (response.status === 201) {
+        console.log('🔍 Save response:', response.status, response.data);
+        
+        if (response.status === 200 || response.status === 201) {
           setSavedAgents(prev => [...prev, response.data]);
-          console.log('Agent saved as favorite');
+          console.log('✅ Agent saved as favorite successfully');
+        } else {
+          console.error('❌ Unexpected status code:', response.status);
+          alert('Failed to save favorite. Unexpected response.');
         }
       }
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      console.error('❌ Error in handleToggleFavorite:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
       alert('Failed to update favorite. Please try again.');
     }
   };
