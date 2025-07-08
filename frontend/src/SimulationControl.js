@@ -643,7 +643,15 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     
     setLoading(true);
     try {
-      const response = await axios.post(`${API}/agents`, agentData, {
+      // Transform the data to match backend expectations
+      const backendData = {
+        ...agentData,
+        memory_summary: agentData.memories || '', // Map memories to memory_summary
+      };
+      // Remove the frontend-specific field
+      delete backendData.memories;
+      
+      const response = await axios.post(`${API}/agents`, backendData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
