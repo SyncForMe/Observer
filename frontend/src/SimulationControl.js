@@ -1388,7 +1388,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   }, [isRunning, isPaused, token, agents.length]);
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* Header with integrated Notification Bar */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3 relative">
         <div className="flex justify-between items-center">
@@ -1523,168 +1524,10 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 ))}
               </div>
             )}
-
-        {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
           </div>
         </div>
 
-            {/* Control Buttons - 30% smaller and positioned at bottom of Live Conversations card */}
-            <div className="mt-4 flex justify-center">
-              <div className="flex space-x-4">
-                {/* Play/Pause Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={playPauseSimulation}
-                    disabled={loading || agents.length < 2}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      !isRunning
-                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                        : isPaused 
-                          ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                          : 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                    }`}
-                  >
-                    <span className="text-sm">
-                      {loading ? '⏳' : !isRunning ? '▶️' : isPaused ? '▶️' : '⏸️'}
-                    </span>
-                  </button>
-                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {loading ? 'Loading...' : !isRunning ? 'Start Simulation' : isPaused ? 'Resume Simulation' : 'Pause Simulation'}
-                  </div>
-                </div>
 
-                {/* Observer Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={() => setShowObserverChat(!showObserverChat)}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
-                      showObserverChat 
-                        ? 'bg-purple-500 hover:bg-purple-600 text-white' 
-                        : 'bg-gray-600 hover:bg-gray-700 text-white'
-                    }`}
-                  >
-                    <span className="text-sm">👁️</span>
-                  </button>
-                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {showObserverChat ? 'Hide Observer' : 'Show Observer'}
-                  </div>
-                </div>
-
-                {/* Fast Forward Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={toggleFastForward}
-                    disabled={loading || !isRunning || agents.length < 2}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      fastForwardMode
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
-                        : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                    }`}
-                  >
-                    <span className="text-sm">⏩</span>
-                  </button>
-                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {loading ? 'Processing...' : fastForwardMode ? 'Fast Forward Active' : 'Fast Forward (1 Day)'}
-                  </div>
-                </div>
-
-                {/* Start Fresh Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={startFreshSimulation}
-                    disabled={loading}
-                    className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="text-sm">🔄</span>
-                  </button>
-                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {loading ? 'Starting Fresh...' : 'Start Fresh'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-            {/* Control Buttons - 30% smaller and positioned under conversations */}
-            <div className="mt-4 flex justify-center">
-              <div className="flex space-x-4">
-                {/* Play/Pause Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={playPauseSimulation}
-                    disabled={loading || agents.length < 2}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      !isRunning
-                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                        : isPaused 
-                          ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                          : 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                    }`}
-                  >
-                    <span className="text-sm">
-                      {loading ? '⏳' : !isRunning ? '▶️' : isPaused ? '▶️' : '⏸️'}
-                    </span>
-                  </button>
-                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {loading ? 'Loading...' : !isRunning ? 'Start Simulation' : isPaused ? 'Resume Simulation' : 'Pause Simulation'}
-                  </div>
-                </div>
-
-                {/* Observer Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={() => setShowObserverChat(!showObserverChat)}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
-                      showObserverChat 
-                        ? 'bg-purple-500 hover:bg-purple-600 text-white' 
-                        : 'bg-gray-600 hover:bg-gray-700 text-white'
-                    }`}
-                  >
-                    <span className="text-sm">👁️</span>
-                  </button>
-                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {showObserverChat ? 'Hide Observer' : 'Show Observer'}
-                  </div>
-                </div>
-
-                {/* Fast Forward Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={toggleFastForward}
-                    disabled={loading || !isRunning || agents.length < 2}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                      fastForwardMode
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
-                        : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                    }`}
-                  >
-                    <span className="text-sm">⏩</span>
-                  </button>
-                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {loading ? 'Processing...' : fastForwardMode ? 'Fast Forward Active' : 'Fast Forward (1 Day)'}
-                  </div>
-                </div>
-
-                {/* Start Fresh Button - 30% smaller */}
-                <div className="group relative">
-                  <button
-                    onClick={startFreshSimulation}
-                    disabled={loading}
-                    className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="text-sm">🔄</span>
-                  </button>
-                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                    {loading ? 'Starting Fresh...' : 'Start Fresh'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Live Conversations Section - Responsive widths (Middle Position) */}
-        <div className="col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-2 md:order-last lg:order-none">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-5 md:p-5 lg:p-6 xl:p-6 2xl:p-8 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
             <div className="flex flex-col sm:flex-col md:flex-row lg:flex-row xl:flex-row 2xl:flex-row justify-between items-start md:items-center mb-4 space-y-2 md:space-y-0">
               <h3 className="text-lg sm:text-lg md:text-xl lg:text-xl xl:text-2xl 2xl:text-2xl font-bold text-white">💬 Live Conversations</h3>
@@ -1747,46 +1590,53 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Conversation Display */}
-            <div className="bg-black/20 rounded-lg p-4 h-96 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-              {conversationLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                </div>
-              ) : conversations.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="text-4xl mb-4">💬</div>
-                    <p className="text-white/60">No conversations yet</p>
-                    <p className="text-white/40 text-sm">Add agents and start simulation to see conversations</p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {conversations.map((conversation, conversationIndex) => (
-                    <div key={conversation.id || conversationIndex} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-white font-medium text-sm">
-                          Round {conversation.round_number} - {conversation.time_period}
-                        </h4>
-                        {conversation.scenario_name && (
-                          <span className="text-white/40 text-xs bg-white/5 px-2 py-1 rounded">
-                            {conversation.scenario_name}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {conversation.messages?.map((message, messageIndex) => {
-                        const isHighlighted = searchResults.some(result => 
-                          result.conversationIndex === conversationIndex && 
-                          result.messageIndex === messageIndex
-                        );
-                        const isCurrentSearch = searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
-                                              searchResults[currentSearchIndex]?.messageIndex === messageIndex;
-                        
-                        return (
-                          <div
+      <div>
+        <AgentEditModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingAgent(null);
+          }}
+          agent={editingAgent}
+          onSave={handleSaveAgent}
+        />
+
+        <AgentCreateModal
+          isOpen={showCreateAgentModal}
+          onClose={() => setShowCreateAgentModal(false)}
+          onSave={handleCreateAgent}
+        />
+
+        <style jsx>{`
+        .agent-archetype-badge {
+          @apply text-xs px-2 py-1 rounded-full;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
+      </div>
+    </>
+  );
+};
+
+export default SimulationControl;
                             key={message.id || messageIndex}
                             ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
                             className={`rounded-lg p-3 border-l-4 ${
