@@ -6,6 +6,13 @@ import AgentCreateModal from './AgentCreateModal';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
 
+// Welcome messages for notification bar
+const WELCOME_MESSAGES = [
+  "Welcome, Observer",
+  "Hey, Observer is back! Agents, rejoice!",
+  "What will you observe today, almighty Observer?"
+];
+
 // Agent Edit Modal Component
 const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
   const [formData, setFormData] = useState({
@@ -242,6 +249,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const [customScenario, setCustomScenario] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
+  
+  // Notification bar state
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationText, setNotificationText] = useState('');
+  const [isWelcomePhase, setIsWelcomePhase] = useState(true); // Start with welcome phase
+
+  // Main state declarations
   const [conversations, setConversations] = useState([]);
   const [conversationLoading, setConversationLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -252,6 +266,141 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
   const messagesEndRef = useRef(null);
   const searchRefs = useRef([]);
   const { user, token } = useAuth();
+
+  // Welcome messages for random selection
+  const WELCOME_MESSAGES = [
+    "Welcome, Observer",
+    "Hey, Observer is back! Agents, rejoice!",
+    "What will you observe today, almighty Observer?"
+  ];
+
+  // Motivational messages for no agents
+  const NO_AGENTS_MESSAGES = [
+    "Psst... Your simulation is feeling lonely without agents! 🤖",
+    "Agent count: 0. Drama potential: Also 0. Time to fix this! 🎭",
+    "Even the best directors need actors. Add some agents! 🎬",
+    "Your empty agent roster is staring at you... judgmentally 👀",
+    "No agents? That's like having a party with no guests! 🎉"
+  ];
+
+  // Motivational messages for no scenario
+  const NO_SCENARIO_MESSAGES = [
+    "Plot twist: There's no plot! Set a scenario to spice things up! 📝",
+    "Your agents are waiting for their script... Give them a scenario! 🎬",
+    "Scenario status: Missing in action. Time for some creative directing! 🎭",
+    "Without a scenario, your agents are just having awkward small talk ☕",
+    "Pro tip: Agents perform better when they know what they're doing! 💡"
+  ];
+
+  // Show notification based on different conditions
+  useEffect(() => {
+    // Only show notifications if user has a token (is logged in)
+    if (!token) return;
+    
+    let timer;
+    let hideTimer;
+    let phaseTimer;
+    
+    // Set welcome phase and show welcome message first when user logs in
+    setIsWelcomePhase(true);
+    setShowNotification(false); // Reset any existing notifications
+    
+    timer = setTimeout(() => {
+      const randomMessage = WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
+      setNotificationText(randomMessage);
+      setShowNotification(true);
+      
+      // Hide welcome notification after 10 seconds and end welcome phase
+      hideTimer = setTimeout(() => {
+        setShowNotification(false);
+        
+        // End welcome phase after a short delay
+        phaseTimer = setTimeout(() => {
+          setIsWelcomePhase(false);
+        }, 500);
+      }, 10000);
+    }, 1000);
+    
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(hideTimer);
+      clearTimeout(phaseTimer);
+    };
+  }, [token]); // Trigger when token changes (login/logout)
+
+  // Show motivational messages based on agents and scenario status
+  useEffect(() => {
+    if (!token || isWelcomePhase) return; // Don't show during welcome phase
+    
+    let timer;
+    
+    // Wait after welcome phase ends, then check conditions
+    timer = setTimeout(() => {
+      // Check if scenario is set - if yes, show scenario name
+      if (scenario && scenario.trim()) {
+        setNotificationText(`Current Scenario: ${scenario}`);
+        setShowNotification(true);
+        return;
+      }
+      
+      // Check if no agents
+      if (agents.length === 0) {
+        const randomMessage = NO_AGENTS_MESSAGES[Math.floor(Math.random() * NO_AGENTS_MESSAGES.length)];
+        setNotificationText(randomMessage);
+        setShowNotification(true);
+        return;
+      }
+      
+      // Check if no scenario but have agents
+      if (agents.length > 0 && (!scenario || !scenario.trim())) {
+        const randomMessage = NO_SCENARIO_MESSAGES[Math.floor(Math.random() * NO_SCENARIO_MESSAGES.length)];
+        setNotificationText(randomMessage);
+        setShowNotification(true);
+        return;
+      }
+      
+      // If we have both agents and scenario, hide notification
+      setShowNotification(false);
+    }, 2000); // Wait 2 seconds after welcome phase ends
+    
+    return () => clearTimeout(timer);
+  }, [token, isWelcomePhase]); // Remove agents.length and scenario from dependencies
+
+  // Separate effect to handle agents/scenario changes only after welcome phase
+  useEffect(() => {
+    if (!token || isWelcomePhase) return; // Don't run during welcome phase
+    
+    // Immediate check when agents or scenario changes (but not during welcome)
+    let timer = setTimeout(() => {
+      // If scenario is set, show scenario name
+      if (scenario && scenario.trim()) {
+        setNotificationText(`Current Scenario: ${scenario}`);
+        setShowNotification(true);
+        return;
+      }
+      
+      // If no agents, show motivational message
+      if (agents.length === 0) {
+        const randomMessage = NO_AGENTS_MESSAGES[Math.floor(Math.random() * NO_AGENTS_MESSAGES.length)];
+        setNotificationText(randomMessage);
+        setShowNotification(true);
+        return;
+      }
+      
+      // If we have agents but no scenario, show scenario motivation
+      if (agents.length > 0 && (!scenario || !scenario.trim())) {
+        const randomMessage = NO_SCENARIO_MESSAGES[Math.floor(Math.random() * NO_SCENARIO_MESSAGES.length)];
+        setNotificationText(randomMessage);
+        setShowNotification(true);
+        return;
+      }
+      
+      // If we have both agents and scenario, hide notification
+      setShowNotification(false);
+    }, 100); // Small delay to avoid conflicts
+    
+    return () => clearTimeout(timer);
+  }, [agents.length, scenario, token, isWelcomePhase]);
 
   // Helper function to get archetype colors
   const getArchetypeColor = (archetype) => {
@@ -1240,8 +1389,8 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3">
+      {/* Header with integrated Notification Bar */}
+      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3 relative">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <h2 className="text-lg font-semibold text-white">🔭 Observatory</h2>
@@ -1252,125 +1401,47 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
               </span>
             </div>
           </div>
-        </div>
-
-        {/* Set Scenario */}
-        <div className="mt-3 mb-3">
-          <div className="flex justify-between items-center mb-2">
-            <button
-              onClick={() => setShowSetScenario(!showSetScenario)}
-              className="flex items-center space-x-2 text-white text-sm font-medium hover:text-blue-300 transition-colors"
-            >
-              <span>Set Scenario</span>
-              <span className={`transform transition-transform duration-200 ${showSetScenario ? 'rotate-180' : ''}`}>
-                ⬇️
-              </span>
-            </button>
+          <div className="text-white/60 text-xs">
+            {agents.length} agents • {conversations.length} rounds
           </div>
-          
-          {/* Expandable Scenario Input */}
-          {showSetScenario && (
-            <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-white/60 text-sm">Enter custom scenario or generate random:</span>
-                <button
-                  onClick={getRandomScenario}
-                  disabled={loading || isRunning}
-                  className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? '⏳' : '🎲 Random'}
-                </button>
-              </div>
-              <div className="relative">
-                <textarea
-                  value={customScenario}
-                  onChange={(e) => setCustomScenario(e.target.value)}
-                  placeholder="Enter your scenario here... (e.g., 'A team of researchers discovers an unexpected signal from deep space')"
-                  disabled={loading || isRunning || isRecording}
-                  className="w-full px-3 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
-                  rows="6"
-                />
-                <button
-                  onClick={handleVoiceInput}
-                  disabled={loading || isRunning}
-                  className={`absolute right-2 top-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                    isRecording 
-                      ? 'bg-red-500/20 text-red-400 animate-pulse' 
-                      : 'text-white/60 hover:text-white hover:bg-white/10'
-                  }`}
-                  title={isRecording ? 'Recording... Click to stop' : 'Click to record scenario with voice'}
-                >
-                  <svg 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="currentColor"
-                    className="w-4 h-4"
-                  >
-                    <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
-                    <rect x="10" y="20" width="4" height="2" rx="1"/>
-                  </svg>
-                </button>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => {
-                    setShowSetScenario(false);
-                    setCustomScenario('');
-                  }}
-                  disabled={loading || isRecording}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSetScenario}
-                  disabled={loading || isRunning || !customScenario.trim() || isRecording}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                >
-                  Set Scenario
-                </button>
-              </div>
-              {isRecording && (
-                <p className="text-yellow-300 text-xs">
-                  🎤 Recording... Speak clearly. Recording will auto-stop after 30 seconds.
-                </p>
-              )}
-            </div>
-          )}
         </div>
-
+        
+        {/* Invisible Notification - Only Text Visible */}
+        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-in-out z-20 ${
+          showNotification ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
+          <div className={`flex items-center justify-center transition-transform duration-1000 ease-out ${
+            showNotification ? 'transform translate-x-0' : 'transform translate-x-full'
+          }`}>
+            <span className="text-white font-medium text-lg tracking-wide drop-shadow-lg text-center">
+              {notificationText}
+            </span>
+          </div>
         </div>
+      </div>
 
-      {/* Combined Active Agents and Live Conversations Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Active Agents Section - 25% width on large screens */}
-        <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
+      {/* Combined Active Agents, Live Conversations, and Scenario Setup Section - Responsive Layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-4 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-6 2xl:gap-8">
+        {/* Active Agents Section - Responsive widths */}
+        <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1 2xl:col-span-1">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-5 md:p-5 lg:p-6 xl:p-6 2xl:p-8 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">🤖 Active Agents</h3>
-              <div className="flex items-center space-x-2">
-                <span className="text-white/60 text-xs">{agents.length}</span>
+              <h3 className="text-base sm:text-base md:text-lg lg:text-lg xl:text-xl 2xl:text-xl font-bold text-white">🤖 Agent List</h3>
+              <div className="flex items-center space-x-1 sm:space-x-1 md:space-x-2 lg:space-x-2 xl:space-x-2 2xl:space-x-3">
+                <span className="text-white/60 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm">{agents.length}</span>
                 <button
                   onClick={() => setShowCreateAgentModal(true)}
                   disabled={loading}
-                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors disabled:opacity-50"
+                  className="px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors disabled:opacity-50"
                   title="Add New Agent"
                 >
                   ➕
-                </button>
-                <button
-                  onClick={fetchAgents}
-                  disabled={agentsLoading || loading}
-                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors disabled:opacity-50"
-                >
-                  {agentsLoading ? '⏳' : '🔄'}
                 </button>
                 {agents.length > 0 && (
                   <button
                     onClick={clearAllAgents}
                     disabled={loading || agentsLoading}
-                    className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors disabled:opacity-50"
+                    className="px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors disabled:opacity-50"
                   >
                     {loading ? '⏳' : '🗑️'}
                   </button>
@@ -1385,9 +1456,9 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
               </div>
             ) : agents.length === 0 ? (
               <div className="text-center py-8">
-                <div className="text-3xl mb-2">🎭</div>
-                <h4 className="text-white font-medium mb-2 text-sm">No Active Agents</h4>
-                <p className="text-white/60 text-xs mb-3">Add agents to start simulation</p>
+                <div className="text-2xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl 2xl:text-4xl mb-2">🎭</div>
+                <h4 className="text-white font-medium mb-2 text-sm sm:text-sm md:text-sm lg:text-sm xl:text-base 2xl:text-base">No Agents in List</h4>
+                <p className="text-white/60 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm mb-3">Add agents to start simulation</p>
                 <button 
                   onClick={() => setActiveTab('agents')}
                   className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
@@ -1396,17 +1467,17 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 </button>
               </div>
             ) : (
-              <div className="max-h-96 overflow-y-auto space-y-3 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+              <div className="max-h-80 sm:max-h-80 md:max-h-96 lg:max-h-96 xl:max-h-[400px] 2xl:max-h-[450px] overflow-y-auto space-y-2 sm:space-y-2 md:space-y-3 lg:space-y-3 xl:space-y-3 2xl:space-y-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
                 {agents.map((agent) => (
                   <motion.div
                     key={agent.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10 hover:border-white/20 transition-all duration-200"
+                    className="bg-white/5 backdrop-blur-sm rounded-lg p-2 sm:p-2 md:p-3 lg:p-3 xl:p-3 2xl:p-4 border border-white/10 hover:border-white/20 transition-all duration-200"
                   >
                     {/* Agent Avatar and Basic Info */}
                     <div className="flex items-start space-x-2 mb-2">
-                      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getArchetypeColor(agent.archetype)} flex items-center justify-center text-white text-xs font-semibold shadow-lg`}>
+                      <div className={`w-6 h-6 sm:w-7 h-7 md:w-8 h-8 lg:w-8 h-8 xl:w-9 h-9 2xl:w-10 h-10 rounded-full bg-gradient-to-br ${getArchetypeColor(agent.archetype)} flex items-center justify-center text-white text-xs font-semibold shadow-lg`}>
                         {agent.avatar_url ? (
                           <img 
                             src={agent.avatar_url} 
@@ -1418,13 +1489,13 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-sm truncate">{agent.name}</h4>
-                        <p className="text-white/60 text-xs truncate">{agent.archetype}</p>
+                        <h4 className="text-white font-medium text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm 2xl:text-base truncate">{agent.name}</h4>
+                        <p className="text-white/60 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-xs 2xl:text-sm truncate">{agent.archetype}</p>
                       </div>
                     </div>
 
                     {/* Agent Goal */}
-                    <p className="text-white/80 text-xs mb-2 line-clamp-2">{agent.goal}</p>
+                    <p className="text-white/80 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm mb-2 line-clamp-2">{agent.goal}</p>
 
                     {/* Action Buttons */}
                     <div className="flex space-x-1">
@@ -1434,7 +1505,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                           setShowEditModal(true);
                         }}
                         disabled={loading}
-                        className="flex-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+                        className="flex-1 px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
                       >
                         <span>✏️</span>
                         <span>Edit</span>
@@ -1442,7 +1513,7 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                       <button
                         onClick={() => handleRemoveAgent(agent.id)}
                         disabled={loading}
-                        className="flex-1 px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
+                        className="flex-1 px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
                       >
                         <span>🗑️</span>
                         <span>Remove</span>
@@ -1452,36 +1523,179 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 ))}
               </div>
             )}
+
+        {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
           </div>
         </div>
 
-        {/* Live Conversations Section - 75% width on large screens */}
-        <div className="lg:col-span-3">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">💬 Live Conversations</h3>
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+            {/* Control Buttons - 30% smaller and positioned at bottom of Live Conversations card */}
+            <div className="mt-4 flex justify-center">
+              <div className="flex space-x-4">
+                {/* Play/Pause Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={playPauseSimulation}
+                    disabled={loading || agents.length < 2}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      !isRunning
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : isPaused 
+                          ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                          : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                    }`}
+                  >
+                    <span className="text-sm">
+                      {loading ? '⏳' : !isRunning ? '▶️' : isPaused ? '▶️' : '⏸️'}
+                    </span>
+                  </button>
+                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {loading ? 'Loading...' : !isRunning ? 'Start Simulation' : isPaused ? 'Resume Simulation' : 'Pause Simulation'}
+                  </div>
+                </div>
+
+                {/* Observer Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={() => setShowObserverChat(!showObserverChat)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
+                      showObserverChat 
+                        ? 'bg-purple-500 hover:bg-purple-600 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                  >
+                    <span className="text-sm">👁️</span>
+                  </button>
+                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {showObserverChat ? 'Hide Observer' : 'Show Observer'}
+                  </div>
+                </div>
+
+                {/* Fast Forward Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={toggleFastForward}
+                    disabled={loading || !isRunning || agents.length < 2}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      fastForwardMode
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
+                        : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                    }`}
+                  >
+                    <span className="text-sm">⏩</span>
+                  </button>
+                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {loading ? 'Processing...' : fastForwardMode ? 'Fast Forward Active' : 'Fast Forward (1 Day)'}
+                  </div>
+                </div>
+
+                {/* Start Fresh Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={startFreshSimulation}
+                    disabled={loading}
+                    className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="text-sm">🔄</span>
+                  </button>
+                  <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {loading ? 'Starting Fresh...' : 'Start Fresh'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+            {/* Control Buttons - 30% smaller and positioned under conversations */}
+            <div className="mt-4 flex justify-center">
+              <div className="flex space-x-4">
+                {/* Play/Pause Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={playPauseSimulation}
+                    disabled={loading || agents.length < 2}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      !isRunning
+                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                        : isPaused 
+                          ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                          : 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                    }`}
+                  >
+                    <span className="text-sm">
+                      {loading ? '⏳' : !isRunning ? '▶️' : isPaused ? '▶️' : '⏸️'}
+                    </span>
+                  </button>
+                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {loading ? 'Loading...' : !isRunning ? 'Start Simulation' : isPaused ? 'Resume Simulation' : 'Pause Simulation'}
+                  </div>
+                </div>
+
+                {/* Observer Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={() => setShowObserverChat(!showObserverChat)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 ${
+                      showObserverChat 
+                        ? 'bg-purple-500 hover:bg-purple-600 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                  >
+                    <span className="text-sm">👁️</span>
+                  </button>
+                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {showObserverChat ? 'Hide Observer' : 'Show Observer'}
+                  </div>
+                </div>
+
+                {/* Fast Forward Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={toggleFastForward}
+                    disabled={loading || !isRunning || agents.length < 2}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      fastForwardMode
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
+                        : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                    }`}
+                  >
+                    <span className="text-sm">⏩</span>
+                  </button>
+                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {loading ? 'Processing...' : fastForwardMode ? 'Fast Forward Active' : 'Fast Forward (1 Day)'}
+                  </div>
+                </div>
+
+                {/* Start Fresh Button - 30% smaller */}
+                <div className="group relative">
+                  <button
+                    onClick={startFreshSimulation}
+                    disabled={loading}
+                    className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="text-sm">🔄</span>
+                  </button>
+                  <div className="absolute top-10 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {loading ? 'Starting Fresh...' : 'Start Fresh'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Conversations Section - Responsive widths (Middle Position) */}
+        <div className="col-span-1 sm:col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-2 md:order-last lg:order-none">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-5 md:p-5 lg:p-6 xl:p-6 2xl:p-8 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
+            <div className="flex flex-col sm:flex-col md:flex-row lg:flex-row xl:flex-row 2xl:flex-row justify-between items-start md:items-center mb-4 space-y-2 md:space-y-0">
+              <h3 className="text-lg sm:text-lg md:text-xl lg:text-xl xl:text-2xl 2xl:text-2xl font-bold text-white">💬 Live Conversations</h3>
+              <div className="flex flex-wrap items-center space-x-2 sm:space-x-2 md:space-x-3 lg:space-x-3 xl:space-x-3 2xl:space-x-4">
+                <div className={`w-2 h-2 sm:w-2 h-2 md:w-3 h-3 lg:w-3 h-3 xl:w-3 h-3 2xl:w-4 h-4 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
                 {autoGenerating && (
-                  <div className="w-2 h-2 rounded-full bg-blue-400 animate-ping"></div>
+                  <div className="w-1.5 h-1.5 sm:w-1.5 h-1.5 md:w-2 h-2 lg:w-2 h-2 xl:w-2 h-2 2xl:w-2 h-2 rounded-full bg-blue-400 animate-ping"></div>
                 )}
-                <span className="text-white/60 text-sm">
+                <span className="text-white/60 text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm 2xl:text-base">
                   {conversations.length} rounds, {observerMessages.length} messages
                 </span>
-                <button
-                  onClick={fetchConversations}
-                  disabled={conversationLoading}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {conversationLoading ? '⏳' : '🔄 Refresh'}
-                </button>
-                <button
-                  onClick={generateConversation}
-                  disabled={loading || agents.length < 2}
-                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {loading ? '⏳' : '💬 Generate'}
-                </button>
               </div>
             </div>
 
@@ -1663,88 +1877,115 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Control Buttons - Aligned with Live Conversations Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Empty space to match Active Agents column */}
-        <div className="lg:col-span-1"></div>
-        
-        {/* Control Buttons aligned with Live Conversations */}
-        <div className="lg:col-span-3 flex justify-center">
-          <div className="flex space-x-6">
-            {/* Play/Pause Button */}
-            <div className="group relative">
+        {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
+        <div className="lg:col-span-1">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white">📝 Scenario Setup</h3>
               <button
-                onClick={playPauseSimulation}
-                disabled={loading || agents.length < 2}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  !isRunning
-                    ? 'bg-green-500 hover:bg-green-600 text-white'
-                    : isPaused 
-                      ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                      : 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                }`}
+                onClick={() => setShowSetScenario(!showSetScenario)}
+                className="flex items-center space-x-2 text-white text-sm font-medium hover:text-blue-300 transition-colors"
               >
-                <span className="text-lg">
-                  {loading ? '⏳' : !isRunning ? '▶️' : isPaused ? '▶️' : '⏸️'}
+                <span className={`transform transition-transform duration-200 ${showSetScenario ? 'rotate-180' : ''}`}>
+                  ⬇️
                 </span>
               </button>
-              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                {loading ? 'Loading...' : !isRunning ? 'Start Simulation' : isPaused ? 'Resume Simulation' : 'Pause Simulation'}
-              </div>
             </div>
-
-            {/* Observer Button */}
-            <div className="group relative">
-              <button
-                onClick={() => setShowObserverChat(!showObserverChat)}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
-                  showObserverChat 
-                    ? 'bg-purple-500 hover:bg-purple-600 text-white' 
-                    : 'bg-gray-600 hover:bg-gray-700 text-white'
-                }`}
-              >
-                <span className="text-lg">👁️</span>
-              </button>
-              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                {showObserverChat ? 'Hide Observer' : 'Show Observer'}
+            
+            {/* Expandable Scenario Input */}
+            {showSetScenario && (
+              <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-white/60 text-sm">Enter custom scenario or generate random:</span>
+                  <button
+                    onClick={getRandomScenario}
+                    disabled={loading || isRunning}
+                    className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {loading ? '⏳' : '🎲 Random'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <textarea
+                    value={customScenario}
+                    onChange={(e) => setCustomScenario(e.target.value)}
+                    placeholder="Enter your scenario here... (e.g., 'A team of researchers discovers an unexpected signal from deep space')"
+                    disabled={loading || isRunning || isRecording}
+                    className="w-full px-3 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
+                    rows="6"
+                  />
+                  <button
+                    onClick={handleVoiceInput}
+                    disabled={loading || isRunning}
+                    className={`absolute right-2 top-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                      isRecording 
+                        ? 'bg-red-500/20 text-red-400 animate-pulse' 
+                        : 'text-white/60 hover:text-white hover:bg-white/10'
+                    }`}
+                    title={isRecording ? 'Recording... Click to stop' : 'Click to record scenario with voice'}
+                  >
+                    <svg 
+                      width="16" 
+                      height="16" 
+                      viewBox="0 0 24 24" 
+                      fill="currentColor"
+                      className="w-4 h-4"
+                    >
+                      <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
+                      <rect x="10" y="20" width="4" height="2" rx="1"/>
+                    </svg>
+                  </button>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => {
+                      setShowSetScenario(false);
+                      setCustomScenario('');
+                    }}
+                    disabled={loading || isRecording}
+                    className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSetScenario}
+                    disabled={loading || isRunning || !customScenario.trim() || isRecording}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    Set Scenario
+                  </button>
+                </div>
+                {isRecording && (
+                  <p className="text-yellow-300 text-xs">
+                    🎤 Recording... Speak clearly. Recording will auto-stop after 30 seconds.
+                  </p>
+                )}
               </div>
-            </div>
+            )}
 
-            {/* Fast Forward Button */}
-            <div className="group relative">
-              <button
-                onClick={toggleFastForward}
-                disabled={loading || !isRunning || agents.length < 2}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  fastForwardMode
-                    ? 'bg-orange-500 hover:bg-orange-600 text-white animate-pulse'
-                    : 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                }`}
-              >
-                <span className="text-lg">⏩</span>
-              </button>
-              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                {loading ? 'Processing...' : fastForwardMode ? 'Fast Forward Active' : 'Fast Forward (1 Day)'}
+            {/* Show current scenario if exists */}
+            {!showSetScenario && scenario && (
+              <div className="bg-white/5 rounded-lg p-4">
+                <p className="text-white/60 text-sm mb-2">Current Scenario:</p>
+                <p className="text-white text-sm">{scenario}</p>
               </div>
-            </div>
+            )}
 
-
-
-            {/* Start Fresh Button */}
-            <div className="group relative">
-              <button
-                onClick={startFreshSimulation}
-                disabled={loading}
-                className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="text-lg">🔄</span>
-              </button>
-              <div className="absolute top-14 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                {loading ? 'Starting Fresh...' : 'Start Fresh'}
+            {/* Default expanded state with instructions */}
+            {!showSetScenario && !scenario && (
+              <div className="text-center py-8">
+                <div className="text-3xl mb-2">📝</div>
+                <h4 className="text-white font-medium mb-2 text-sm">No Scenario Set</h4>
+                <p className="text-white/60 text-xs mb-3">Set a scenario to guide your simulation</p>
+                <button 
+                  onClick={() => setShowSetScenario(true)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                >
+                  Set Scenario
+                </button>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -1759,20 +2000,26 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
         agent={editingAgent}
         onSave={handleSaveAgent}
       />
-      
+
       {/* Agent Create Modal */}
       <AgentCreateModal
         isOpen={showCreateAgentModal}
         onClose={() => setShowCreateAgentModal(false)}
-        onCreate={handleCreateAgent}
-        loading={loading}
+        onSave={handleCreateAgent}
       />
-      
+
       <style jsx>{`
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
+        
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out;
         }
