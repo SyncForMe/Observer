@@ -56,369 +56,442 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
     }
   }, [agent, isOpen]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave(agent.id, formData);
+      await onSave(formData);
       onClose();
     } catch (error) {
       console.error('Error saving agent:', error);
-      if (!confirm('Failed to save agent. Would you like to try again?')) {
-        setSaving(false);
-        return;
-      }
-      // Retry the operation
-      await handleSubmit(e);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handlePersonalityChange = (trait, value) => {
+    setFormData(prev => ({
+      ...prev,
+      personality: {
+        ...prev.personality,
+        [trait]: parseInt(value)
+      }
+    }));
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
-      >
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-2xl font-bold">✏️ Edit Agent</h2>
-              <p className="text-white/80 mt-1">Customize your agent's personality and expertise</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-gradient-to-br from-purple-900 to-pink-900 p-8 rounded-xl shadow-2xl max-w-4xl w-full mx-4 border border-purple-500/30 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-white">Edit Agent</h2>
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Agent Avatar */}
+          <div className="text-center">
+            <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
+              {formData.avatar_url ? (
+                <img src={formData.avatar_url} alt={formData.name} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <span className="text-white text-4xl font-bold">
+                  {formData.name ? formData.name.charAt(0).toUpperCase() : '👤'}
+                </span>
+              )}
             </div>
-            <button
-              onClick={onClose}
-              className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              ✕
-            </button>
+          </div>
+
+          {/* Agent Details */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-white/80 text-sm font-medium mb-2">Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-white/80 text-sm font-medium mb-2">Archetype</label>
+              <select
+                value={formData.archetype}
+                onChange={(e) => handleInputChange('archetype', e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="scientist">Scientist</option>
+                <option value="artist">Artist</option>
+                <option value="leader">Leader</option>
+                <option value="skeptic">Skeptic</option>
+                <option value="optimist">Optimist</option>
+                <option value="introvert">Introvert</option>
+                <option value="adventurer">Adventurer</option>
+                <option value="mediator">Mediator</option>
+                <option value="researcher">Researcher</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-white/80 text-sm font-medium mb-2">Goal</label>
+              <input
+                type="text"
+                value={formData.goal}
+                onChange={(e) => handleInputChange('goal', e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-white/80 text-sm font-medium mb-2">Expertise</label>
+              <input
+                type="text"
+                value={formData.expertise}
+                onChange={(e) => handleInputChange('expertise', e.target.value)}
+                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Agent Profile */}
-            <div>
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                  {formData.avatar_url ? (
-                    <img 
-                      src={formData.avatar_url} 
-                      alt={formData.name}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-white text-2xl font-bold">
-                      {formData.name?.[0] || '🤖'}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Agent Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                    placeholder="Enter agent name"
-                    required
-                  />
-                </div>
+        <div className="mt-6">
+          <label className="block text-white/80 text-sm font-medium mb-2">Background</label>
+          <textarea
+            value={formData.background}
+            onChange={(e) => handleInputChange('background', e.target.value)}
+            rows={3}
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+
+        <div className="mt-6">
+          <label className="block text-white/80 text-sm font-medium mb-2">Memories</label>
+          <textarea
+            value={formData.memories}
+            onChange={(e) => handleInputChange('memories', e.target.value)}
+            rows={3}
+            className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+
+        {/* Personality Traits */}
+        <div className="mt-6">
+          <h3 className="text-white/80 text-sm font-medium mb-4">Personality Traits</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Object.entries(formData.personality).map(([trait, value]) => (
+              <div key={trait}>
+                <label className="block text-white/60 text-xs mb-1 capitalize">{trait}</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={value}
+                  onChange={(e) => handlePersonalityChange(trait, e.target.value)}
+                  className="w-full"
+                />
+                <div className="text-white/40 text-xs text-center">{value}/10</div>
               </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Goal</label>
-                  <textarea
-                    value={formData.goal}
-                    onChange={(e) => setFormData({...formData, goal: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                    placeholder="What is this agent trying to achieve?"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Expertise</label>
-                  <input
-                    type="text"
-                    value={formData.expertise}
-                    onChange={(e) => setFormData({...formData, expertise: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                    placeholder="Areas of expertise"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Background</label>
-                  <textarea
-                    value={formData.background}
-                    onChange={(e) => setFormData({...formData, background: e.target.value})}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                    placeholder="Professional background and experience"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Personality Traits */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Personality Traits</h3>
-              <div className="space-y-4">
-                {[
-                  { key: 'extroversion', label: 'Extroversion', desc: 'How outgoing and social' },
-                  { key: 'optimism', label: 'Optimism', desc: 'How positive and hopeful' },
-                  { key: 'curiosity', label: 'Curiosity', desc: 'How inquisitive and exploratory' },
-                  { key: 'cooperativeness', label: 'Cooperativeness', desc: 'How collaborative and helpful' },
-                  { key: 'energy', label: 'Energy', desc: 'How active and enthusiastic' }
-                ].map(trait => (
-                  <div key={trait.key}>
-                    <div className="flex justify-between items-center mb-2">
-                      <div>
-                        <span className="text-sm font-medium text-gray-700">{trait.label}</span>
-                        <p className="text-xs text-gray-500">{trait.desc}</p>
-                      </div>
-                      <span className="text-sm font-bold text-purple-600">
-                        {formData.personality[trait.key]}/10
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={formData.personality[trait.key]}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        personality: {
-                          ...formData.personality,
-                          [trait.key]: parseInt(e.target.value)
-                        }
-                      })}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
+        </div>
 
-          <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </motion.div>
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-white/80 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-const SimulationControl = ({ setActiveTab, activeTab }) => {
+const SimulationControl = () => {
+  const { user } = useAuth();
   const [simulationState, setSimulationState] = useState(null);
+  const [agents, setAgents] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [scenario, setScenario] = useState('');
+  const [customScenario, setCustomScenario] = useState('');
+  const [scenarioName, setScenarioName] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [autoMode, setAutoMode] = useState(false);
-  const [scenario, setScenario] = useState('');
-  const [observerMessages, setObserverMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
+  const [autoGenerating, setAutoGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [fastForwardMode, setFastForwardMode] = useState(false);
-  const [agents, setAgents] = useState([]);
-  const [agentsLoading, setAgentsLoading] = useState(false);
-  const [editingAgent, setEditingAgent] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showObserverChat, setShowObserverChat] = useState(false);
-  const [showSetScenario, setShowSetScenario] = useState(false);
-  const [customScenario, setCustomScenario] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
-  
-  // Notification bar state
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationText, setNotificationText] = useState('');
-  const [isWelcomePhase, setIsWelcomePhase] = useState(true); // Start with welcome phase
-
-  // Main state declarations
-  const [conversations, setConversations] = useState([]);
   const [conversationLoading, setConversationLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
-  const [autoGenerating, setAutoGenerating] = useState(false);
-
-  const messagesEndRef = useRef(null);
+  const [editingAgent, setEditingAgent] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
+  const [showSetScenario, setShowSetScenario] = useState(false);
+  const [showObserverChat, setShowObserverChat] = useState(false);
+  const [observerMessage, setObserverMessage] = useState('');
+  const [observerMessages, setObserverMessages] = useState([]);
+  const [isObserverLoading, setIsObserverLoading] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationText, setNotificationText] = useState('');
   const searchRefs = useRef([]);
-  const { user, token } = useAuth();
+  const messagesEndRef = useRef(null);
 
-  // Welcome messages for random selection
-  const WELCOME_MESSAGES = [
-    "Welcome, Observer",
-    "Hey, Observer is back! Agents, rejoice!",
-    "What will you observe today, almighty Observer?"
-  ];
+  const [newAgent, setNewAgent] = useState({
+    name: '',
+    archetype: '',
+    expertise: '',
+    background: '',
+    goal: '',
+    avatar_url: ''
+  });
 
-  // Motivational messages for no agents
-  const NO_AGENTS_MESSAGES = [
-    "Psst... Your simulation is feeling lonely without agents! 🤖",
-    "Agent count: 0. Drama potential: Also 0. Time to fix this! 🎭",
-    "Even the best directors need actors. Add some agents! 🎬",
-    "Your empty agent roster is staring at you... judgmentally 👀",
-    "No agents? That's like having a party with no guests! 🎉"
-  ];
-
-  // Motivational messages for no scenario
-  const NO_SCENARIO_MESSAGES = [
-    "Plot twist: There's no plot! Set a scenario to spice things up! 📝",
-    "Your agents are waiting for their script... Give them a scenario! 🎬",
-    "Scenario status: Missing in action. Time for some creative directing! 🎭",
-    "Without a scenario, your agents are just having awkward small talk ☕",
-    "Pro tip: Agents perform better when they know what they're doing! 💡"
-  ];
-
-  // Show notification based on different conditions
+  // Initialize
   useEffect(() => {
-    // Only show notifications if user has a token (is logged in)
-    if (!token) return;
+    fetchSimulationState();
+    const welcomeMessage = WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
+    showNotification(welcomeMessage);
     
-    let timer;
-    let hideTimer;
-    let phaseTimer;
+    // Set up periodic refresh to check for new agents
+    const interval = setInterval(() => {
+      fetchSimulationState();
+    }, 5000); // Refresh every 5 seconds
     
-    // Set welcome phase and show welcome message first when user logs in
-    setIsWelcomePhase(true);
-    setShowNotification(false); // Reset any existing notifications
-    
-    timer = setTimeout(() => {
-      const randomMessage = WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
-      setNotificationText(randomMessage);
-      setShowNotification(true);
-      
-      // Hide welcome notification after 10 seconds and end welcome phase
-      hideTimer = setTimeout(() => {
-        setShowNotification(false);
-        
-        // End welcome phase after a short delay
-        phaseTimer = setTimeout(() => {
-          setIsWelcomePhase(false);
-        }, 500);
-      }, 10000);
-    }, 1000);
-    
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(hideTimer);
-      clearTimeout(phaseTimer);
-    };
-  }, [token]); // Trigger when token changes (login/logout)
+    return () => clearInterval(interval);
+  }, []);
 
-  // Show motivational messages based on agents and scenario status
+  // Auto-scroll to bottom of conversations
   useEffect(() => {
-    if (!token || isWelcomePhase) return; // Don't show during welcome phase
-    
-    let timer;
-    
-    // Wait after welcome phase ends, then check conditions
-    timer = setTimeout(() => {
-      // Check if scenario is set - if yes, show scenario name
-      if (scenario && scenario.trim()) {
-        setNotificationText(`Current Scenario: ${scenario}`);
-        setShowNotification(true);
-        return;
-      }
-      
-      // Check if no agents
-      if (agents.length === 0) {
-        const randomMessage = NO_AGENTS_MESSAGES[Math.floor(Math.random() * NO_AGENTS_MESSAGES.length)];
-        setNotificationText(randomMessage);
-        setShowNotification(true);
-        return;
-      }
-      
-      // Check if no scenario but have agents
-      if (agents.length > 0 && (!scenario || !scenario.trim())) {
-        const randomMessage = NO_SCENARIO_MESSAGES[Math.floor(Math.random() * NO_SCENARIO_MESSAGES.length)];
-        setNotificationText(randomMessage);
-        setShowNotification(true);
-        return;
-      }
-      
-      // If we have both agents and scenario, hide notification
-      setShowNotification(false);
-    }, 2000); // Wait 2 seconds after welcome phase ends
-    
-    return () => clearTimeout(timer);
-  }, [token, isWelcomePhase]); // Remove agents.length and scenario from dependencies
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [conversations, observerMessages]);
 
-  // Separate effect to handle agents/scenario changes only after welcome phase
-  useEffect(() => {
-    if (!token || isWelcomePhase) return; // Don't run during welcome phase
-    
-    // Immediate check when agents or scenario changes (but not during welcome)
-    let timer = setTimeout(() => {
-      // If scenario is set, show scenario name
-      if (scenario && scenario.trim()) {
-        setNotificationText(`Current Scenario: ${scenario}`);
-        setShowNotification(true);
-        return;
-      }
-      
-      // If no agents, show motivational message
-      if (agents.length === 0) {
-        const randomMessage = NO_AGENTS_MESSAGES[Math.floor(Math.random() * NO_AGENTS_MESSAGES.length)];
-        setNotificationText(randomMessage);
-        setShowNotification(true);
-        return;
-      }
-      
-      // If we have agents but no scenario, show scenario motivation
-      if (agents.length > 0 && (!scenario || !scenario.trim())) {
-        const randomMessage = NO_SCENARIO_MESSAGES[Math.floor(Math.random() * NO_SCENARIO_MESSAGES.length)];
-        setNotificationText(randomMessage);
-        setShowNotification(true);
-        return;
-      }
-      
-      // If we have both agents and scenario, hide notification
-      setShowNotification(false);
-    }, 100); // Small delay to avoid conflicts
-    
-    return () => clearTimeout(timer);
-  }, [agents.length, scenario, token, isWelcomePhase]);
-
-  // Helper function to get archetype colors
-  const getArchetypeColor = (archetype) => {
-    const colors = {
-      scientist: 'from-blue-500 to-cyan-500',
-      artist: 'from-purple-500 to-pink-500',
-      leader: 'from-red-500 to-orange-500',
-      skeptic: 'from-gray-500 to-slate-500',
-      optimist: 'from-yellow-500 to-amber-500',
-      introvert: 'from-indigo-500 to-blue-500',
-      adventurer: 'from-green-500 to-emerald-500',
-      mediator: 'from-teal-500 to-cyan-500',
-      researcher: 'from-violet-500 to-purple-500'
-    };
-    return colors[archetype] || 'from-gray-500 to-gray-600';
+  const showNotification = (text) => {
+    setNotificationText(text);
+    setNotificationVisible(true);
+    setTimeout(() => {
+      setNotificationVisible(false);
+    }, 3000);
   };
 
-  // Search functionality
+  const fetchSimulationState = async () => {
+    try {
+      const response = await axios.get(`${API}/simulation/state`, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      setSimulationState(response.data);
+      setAgents(response.data.agents || []);
+      setConversations(response.data.conversations || []);
+      setIsRunning(response.data.is_active || false);
+      setIsPaused(response.data.is_paused || false);
+      
+      // Also try to fetch available agents that might not be in simulation yet
+      try {
+        const agentsResponse = await axios.get(`${API}/agents`, {
+          headers: { Authorization: `Bearer ${user?.token}` }
+        });
+        console.log('Available agents:', agentsResponse.data);
+      } catch (agentError) {
+        console.log('Could not fetch additional agents:', agentError);
+      }
+    } catch (error) {
+      console.error('Error fetching simulation state:', error);
+    }
+  };
+
+  const playPauseSimulation = async () => {
+    try {
+      setLoading(true);
+      const endpoint = isRunning && !isPaused ? '/simulation/pause' : '/simulation/start';
+      await axios.post(`${API}${endpoint}`, {}, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      await fetchSimulationState();
+    } catch (error) {
+      console.error('Error controlling simulation:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleFastForward = async () => {
+    try {
+      await axios.post(`${API}/simulation/fast-forward`, {}, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      await fetchSimulationState();
+    } catch (error) {
+      console.error('Error fast forwarding:', error);
+    }
+  };
+
+  const startFreshSimulation = async () => {
+    try {
+      setLoading(true);
+      await axios.post(`${API}/simulation/reset`, {}, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      await fetchSimulationState();
+      setConversations([]);
+      setObserverMessages([]);
+    } catch (error) {
+      console.error('Error starting fresh:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddAgent = () => {
+    setShowCreateAgentModal(true);
+  };
+
+  const handleCreateAgent = async (agentData) => {
+    try {
+      const response = await axios.post(`${API}/agents`, agentData, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      
+      // Add to simulation
+      await axios.post(`${API}/simulation/agents`, { agent_id: response.data.id }, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      
+      await fetchSimulationState();
+      setShowCreateAgentModal(false);
+    } catch (error) {
+      console.error('Error creating agent:', error);
+    }
+  };
+
+  const handleRemoveAgent = async (agentId) => {
+    try {
+      await axios.delete(`${API}/simulation/agents/${agentId}`, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      await fetchSimulationState();
+    } catch (error) {
+      console.error('Error removing agent:', error);
+    }
+  };
+
+  const handleEditAgent = (agent) => {
+    setEditingAgent(agent);
+    setShowEditModal(true);
+  };
+
+  const handleSaveAgent = async (formData) => {
+    try {
+      await axios.put(`${API}/agents/${editingAgent.id}`, formData, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      await fetchSimulationState();
+      setShowEditModal(false);
+      setEditingAgent(null);
+    } catch (error) {
+      console.error('Error saving agent:', error);
+    }
+  };
+
+  const getRandomScenario = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/scenarios/random`, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      setCustomScenario(response.data.description);
+      setScenarioName(response.data.name);
+    } catch (error) {
+      console.error('Error getting random scenario:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetScenario = async () => {
+    try {
+      setLoading(true);
+      await axios.post(`${API}/simulation/scenario`, {
+        scenario: customScenario,
+        scenario_name: scenarioName
+      }, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      setScenario(customScenario);
+      setShowSetScenario(false);
+      await fetchSimulationState();
+    } catch (error) {
+      console.error('Error setting scenario:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVoiceInput = () => {
+    if (!isRecording) {
+      setIsRecording(true);
+      // Voice recording logic would go here
+      setTimeout(() => {
+        setIsRecording(false);
+        setCustomScenario("A team of researchers discovers an unexpected signal from deep space and must decide how to respond.");
+      }, 3000);
+    } else {
+      setIsRecording(false);
+    }
+  };
+
+  const handleSendObserverMessage = async () => {
+    if (!observerMessage.trim()) return;
+
+    try {
+      setIsObserverLoading(true);
+      const newMessage = {
+        id: Date.now(),
+        agent_name: "Observer (You)",
+        message: observerMessage,
+        timestamp: new Date().toISOString()
+      };
+      
+      setObserverMessages(prev => [...prev, newMessage]);
+      setObserverMessage('');
+
+      await axios.post(`${API}/simulation/observer-message`, {
+        message: observerMessage
+      }, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+
+      await fetchSimulationState();
+    } catch (error) {
+      console.error('Error sending observer message:', error);
+    } finally {
+      setIsObserverLoading(false);
+    }
+  };
+
   const performSearch = (term) => {
     if (!term.trim()) {
       setSearchResults([]);
@@ -427,1108 +500,182 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
     }
 
     const results = [];
-    conversations.forEach((conversation, convIndex) => {
-      conversation.messages?.forEach((message, msgIndex) => {
-        const messageText = message.message?.toLowerCase() || '';
-        const searchLower = term.toLowerCase();
-        
-        if (messageText.includes(searchLower)) {
-          results.push({
-            conversationIndex: convIndex,
-            messageIndex: msgIndex,
-            conversation: conversation,
-            message: message,
-            text: message.message
-          });
-        }
-      });
+    [...conversations, ...observerMessages].forEach((conversation, conversationIndex) => {
+      if (conversation.messages) {
+        conversation.messages.forEach((message, messageIndex) => {
+          if (message.message.toLowerCase().includes(term.toLowerCase())) {
+            results.push({
+              conversationIndex,
+              messageIndex,
+              message
+            });
+          }
+        });
+      } else if (conversation.message && conversation.message.toLowerCase().includes(term.toLowerCase())) {
+        results.push({
+          conversationIndex: -1,
+          messageIndex: conversationIndex,
+          message: conversation
+        });
+      }
     });
 
     setSearchResults(results);
     setCurrentSearchIndex(0);
-    
-    // Scroll to first result
-    if (results.length > 0) {
-      setTimeout(() => {
-        const firstRef = searchRefs.current[0];
-        if (firstRef) {
-          firstRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    }
   };
 
   const navigateSearch = (direction) => {
     if (searchResults.length === 0) return;
-    
-    let newIndex;
-    if (direction === 'prev') {
-      newIndex = currentSearchIndex > 0 ? currentSearchIndex - 1 : searchResults.length - 1;
+
+    let newIndex = currentSearchIndex;
+    if (direction === 'next') {
+      newIndex = (currentSearchIndex + 1) % searchResults.length;
     } else {
-      newIndex = currentSearchIndex < searchResults.length - 1 ? currentSearchIndex + 1 : 0;
+      newIndex = currentSearchIndex === 0 ? searchResults.length - 1 : currentSearchIndex - 1;
     }
     
     setCurrentSearchIndex(newIndex);
     
-    // Scroll to the result
-    setTimeout(() => {
-      const ref = searchRefs.current[newIndex];
-      if (ref) {
-        ref.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 100);
+    if (searchRefs.current[newIndex]) {
+      searchRefs.current[newIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
-  const highlightSearchTerm = (text, term, isCurrentResult = false) => {
+  const highlightSearchTerm = (text, term) => {
     if (!term) return text;
     
     const regex = new RegExp(`(${term})`, 'gi');
     const parts = text.split(regex);
     
     return parts.map((part, index) => 
-      regex.test(part) ? (
-        <mark 
-          key={index} 
-          className={isCurrentResult ? 'bg-yellow-400 text-black' : 'bg-blue-400 text-white'}
-        >
-          {part}
-        </mark>
-      ) : part
+      regex.test(part) ? 
+        <span key={index} className="bg-yellow-400 text-black px-1 rounded">{part}</span> : 
+        part
     );
   };
 
-  // Scenarios
-  const scenarios = [
-    "Medical Research Breakthrough",
-    "Space Mission Planning", 
-    "Climate Change Solutions",
-    "AI Ethics Committee",
-    "Startup Pitch Competition",
-    "Archaeological Discovery",
-    "Cybersecurity Crisis",
-    "Educational Reform",
-    "Urban Planning",
-    "Renewable Energy Project"
-  ];
-
-  // Fetch conversations
-  const fetchConversations = async () => {
-    if (!token) return;
-    
-    setConversationLoading(true);
-    try {
-      const response = await axios.get(`${API}/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setConversations(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch conversations:', error);
-      setConversations([]);
-    }
-    setConversationLoading(false);
-  };
-
-  // Fetch agents
-  const fetchAgents = async () => {
-    if (!token) return;
-    
-    setAgentsLoading(true);
-    try {
-      const response = await axios.get(`${API}/agents`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAgents(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch agents:', error);
-      setAgents([]);
-    }
-    setAgentsLoading(false);
-  };
-
-  // Fetch simulation state
-  const fetchSimulationState = async () => {
-    if (!token) return;
-    
-    try {
-      const response = await axios.get(`${API}/simulation/state`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSimulationState(response.data);
-      
-      // Update running state based on backend response
-      const backendIsActive = response.data?.is_active || false;
-      setIsRunning(backendIsActive);
-      
-      // If simulation is not active in backend, it's not paused either
-      if (!backendIsActive) {
-        setIsPaused(false);
-      }
-      
-    } catch (error) {
-      console.error('Failed to fetch simulation state:', error);
-    }
-  };
-
-  // Clear all agents
-  const clearAllAgents = async () => {
-    if (!token) return;
-    
-    if (!confirm(
-      `Are you sure you want to remove all ${agents.length} agents from the simulation? This action cannot be undone.`
-    )) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Remove each agent
-      for (const agent of agents) {
-        await axios.delete(`${API}/agents/${agent.id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
-      
-      console.log('✅ All agents cleared');
-      await fetchAgents();
-      await fetchSimulationState();
-    } catch (error) {
-      console.error('Failed to clear agents:', error);
-      if (!confirm('Failed to clear agents. Would you like to try again?')) {
-        return;
-      }
-      // Retry the operation
-      await clearAllAgents();
-    }
-    setLoading(false);
-  };
-
-  // Start fresh - Clear all data and reset to clean stopped state
-  const startFreshSimulation = async () => {
-    if (!token) return;
-    
-    if (!confirm('This will clear all conversations, remove all agents, and pause the simulation. Continue?')) {
-      return;
-    }
-
-    setLoading(true);
-    try {
-      console.log('🔄 Starting fresh simulation...');
-      
-      // Step 1: Pause simulation first if it's running
-      if (isRunning && !isPaused) {
-        console.log('⏸️ Pausing simulation...');
-        await axios.post(`${API}/simulation/pause`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
-      
-      // Step 2: Clear all agents
-      if (agents.length > 0) {
-        console.log(`🗑️ Clearing ${agents.length} agents...`);
-        const agentIds = agents.map(agent => agent.id);
-        await axios.post(`${API}/agents/bulk-delete`, agentIds, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
-      
-      // Step 3: Start fresh simulation to clear conversations
-      console.log('🆕 Starting fresh simulation state...');
-      await axios.post(`${API}/simulation/start`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Step 4: Immediately pause the simulation to set it to stopped state
-      console.log('⏸️ Pausing fresh simulation...');
-      await axios.post(`${API}/simulation/pause`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      // Step 5: Clear local state immediately
-      setAgents([]);
-      setConversations([]);
-      setObserverMessages([]);
-      setScenario('');
-      setNewMessage('');
-      
-      // Set simulation state to clean stopped state
-      setIsRunning(false);
-      setIsPaused(false);
-      setAutoMode(false);
-      setFastForwardMode(false);
-      
-      // Step 6: Refresh data to confirm clean state
-      await fetchAgents();
-      await fetchConversations();
-      await fetchSimulationState();
-      
-      console.log('✅ Fresh state created - all conversations cleared, all agents removed, simulation paused');
-    } catch (error) {
-      console.error('Failed to create fresh state:', error);
-      if (!confirm('Failed to create fresh state. Would you like to try again?')) {
-        return;
-      }
-      // Retry the operation
-      await startFreshSimulation();
-    }
-    setLoading(false);
-  };
-
-  // Function to display messages with staggered timing for better UX
-  const displayMessagesWithDelay = async (conversationData) => {
-    if (!conversationData || !conversationData.messages) return;
-    
-    // Add the conversation structure first (empty messages)
-    const emptyConversation = {
-      ...conversationData,
-      messages: []
-    };
-    
-    setConversations(prevConversations => [...prevConversations, emptyConversation]);
-    
-    // Then add messages one by one with delay
-    for (let i = 0; i < conversationData.messages.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay between messages
-      
-      setConversations(prevConversations => {
-        const updatedConversations = [...prevConversations];
-        const lastConvIndex = updatedConversations.length - 1;
-        const lastConversation = updatedConversations[lastConvIndex];
-        
-        updatedConversations[lastConvIndex] = {
-          ...lastConversation,
-          messages: [...(lastConversation.messages || []), conversationData.messages[i]]
-        };
-        
-        return updatedConversations;
-      });
-      
-      // Scroll to bottom as each message appears
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
-  };
-
-  // Observer message functionality
-  const sendObserverMessage = async () => {
-    if (!newMessage.trim() || !token) return;
-    
-    setLoading(true);
-    try {
-      console.log('🔍 Sending observer message:', newMessage);
-      const response = await axios.post(`${API}/observer/send-message`, {
-        observer_message: newMessage
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('✅ Observer message sent successfully:', response.data);
-      
-      setNewMessage('');
-      
-      // Add the new observer conversation directly to the existing conversations
-      // instead of refreshing everything
-      if (response.data && response.data.agent_responses) {
-        setConversations(prevConversations => {
-          const newConversations = [...prevConversations, response.data.agent_responses];
-          return newConversations;
-        });
-        
-        // Reset loading state immediately after sending, before displaying messages
-        setLoading(false);
-        
-        // Display messages one by one with staggered timing (async, non-blocking)
-        displayMessagesWithDelay(response.data.agent_responses);
-      } else {
-        setLoading(false);
-      }
-      
-      // Scroll to bottom after new message
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-      
-    } catch (error) {
-      console.error('Failed to send observer message:', error);
-      console.error('Error details:', error.response?.data);
-      if (!confirm('Failed to send message. Would you like to try again?')) {
-        setLoading(false);
-        return;
-      }
-      // Retry the operation
-      await sendObserverMessage();
-    }
-  };
-
-  // Remove agent
-  const handleRemoveAgent = async (agentId) => {
-    if (!token) return;
-
-    setLoading(true);
-    try {
-      await axios.delete(`${API}/agents/${agentId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('✅ Agent removed successfully');
-      await fetchAgents();
-      await fetchSimulationState();
-    } catch (error) {
-      console.error('Failed to remove agent:', error);
-      if (!confirm('Failed to remove agent. Would you like to try again?')) {
-        setLoading(false);
-        return;
-      }
-      // Retry the operation
-      await handleRemoveAgent(agentId);
-      return;
-    }
-    setLoading(false);
-  };
-
-  // Create new agent
-  const handleCreateAgent = async (agentData) => {
-    if (!token) return;
-    
-    setLoading(true);
-    try {
-      // Transform the data to match backend expectations
-      const backendData = {
-        ...agentData,
-        memory_summary: agentData.memories || '', // Map memories to memory_summary
-      };
-      // Remove the frontend-specific field
-      delete backendData.memories;
-      
-      const response = await axios.post(`${API}/agents`, backendData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('✅ Agent created successfully');
-      
-      // AUTO-SAVE: Also save the agent to user's library
-      try {
-        const savedAgentData = {
-          name: agentData.name,
-          archetype: agentData.archetype,
-          personality: agentData.personality,
-          goal: agentData.goal,
-          expertise: agentData.expertise || '',
-          background: agentData.background || '',
-          memory_summary: agentData.memories || '',
-          avatar_url: agentData.avatar_url || '',
-          avatar_prompt: agentData.avatar_prompt || '',
-          is_favorite: false // Default to not favorite
-        };
-        
-        await axios.post(`${API}/saved-agents`, savedAgentData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        console.log('✅ Agent auto-saved to My Agents library');
-      } catch (error) {
-        console.error('Failed to auto-save agent to library:', error);
-        // Don't fail the main creation if auto-save fails
-      }
-      
-      setShowCreateAgentModal(false);
-      await fetchAgents();
-      await fetchSimulationState();
-    } catch (error) {
-      console.error('Failed to create agent:', error);
-      if (!confirm('Failed to create agent. Would you like to try again?')) {
-        setLoading(false);
-        return;
-      }
-      await handleCreateAgent(agentData);
-      return;
-    }
-    setLoading(false);
-  };
-
-  // Save agent
-  const handleSaveAgent = async (agentId, formData) => {
-    if (!token) return;
-    
-    try {
-      // Transform the data to match backend expectations
-      const backendData = {
-        ...formData,
-        memory_summary: formData.memories || '', // Map memories to memory_summary
-      };
-      // Remove the frontend-specific field
-      delete backendData.memories;
-      
-      await axios.put(`${API}/agents/${agentId}`, backendData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('✅ Agent updated successfully');
-      await fetchAgents();
-    } catch (error) {
-      console.error('Failed to update agent:', error);
-      throw error;
-    }
-  };
-
-  // Voice recording for scenario input
-  const handleVoiceInput = async () => {
-    if (!token) {
-      alert('Please login to use voice input functionality.');
-      return;
-    }
-
-    if (isRecording) {
-      // Stop recording immediately when clicked again
-      console.log('🛑 User requested to stop recording');
-      setIsRecording(false);
-      // The actual stopping will be handled by the mediaRecorder reference
-      if (window.currentMediaRecorder && window.currentMediaRecorder.state === 'recording') {
-        console.log('⏹️ Stopping MediaRecorder...');
-        window.currentMediaRecorder.stop();
-      }
-      return;
-    }
-
-    try {
-      console.log('🎤 Starting voice recording...');
-      setIsRecording(true);
-      
-      // Check if browser supports getUserMedia
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Voice recording not supported in this browser');
-      }
-      
-      // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100,
-          channelCount: 1 // Mono audio for better compatibility
-        }
-      });
-      
-      console.log('🎤 Microphone access granted');
-      
-      // Check if MediaRecorder is supported
-      if (!window.MediaRecorder) {
-        throw new Error('MediaRecorder not supported in this browser');
-      }
-      
-      // Try different formats for better compatibility with OpenAI Whisper
-      let mimeType = '';
-      let fileExtension = '.webm';
-      
-      // Prefer formats that work best with OpenAI Whisper
-      const supportedFormats = [
-        { mime: 'audio/wav', ext: '.wav' },
-        { mime: 'audio/mp4', ext: '.mp4' },
-        { mime: 'audio/mpeg', ext: '.mp3' },
-        { mime: 'audio/webm;codecs=opus', ext: '.webm' },
-        { mime: 'audio/webm', ext: '.webm' },
-        { mime: 'audio/ogg;codecs=opus', ext: '.ogg' }
-      ];
-      
-      for (const format of supportedFormats) {
-        if (MediaRecorder.isTypeSupported(format.mime)) {
-          mimeType = format.mime;
-          fileExtension = format.ext;
-          break;
-        }
-      }
-      
-      console.log('🎵 Using MIME type:', mimeType || 'browser default');
-      console.log('📄 File extension:', fileExtension);
-      
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
-      
-      // Store reference for stopping from button click
-      window.currentMediaRecorder = mediaRecorder;
-      
-      const audioChunks = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-          console.log('📊 Audio chunk received:', event.data.size, 'bytes');
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        console.log('🛑 Recording stopped, processing audio...');
-        
-        // Clear the reference
-        window.currentMediaRecorder = null;
-        
-        if (audioChunks.length === 0) {
-          console.error('❌ No audio data recorded');
-          alert('No audio was recorded. Please try again.');
-          setIsRecording(false);
-          return;
-        }
-        
-        // Use the recorded MIME type for the blob
-        const audioBlob = new Blob(audioChunks, { type: mimeType || 'audio/webm' });
-        console.log('📦 Audio blob created:', audioBlob.size, 'bytes', 'type:', audioBlob.type);
-        
-        if (audioBlob.size === 0) {
-          console.error('❌ Audio blob is empty');
-          alert('No audio was recorded. Please check your microphone and try again.');
-          setIsRecording(false);
-          return;
-        }
-        
-        // Create filename with proper extension
-        const fileName = `scenario_audio${fileExtension}`;
-        
-        const formData = new FormData();
-        formData.append('audio', audioBlob, fileName);
-        
-        // Log the FormData contents
-        console.log('📋 FormData contents:');
-        for (let [key, value] of formData.entries()) {
-          console.log(`  ${key}:`, value, 'name:', value.name, 'type:', value.type);
-        }
-
-        try {
-          console.log('🚀 Sending audio for transcription...');
-          console.log('📋 Request details:', {
-            url: `${API}/speech/transcribe-scenario`,
-            fileSize: audioBlob.size,
-            fileName: fileName,
-            mimeType: audioBlob.type,
-            token: token ? 'Present' : 'Missing'
-          });
-          
-          const response = await axios.post(`${API}/speech/transcribe-scenario`, formData, {
-            headers: {
-              Authorization: `Bearer ${token}`
-              // Don't set Content-Type - let browser set it with boundary
-            },
-            timeout: 30000, // 30 second timeout
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              console.log('📤 Upload progress:', percentCompleted + '%');
-            }
-          });
-
-          console.log('✅ Transcription response received:', response);
-          console.log('📋 Response status:', response.status);
-          console.log('📋 Response headers:', response.headers);
-          console.log('📋 Response data:', response.data);
-          
-          if (response.data && response.data.text) {
-            console.log('📝 Setting transcribed text:', response.data.text);
-            setCustomScenario(response.data.text);
-            console.log('✅ Text successfully set in input field');
-            alert(`Voice transcription successful! Transcribed: "${response.data.text}"`);
-          } else {
-            console.log('❌ No text in transcription response:', response.data);
-            alert('No speech was detected in the recording. Please speak clearly and try again.');
-          }
-        } catch (error) {
-          console.error('❌ Failed to transcribe audio:', error);
-          console.error('Error response:', error.response);
-          console.error('Error config:', error.config);
-          
-          if (error.response) {
-            console.error('Response status:', error.response.status);
-            console.error('Response data:', error.response.data);
-            console.error('Response headers:', error.response.headers);
-          }
-          
-          if (error.response?.status === 401) {
-            alert('Authentication failed. Please refresh the page and try again.');
-          } else if (error.response?.status === 400) {
-            const errorMsg = error.response.data?.detail || 'Invalid audio format';
-            console.error('❌ Server rejected audio format:', {
-              sentFormat: audioBlob.type,
-              fileName: fileName,
-              fileSize: audioBlob.size
-            });
-            alert(`Invalid request: ${errorMsg}. Try a different browser or check microphone settings.`);
-          } else if (error.code === 'ECONNABORTED') {
-            alert('Request timeout. Please try with a shorter recording.');
-          } else {
-            alert(`Failed to transcribe audio: ${error.response?.data?.detail || error.message}. Please check the console for details.`);
-          }
-        }
-
-        // Stop all tracks to release microphone
-        stream.getTracks().forEach(track => {
-          track.stop();
-          console.log('🔇 Microphone track stopped');
-        });
-        setIsRecording(false);
-      };
-
-      mediaRecorder.onerror = (event) => {
-        console.error('❌ MediaRecorder error:', event.error);
-        alert('Recording error occurred. Please try again.');
-        window.currentMediaRecorder = null;
-        setIsRecording(false);
-      };
-
-      console.log('🎬 Starting MediaRecorder...');
-      console.log('💡 Click the microphone button again to stop recording');
-      mediaRecorder.start(1000); // Collect data every second
-
-      // Backup auto-stop after 60 seconds (only as safety fallback)
-      setTimeout(() => {
-        if (mediaRecorder.state === 'recording') {
-          console.log('⏰ Safety auto-stop after 60 seconds');
-          mediaRecorder.stop();
-        }
-      }, 60000);
-
-    } catch (error) {
-      console.error('❌ Failed to start recording:', error);
-      setIsRecording(false);
-      window.currentMediaRecorder = null;
-      
-      if (error.name === 'NotAllowedError') {
-        alert('Microphone access denied. Please allow microphone access and try again.');
-      } else if (error.name === 'NotFoundError') {
-        alert('No microphone found. Please connect a microphone and try again.');
-      } else if (error.name === 'NotSupportedError') {
-        alert('Voice recording is not supported in this browser. Please use Chrome, Firefox, or Safari.');
-      } else {
-        alert(`Failed to access microphone: ${error.message}. Please check your browser settings and try again.`);
-      }
-    }
-  };
-
-  // Set custom scenario
-  const handleSetScenario = async () => {
-    if (!token || !customScenario.trim()) return;
-
-    setLoading(true);
-    try {
-      await axios.post(`${API}/simulation/set-scenario`, {
-        scenario: customScenario.trim(),
-        scenario_name: customScenario.trim().substring(0, 50) + (customScenario.length > 50 ? '...' : '')
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      console.log('✅ Custom scenario set');
-      setShowSetScenario(false);
-      setCustomScenario('');
-      await fetchSimulationState();
-    } catch (error) {
-      console.error('Failed to set scenario:', error);
-      if (!confirm('Failed to set scenario. Would you like to try again?')) {
-        setLoading(false);
-        return;
-      }
-      await handleSetScenario();
-      return;
-    }
-    setLoading(false);
-  };
-
-  // Set simulation scenario
-  const setSimulationScenario = async (scenarioText) => {
-    if (!token) return;
-    
-    setLoading(true);
-    setScenario(scenarioText);
-    
-    try {
-      const response = await axios.post(`${API}/simulation/set-scenario`, {
-        scenario: scenarioText,
-        scenario_name: scenarioText
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('✅ Scenario set:', scenarioText);
-      await fetchSimulationState();
-    } catch (error) {
-      console.error('Failed to set scenario:', error);
-    }
-    setLoading(false);
-  };
-
-  // Play/Pause simulation functionality
-  const playPauseSimulation = async () => {
-    if (!token) return;
-    
-    setLoading(true);
-    try {
-      if (!isRunning) {
-        // Start the simulation
-        const response = await axios.post(`${API}/simulation/start`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setIsRunning(true);
-        setIsPaused(false);
-        console.log('✅ Simulation started');
-        
-      } else if (isPaused) {
-        // Resume the simulation
-        const response = await axios.post(`${API}/simulation/resume`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setIsPaused(false);
-        console.log('✅ Simulation resumed');
-        
-      } else {
-        // Pause the simulation
-        const response = await axios.post(`${API}/simulation/pause`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setIsPaused(true);
-        console.log('✅ Simulation paused');
-      }
-      
-      // Always fetch the latest simulation state after any operation
-      setTimeout(() => {
-        fetchSimulationState();
-      }, 500); // Small delay to ensure backend state is updated
-      
-    } catch (error) {
-      console.error('Failed to control simulation:', error);
-      if (!confirm('Failed to control simulation. Would you like to try again?')) {
-        // Reset local state on error
-        await fetchSimulationState();
-        setLoading(false);
-        return;
-      }
-      // Retry the operation
-      await playPauseSimulation();
-      return;
-    }
-    setLoading(false);
-  };
-
-  // Fast forward simulation functionality
-  const toggleFastForward = async () => {
-    if (!token) return;
-    
-    setLoading(true);
-    try {
-      if (!fastForwardMode) {
-        // Start fast forward
-        await axios.post(`${API}/simulation/fast-forward`, {
-          target_days: 1,
-          conversations_per_period: 2
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setFastForwardMode(true);
-        console.log('✅ Fast forward activated');
-      } else {
-        // Fast forward is automatic, no need to toggle off
-        setFastForwardMode(false);
-        console.log('✅ Fast forward completed');
-      }
-      
-      await fetchSimulationState();
-      await fetchConversations();
-    } catch (error) {
-      console.error('Failed to fast forward:', error);
-      if (!confirm('Failed to fast forward simulation. Would you like to try again?')) {
-        setLoading(false);
-        return;
-      }
-      // Retry the operation
-      await toggleFastForward();
-      return;
-    }
-    setLoading(false);
-  };
-
-  // Generate conversation manually
-  const generateConversation = async () => {
-    if (!token) return;
-    
-    setLoading(true);
-    try {
-      const response = await axios.post(`${API}/conversation/generate`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('✅ Conversation generated:', response.data);
-      
-      // Use staggered display for regular conversations too
-      if (response.data) {
-        await displayMessagesWithDelay(response.data);
-      }
-      
-    } catch (error) {
-      console.error('Failed to generate conversation:', error);
-      if (error.response?.status === 400) {
-        // Don't show alert for expected errors (like insufficient agents)
-        console.log('Conversation generation skipped:', error.response?.data?.detail);
-      } else {
-        if (!confirm('Failed to generate conversation. Please add more agents or check your simulation setup. Would you like to try again?')) {
-          setLoading(false);
-          return;
-        }
-        // Retry the operation
-        await generateConversation();
-        return;
-      }
-    }
-    setLoading(false);
-  };
-
-  // Fetch only new conversations efficiently without causing re-renders
-  const fetchNewConversations = async () => {
-    if (!token) return;
-    
-    try {
-      const response = await axios.get(`${API}/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      const allConversations = response.data || [];
-      
-      // Only update if there are actually new conversations
-      if (allConversations.length > conversations.length) {
-        // Use functional update to ensure we're working with latest state
-        setConversations(prevConversations => {
-          // Check if we actually have new conversations to avoid unnecessary updates
-          if (allConversations.length > prevConversations.length) {
-            // Only add the new conversations, don't replace everything
-            const newConversations = allConversations.slice(prevConversations.length);
-            const updatedConversations = [...prevConversations, ...newConversations];
-            
-            // Smooth scroll to new content only if user is near bottom
-            setTimeout(() => {
-              const conversationContainer = messagesEndRef.current?.parentElement;
-              if (conversationContainer) {
-                const { scrollTop, scrollHeight, clientHeight } = conversationContainer;
-                const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100;
-                
-                if (isNearBottom) {
-                  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-                }
-              }
-            }, 100);
-            
-            return updatedConversations;
-          }
-          return prevConversations;
-        });
-      }
-    } catch (error) {
-      console.error('Failed to fetch new conversations:', error);
-    }
-  };
-
-  // Get random scenario
-  const getRandomScenario = async () => {
-    if (!token) return;
-    
-    setLoading(true);
-    try {
-      const response = await axios.get(`${API}/simulation/random-scenario`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      const randomScenario = response.data.scenario;
-      
-      // Set the scenario in the text box for editing instead of directly applying
-      setCustomScenario(randomScenario);
-      setShowSetScenario(true); // Expand the set scenario section
-      
-    } catch (error) {
-      console.error('Failed to get random scenario:', error);
-      if (!confirm('Failed to get random scenario. Would you like to try again?')) {
-        setLoading(false);
-        return;
-      }
-      // Retry the operation
-      await getRandomScenario();
-      return;
-    }
-    setLoading(false);
-  };
-
-  // Refresh agents when switching to simulation tab
-  useEffect(() => {
-    if (activeTab === 'simulation') {
-      fetchAgents();
-      fetchConversations();
-      fetchSimulationState();
-    }
-  }, [activeTab, token]);
-
-  // Auto-generate and refresh conversations (smooth, no flashing)
-  useEffect(() => {
-    if (isRunning && !isPaused && token && agents.length >= 2) {
-      const interval = setInterval(async () => {
-        try {
-          setAutoGenerating(true);
-          
-          // Silent generation - don't set loading state to avoid UI flash
-          const response = await axios.post(`${API}/conversation/generate`, {}, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          
-          // Use staggered display for auto-generated conversations
-          if (response.data) {
-            await displayMessagesWithDelay(response.data);
-          }
-          
-        } catch (error) {
-          // Silent failure for auto-generation - don't spam console or UI
-          if (error.response?.status !== 400) {
-            console.error('Auto-generation failed:', error);
-          }
-        } finally {
-          setAutoGenerating(false);
-        }
-      }, 4000); // Generate every 4 seconds
-      return () => clearInterval(interval);
-    }
-  }, [isRunning, isPaused, token, agents.length]);
-
   return (
     <>
-      <div className="space-y-6">
-      {/* Header with integrated Notification Bar */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-xl p-3 relative">
+      <div className="relative">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <h2 className="text-lg font-semibold text-white">🔭 Observatory</h2>
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
-              <span className="text-white/80 text-xs">
-                {isRunning ? (isPaused ? 'Paused' : 'Running') : 'Stopped'}
-              </span>
-            </div>
-          </div>
-          <div className="text-white/60 text-xs">
+          <h2 className="text-2xl font-bold text-white mb-0">🔬 Observatory</h2>
+          <div className="text-white/60 text-sm">
             {agents.length} agents • {conversations.length} rounds
           </div>
         </div>
         
-        {/* Invisible Notification - Only Text Visible */}
-        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-in-out z-20 ${
-          showNotification ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
-          <div className={`flex items-center justify-center transition-transform duration-1000 ease-out ${
-            showNotification ? 'transform translate-x-0' : 'transform translate-x-full'
-          }`}>
-            <span className="text-white font-medium text-lg tracking-wide drop-shadow-lg text-center">
+        {/* Notification Bar - Between header and cards */}
+        <AnimatePresence>
+          {notificationVisible && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="text-center mt-4 mb-2 text-white text-sm font-medium"
+            >
               {notificationText}
-            </span>
-          </div>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Combined Active Agents, Live Conversations, and Scenario Setup Section - Responsive Layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-4 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-6 2xl:gap-8">
-        {/* Active Agents Section - Responsive widths */}
-        <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-1 xl:col-span-1 2xl:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-5 md:p-5 lg:p-6 xl:p-6 2xl:p-8 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
+      {/* Main Grid Layout - 3 Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-6 2xl:gap-8">
+        
+        {/* Agent List Section - 25% width on large screens (Left Position) */}
+        <div className="lg:col-span-1">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base sm:text-base md:text-lg lg:text-lg xl:text-xl 2xl:text-xl font-bold text-white">🤖 Agent List</h3>
-              <div className="flex items-center space-x-1 sm:space-x-1 md:space-x-2 lg:space-x-2 xl:space-x-2 2xl:space-x-3">
-                <span className="text-white/60 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm">{agents.length}</span>
+              <h3 className="text-lg font-bold text-white">🤖 Agent List</h3>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${agents.length > 0 ? 'bg-green-400' : 'bg-gray-400'}`}></div>
+                <span className="text-white/60 text-sm">{agents.length}</span>
                 <button
-                  onClick={() => setShowCreateAgentModal(true)}
-                  disabled={loading}
-                  className="px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors disabled:opacity-50"
-                  title="Add New Agent"
+                  onClick={() => {
+                    // Click the Agent Library tab in the navigation
+                    const tabs = document.querySelectorAll('a, button');
+                    for (const tab of tabs) {
+                      if (tab.textContent && tab.textContent.toLowerCase().includes('agent library')) {
+                        tab.click();
+                        break;
+                      }
+                    }
+                  }}
+                  className="ml-2 w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center transition-colors text-sm"
+                  title="Open Agent Library"
                 >
-                  ➕
+                  +
                 </button>
-                {agents.length > 0 && (
-                  <button
-                    onClick={clearAllAgents}
-                    disabled={loading || agentsLoading}
-                    className="px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors disabled:opacity-50"
-                  >
-                    {loading ? '⏳' : '🗑️'}
-                  </button>
-                )}
               </div>
             </div>
-
-            {agentsLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                <p className="text-white/60 text-sm">Loading...</p>
-              </div>
-            ) : agents.length === 0 ? (
-              <div className="text-center py-8">
-                <div className="text-2xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl 2xl:text-4xl mb-2">🎭</div>
-                <h4 className="text-white font-medium mb-2 text-sm sm:text-sm md:text-sm lg:text-sm xl:text-base 2xl:text-base">No Agents in List</h4>
-                <p className="text-white/60 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm mb-3">Add agents to start simulation</p>
-                <button 
-                  onClick={() => setActiveTab('agents')}
-                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
-                >
-                  Add Agents
-                </button>
+            
+            {agents.length > 0 ? (
+              <div className="space-y-3 mb-4">
+                {agents.map((agent) => (
+                  <div
+                    key={agent.id}
+                    className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          {agent.avatar_url ? (
+                            <img src={agent.avatar_url} alt={agent.name} className="w-full h-full rounded-full object-cover" />
+                          ) : (
+                            <span className="text-white text-sm font-semibold">
+                              {agent.name?.charAt(0) || '🤖'}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium text-sm">{agent.name}</h4>
+                          <p className="text-white/60 text-xs capitalize">{agent.archetype}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditAgent(agent)}
+                          className="text-white/60 hover:text-white p-1 rounded transition-colors"
+                          title="Edit Agent"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleRemoveAgent(agent.id)}
+                          className="text-white/60 hover:text-red-400 p-1 rounded transition-colors"
+                          title="Remove Agent"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <p className="text-white/70 text-xs line-clamp-2 mb-2">
+                      {agent.background || agent.expertise}
+                    </p>
+                    
+                    {agent.goal && (
+                      <div className="text-white/50 text-xs">
+                        Goal: {agent.goal}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="max-h-80 sm:max-h-80 md:max-h-96 lg:max-h-96 xl:max-h-[400px] 2xl:max-h-[450px] overflow-y-auto space-y-2 sm:space-y-2 md:space-y-3 lg:space-y-3 xl:space-y-3 2xl:space-y-4 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-                {agents.map((agent) => (
-                  <motion.div
-                    key={agent.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white/5 backdrop-blur-sm rounded-lg p-2 sm:p-2 md:p-3 lg:p-3 xl:p-3 2xl:p-4 border border-white/10 hover:border-white/20 transition-all duration-200"
-                  >
-                    {/* Agent Avatar and Basic Info */}
-                    <div className="flex items-start space-x-2 mb-2">
-                      <div className={`w-6 h-6 sm:w-7 h-7 md:w-8 h-8 lg:w-8 h-8 xl:w-9 h-9 2xl:w-10 h-10 rounded-full bg-gradient-to-br ${getArchetypeColor(agent.archetype)} flex items-center justify-center text-white text-xs font-semibold shadow-lg`}>
-                        {agent.avatar_url ? (
-                          <img 
-                            src={agent.avatar_url} 
-                            alt={agent.name}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          agent.name?.[0] || '🤖'
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-white font-medium text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm 2xl:text-base truncate">{agent.name}</h4>
-                        <p className="text-white/60 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-xs 2xl:text-sm truncate">{agent.archetype}</p>
-                      </div>
-                    </div>
-
-                    {/* Agent Goal */}
-                    <p className="text-white/80 text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm mb-2 line-clamp-2">{agent.goal}</p>
-
-                    {/* Action Buttons */}
-                    <div className="flex space-x-1">
-                      <button
-                        onClick={() => {
-                          setEditingAgent(agent);
-                          setShowEditModal(true);
-                        }}
-                        disabled={loading}
-                        className="flex-1 px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
-                      >
-                        <span>✏️</span>
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        onClick={() => handleRemoveAgent(agent.id)}
-                        disabled={loading}
-                        className="flex-1 px-1.5 sm:px-1.5 md:px-2 lg:px-2 xl:px-2 2xl:px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-xs md:text-xs lg:text-xs xl:text-sm 2xl:text-sm rounded transition-colors flex items-center justify-center space-x-1 disabled:opacity-50"
-                      >
-                        <span>🗑️</span>
-                        <span>Remove</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">🤖</div>
+                <p className="text-white/60 text-sm mb-4">No Agents in List</p>
+                <p className="text-white/40 text-xs mb-4">Click + to add agents from library</p>
               </div>
             )}
           </div>
         </div>
 
-
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-5 md:p-5 lg:p-6 xl:p-6 2xl:p-8 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
+        {/* Live Conversations Section - 50% width on large screens (Middle Position) */}
+        <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-5 md:p-5 lg:p-6 xl:p-6 2xl:p-8 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px] flex flex-col">
             <div className="flex flex-col sm:flex-col md:flex-row lg:flex-row xl:flex-row 2xl:flex-row justify-between items-start md:items-center mb-4 space-y-2 md:space-y-0">
               <h3 className="text-lg sm:text-lg md:text-xl lg:text-xl xl:text-2xl 2xl:text-2xl font-bold text-white">💬 Live Conversations</h3>
               <div className="flex flex-wrap items-center space-x-2 sm:space-x-2 md:space-x-3 lg:space-x-3 xl:space-x-3 2xl:space-x-4">
@@ -1590,58 +737,97 @@ const SimulationControl = ({ setActiveTab, activeTab }) => {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div>
-        <AgentEditModal
-          isOpen={showEditModal}
-          onClose={() => {
-            setShowEditModal(false);
-            setEditingAgent(null);
-          }}
-          agent={editingAgent}
-          onSave={handleSaveAgent}
-        />
+            {/* Conversations Display */}
+            <div className="flex-1 overflow-y-auto max-h-[300px] md:max-h-[350px] lg:max-h-[400px] xl:max-h-[450px] 2xl:max-h-[500px] space-y-3 mb-4">
+              {conversations.length === 0 && observerMessages.length === 0 ? (
+                <div className="text-center py-8 space-y-4">
+                  <div className="text-4xl">💬</div>
+                  <div>
+                    <p className="text-white/60 text-sm mb-2">No conversations yet</p>
+                    <p className="text-white/40 text-xs">Start simulation to see agent conversations</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {observerMessages.map((message, messageIndex) => {
+                    const isCurrentSearch = searchResults.length > 0 && 
+                      searchResults[currentSearchIndex]?.conversationIndex === -1 && 
+                      searchResults[currentSearchIndex]?.messageIndex === messageIndex;
+                    const isHighlighted = searchResults.some(result => 
+                      result.conversationIndex === -1 && result.messageIndex === messageIndex
+                    );
 
-        <AgentCreateModal
-          isOpen={showCreateAgentModal}
-          onClose={() => setShowCreateAgentModal(false)}
-          onSave={handleCreateAgent}
-        />
+                    return (
+                      <div
+                        key={message.id || messageIndex}
+                        ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
+                        className={`rounded-lg p-3 border-l-4 ${
+                          message.agent_name === "Observer (You)"
+                            ? 'bg-blue-500/20 border-blue-500 shadow-lg'
+                            : isCurrentSearch 
+                              ? 'border-yellow-400 bg-yellow-400/10' 
+                              : isHighlighted 
+                                ? 'border-blue-400 bg-blue-400/10' 
+                                : 'bg-white/5 border-white/20'
+                        } transition-all duration-200`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            message.agent_name === "Observer (You)"
+                              ? 'bg-gradient-to-br from-blue-600 to-blue-800'
+                              : 'bg-gradient-to-br from-purple-500 to-pink-500'
+                          }`}>
+                            <span className="text-white text-xs font-semibold">
+                              {message.agent_name === "Observer (You)" ? '👁️' : (message.agent_name?.[0] || '🤖')}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className={`font-medium text-sm ${
+                                message.agent_name === "Observer (You)"
+                                  ? 'text-blue-300'
+                                  : 'text-white'
+                              }`}>
+                                {message.agent_name}
+                                {message.agent_name === "Observer (You)" && (
+                                  <span className="ml-1 text-xs bg-blue-600 px-1 py-0.5 rounded">CEO</span>
+                                )}
+                              </span>
+                              <span className="text-white/40 text-xs">
+                                {new Date(message.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <p className={`text-sm leading-relaxed ${
+                              message.agent_name === "Observer (You)"
+                                ? 'text-blue-100 font-medium'
+                                : 'text-white/90'
+                            }`}>
+                              {highlightSearchTerm(message.message, searchTerm)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
 
-        <style jsx>{`
-        .agent-archetype-badge {
-          @apply text-xs px-2 py-1 rounded-full;
-        }
-        
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-      `}</style>
-      </div>
-    </>
-  );
-};
+                  {conversations.map((conversation, conversationIndex) => (
+                    <div key={conversationIndex} className="space-y-2">
+                      {conversation.messages?.map((message, messageIndex) => {
+                        const isCurrentSearch = searchResults.length > 0 && 
+                          searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
+                          searchResults[currentSearchIndex]?.messageIndex === messageIndex;
+                        const isHighlighted = searchResults.some(result => 
+                          result.conversationIndex === conversationIndex && result.messageIndex === messageIndex
+                        );
 
-export default SimulationControl;
+                        return (
+                          <div
                             key={message.id || messageIndex}
                             ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
                             className={`rounded-lg p-3 border-l-4 ${
                               message.agent_name === "Observer (You)"
-                                ? 'bg-blue-500/20 border-blue-500 shadow-lg' // Special styling for observer messages
+                                ? 'bg-blue-500/20 border-blue-500 shadow-lg'
                                 : isCurrentSearch 
                                   ? 'border-yellow-400 bg-yellow-400/10' 
                                   : isHighlighted 
@@ -1652,7 +838,7 @@ export default SimulationControl;
                             <div className="flex items-start space-x-3">
                               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                                 message.agent_name === "Observer (You)"
-                                  ? 'bg-gradient-to-br from-blue-600 to-blue-800' // Special blue gradient for observer
+                                  ? 'bg-gradient-to-br from-blue-600 to-blue-800'
                                   : 'bg-gradient-to-br from-purple-500 to-pink-500'
                               }`}>
                                 <span className="text-white text-xs font-semibold">
@@ -1663,7 +849,7 @@ export default SimulationControl;
                                 <div className="flex items-center space-x-2 mb-1">
                                   <span className={`font-medium text-sm ${
                                     message.agent_name === "Observer (You)"
-                                      ? 'text-blue-300' // Special color for observer name
+                                      ? 'text-blue-300'
                                       : 'text-white'
                                   }`}>
                                     {message.agent_name}
@@ -1677,7 +863,7 @@ export default SimulationControl;
                                 </div>
                                 <p className={`text-sm leading-relaxed ${
                                   message.agent_name === "Observer (You)"
-                                    ? 'text-blue-100 font-medium' // Special styling for observer text
+                                    ? 'text-blue-100 font-medium'
                                     : 'text-white/90'
                                 }`}>
                                   {highlightSearchTerm(message.message, searchTerm)}
@@ -1698,29 +884,28 @@ export default SimulationControl;
             {showObserverChat && (
               <div className="mt-4 p-4 bg-white/5 rounded-lg border border-purple-500/30">
                 <h4 className="text-white font-medium mb-3 flex items-center space-x-2">
-                  <span>👁️</span>
-                  <span>Observer Input</span>
+                  <span className="text-blue-400">👁️</span>
+                  <span>Observer Control</span>
                 </h4>
                 <div className="flex space-x-2">
                   <input
                     type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Send a message to the agents..."
-                    className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    value={observerMessage}
+                    onChange={(e) => setObserverMessage(e.target.value)}
+                    placeholder="Enter observer message..."
+                    className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendObserverMessage();
+                      if (e.key === 'Enter') {
+                        handleSendObserverMessage();
                       }
                     }}
                   />
                   <button
-                    onClick={sendObserverMessage}
-                    disabled={!newMessage.trim() || loading}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                    onClick={handleSendObserverMessage}
+                    disabled={!observerMessage.trim() || isObserverLoading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
                   >
-                    Send
+                    {isObserverLoading ? 'Sending...' : 'Send'}
                   </button>
                 </div>
               </div>
@@ -1780,53 +965,52 @@ export default SimulationControl;
                       height="16" 
                       viewBox="0 0 24 24" 
                       fill="currentColor"
-                      className="w-4 h-4"
                     >
-                      <path d="M12 1c-1.6 0-3 1.4-3 3v8c0 1.6 1.4 3 3 3s3-1.4 3-3V4c0-1.6-1.4-3-3-3zm0 18c-3.3 0-6-2.7-6-6h-2c0 4.4 3.6 8 8 8s8-3.6 8-8h-2c0 3.3-2.7 6-6 6zm1-6V4c0-.6-.4-1-1-1s-1 .4-1 1v9c0 .6.4 1 1 1s1-.4 1-1z"/>
-                      <rect x="10" y="20" width="4" height="2" rx="1"/>
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                      <path d="M12 19v4"/>
+                      <path d="M8 23h8"/>
                     </svg>
                   </button>
                 </div>
-                <div className="flex justify-end space-x-2">
-                  <button
-                    onClick={() => {
-                      setShowSetScenario(false);
-                      setCustomScenario('');
-                    }}
-                    disabled={loading || isRecording}
-                    className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={scenarioName}
+                    onChange={(e) => setScenarioName(e.target.value)}
+                    placeholder="Scenario name (optional)"
+                    disabled={loading || isRunning}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  />
                   <button
                     onClick={handleSetScenario}
-                    disabled={loading || isRunning || !customScenario.trim() || isRecording}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                    disabled={loading || isRunning || !customScenario.trim()}
+                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
                   >
-                    Set Scenario
+                    {loading ? 'Setting...' : 'Set Scenario'}
                   </button>
                 </div>
-                {isRecording && (
-                  <p className="text-yellow-300 text-xs">
-                    🎤 Recording... Speak clearly. Recording will auto-stop after 30 seconds.
-                  </p>
-                )}
               </div>
             )}
-
-            {/* Show current scenario if exists */}
-            {!showSetScenario && scenario && (
-              <div className="bg-white/5 rounded-lg p-4">
-                <p className="text-white/60 text-sm mb-2">Current Scenario:</p>
-                <p className="text-white text-sm">{scenario}</p>
+            
+            {/* Current Scenario Display */}
+            {!showSetScenario && (simulationState?.scenario || scenario) && (
+              <div className="bg-white/5 rounded-lg p-3 animate-fadeIn">
+                <h4 className="text-white font-medium text-sm mb-2">Current Scenario:</h4>
+                <p className="text-white/80 text-sm mb-3">{simulationState?.scenario_name || scenarioName || 'Custom Scenario'}</p>
+                <p className="text-white/60 text-xs mb-3 line-clamp-3">{simulationState?.scenario || scenario}</p>
+                <button 
+                  onClick={() => setShowSetScenario(true)}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                >
+                  Change Scenario
+                </button>
               </div>
             )}
-
-            {/* Default expanded state with instructions */}
-            {!showSetScenario && !scenario && (
-              <div className="text-center py-8">
-                <div className="text-3xl mb-2">📝</div>
-                <h4 className="text-white font-medium mb-2 text-sm">No Scenario Set</h4>
+            
+            {/* No Scenario Set */}
+            {!showSetScenario && !simulationState?.scenario && !scenario && (
+              <div className="bg-white/5 rounded-lg p-3 text-center animate-fadeIn">
                 <p className="text-white/60 text-xs mb-3">Set a scenario to guide your simulation</p>
                 <button 
                   onClick={() => setShowSetScenario(true)}
@@ -1836,6 +1020,72 @@ export default SimulationControl;
                 </button>
               </div>
             )}
+
+            {/* Control Buttons - Icon only at bottom of Live Conversations */}
+            <div className="mt-auto pt-4 flex justify-center space-x-3">
+              {/* Play/Pause Button */}
+              <button
+                onClick={playPauseSimulation}
+                className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
+                  isRunning && !isPaused
+                    ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                }`}
+                title={isRunning && !isPaused ? 'Pause' : 'Play'}
+              >
+                <span className="text-sm">
+                  {isRunning && !isPaused ? '⏸️' : '▶️'}
+                </span>
+              </button>
+
+              {/* Observer Button */}
+              <button
+                onClick={() => setShowObserverChat(!showObserverChat)}
+                className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
+                  showObserverChat 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                }`}
+                title="Observer"
+              >
+                <span className="text-sm">👁️</span>
+              </button>
+
+              {/* Fast Forward Button */}
+              <button
+                onClick={toggleFastForward}
+                disabled={!isRunning || isPaused}
+                className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
+                  isRunning && !isPaused
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                    : 'bg-gray-600 cursor-not-allowed text-gray-400'
+                }`}
+                title="Fast Forward"
+              >
+                <span className="text-sm">⏩</span>
+              </button>
+
+              {/* Start Fresh Button */}
+              <button
+                onClick={startFreshSimulation}
+                className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 flex items-center justify-center"
+                title="Start Fresh"
+              >
+                <span className="text-sm">🔄</span>
+              </button>
+            </div>
+
+            {/* Status Display */}
+            <div className="mt-3 text-center">
+              <div className="inline-flex items-center space-x-2 bg-white/10 rounded-full px-3 py-1">
+                <div className={`w-1.5 h-1.5 rounded-full ${
+                  isRunning && !isPaused ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
+                }`}></div>
+                <span className="text-white text-xs">
+                  Status: {isRunning && !isPaused ? 'Running' : isPaused ? 'Paused' : 'Stopped'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1852,29 +1102,41 @@ export default SimulationControl;
       />
 
       {/* Agent Create Modal */}
-      <AgentCreateModal
-        isOpen={showCreateAgentModal}
-        onClose={() => setShowCreateAgentModal(false)}
-        onSave={handleCreateAgent}
-      />
+      {showCreateAgentModal && (
+        <AgentCreateModal
+          onClose={() => setShowCreateAgentModal(false)}
+          onAgentCreated={handleCreateAgent}
+        />
+      )}
 
       <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
             opacity: 1;
-            transform: translateY(0);
+          }
+          50% {
+            opacity: 0.5;
           }
         }
         
         .animate-fadeIn {
           animation: fadeIn 0.3s ease-out;
         }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
       `}</style>
-    </div>
+    </>
   );
 };
 
