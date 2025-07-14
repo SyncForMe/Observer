@@ -1,10 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 import AgentCreateModal from './AgentCreateModal';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
+
+// Performance optimization utility: Debounce function
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 // Welcome messages for notification bar
 const WELCOME_MESSAGES = [
@@ -230,8 +243,8 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
   );
 };
 
-const SimulationControl = () => {
-  const { user } = useAuth();
+const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
+  const { user, token } = useAuth();
   const [simulationState, setSimulationState] = useState(null);
   const [agents, setAgents] = useState([]);
   const [conversations, setConversations] = useState([]);
@@ -252,6 +265,9 @@ const SimulationControl = () => {
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
   const [showSetScenario, setShowSetScenario] = useState(false);
   const [showObserverChat, setShowObserverChat] = useState(false);
+  const [showClearAllModal, setShowClearAllModal] = useState(false);
+  const [showStartFreshModal, setShowStartFreshModal] = useState(false);
+  const [autoGenerateInterval, setAutoGenerateInterval] = useState(null);
   const [observerMessage, setObserverMessage] = useState('');
   const [observerMessages, setObserverMessages] = useState([]);
   const [isObserverLoading, setIsObserverLoading] = useState(false);
@@ -259,6 +275,7 @@ const SimulationControl = () => {
   const [notificationText, setNotificationText] = useState('');
   const searchRefs = useRef([]);
   const messagesEndRef = useRef(null);
+  const fetchingRef = useRef(false); // Performance optimization: Prevent duplicate fetches
 
   const [newAgent, setNewAgent] = useState({
     name: '',
@@ -269,26 +286,180 @@ const SimulationControl = () => {
     avatar_url: ''
   });
 
-  // Initialize
+  // Initialize with performance optimizations
+
+
+  // Initialize with performance optimizations
   useEffect(() => {
-    fetchSimulationState();
+    // Define fetch function directly inside useEffect to avoid hoisting issues
+    const performFetch = debounce(async (forceRefresh = false) => {
+      try {
+        // Only fetch if not already fetching (prevent duplicate calls)
+        if (fetchingRef.current && !forceRefresh) {
+          return;
+        }
+        fetchingRef.current = true;
+
+        // Parallel API calls for better performance
+        const [stateResponse, agentsResponse, conversationsResponse] = await Promise.all([
+          axios.get(`${API}/simulation/state`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API}/agents`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${API}/conversations`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        // Update state
+        setSimulationState(stateResponse.data);
+        setConversations(conversationsResponse.data || []);
+        setIsRunning(stateResponse.data.is_active || false);
+        setIsPaused(stateResponse.data.is_paused || false);
+        setAgents(agentsResponse.data || []);
+        
+        console.log('✅ Optimized fetch completed - Agents:', agentsResponse.data.length, 'Conversations:', conversationsResponse.data?.length || 0);
+        
+      } catch (error) {
+        console.error('Error fetching simulation state:', error);
+        // Don't clear agents on error to maintain UI state
+      } finally {
+        fetchingRef.current = false;
+      }
+    }, 300);
+
+    // Initial fetch
+    performFetch(true);
     const welcomeMessage = WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
     showNotification(welcomeMessage);
     
-    // Set up periodic refresh to check for new agents
-    const interval = setInterval(() => {
-      fetchSimulationState();
-    }, 5000); // Refresh every 5 seconds
+    // Smart refresh function (defined inside useEffect to avoid circular dependency)
+    const smartRefresh = () => {
+      // Increase interval when simulation is not active (less frequent polling)
+      const interval = isRunning ? 3000 : 10000; // 3s when running, 10s when stopped
+      
+      // Only fetch if page is visible (performance optimization)
+      if (!document.hidden) {
+        performFetch();
+      }
+      
+      return interval;
+    };
     
-    return () => clearInterval(interval);
-  }, []);
+    // Smart interval that adapts based on simulation state
+    let intervalId;
+    const setupInterval = () => {
+      if (intervalId) clearInterval(intervalId);
+      const interval = smartRefresh();
+      intervalId = setInterval(smartRefresh, interval);
+    };
+    
+    setupInterval();
+    
+    // Page visibility optimization: Pause polling when tab is hidden
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (intervalId) clearInterval(intervalId);
+      } else {
+        setupInterval();
+        performFetch(true); // Fetch immediately when tab becomes visible
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [token, isRunning]); // Removed fetchSimulationState from dependencies
 
-  // Auto-scroll to bottom of conversations
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  // Simple fetch function for use by other functions (non-debounced to avoid hoisting issues)
+  const fetchSimulationState = async () => {
+    try {
+      if (fetchingRef.current) return;
+      fetchingRef.current = true;
+
+      const [stateResponse, agentsResponse, conversationsResponse] = await Promise.all([
+        axios.get(`${API}/simulation/state`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/agents`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/conversations`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      setSimulationState(stateResponse.data);
+      setConversations(conversationsResponse.data || []);
+      setIsRunning(stateResponse.data.is_active || false);
+      setIsPaused(stateResponse.data.is_paused || false);
+      setAgents(agentsResponse.data || []);
+      
+      console.log('✅ Fetch completed - Conversations:', conversationsResponse.data?.length || 0);
+      
+    } catch (error) {
+      console.error('Error fetching simulation state:', error);
+    } finally {
+      fetchingRef.current = false;
     }
-  }, [conversations, observerMessages]);
+  };
+
+
+
+  // Auto-scroll to bottom of conversations - DISABLED to prevent interrupting reading
+  // useEffect(() => {
+  //   if (messagesEndRef.current) {
+  //     messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  //   }
+  // }, [conversations, observerMessages]);
+
+  // React to refresh trigger from Agent Library
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      console.log('🔄 Observatory refreshing due to Agent Library change');
+      fetchSimulationState();
+    }
+  }, [refreshTrigger]);
+
+  // Continuous conversation generation when simulation is running
+  useEffect(() => {
+    if (isRunning && !isPaused && agents.length >= 2) {
+      console.log('🔄 Starting continuous conversation generation...');
+      
+      // Clear any existing interval
+      if (autoGenerateInterval) {
+        clearInterval(autoGenerateInterval);
+      }
+      
+      // Set up new interval for continuous generation
+      const intervalId = setInterval(() => {
+        console.log('⏰ Auto-generating conversation...');
+        generateNewConversation(true); // Mark as auto-generated
+      }, 5000); // Generate new conversation every 5 seconds
+      
+      setAutoGenerateInterval(intervalId);
+      
+    } else {
+      // Clear interval when simulation stops/pauses or insufficient agents
+      if (autoGenerateInterval) {
+        console.log('⏹️ Stopping continuous conversation generation');
+        clearInterval(autoGenerateInterval);
+        setAutoGenerateInterval(null);
+      }
+    }
+    
+    // Cleanup function
+    return () => {
+      if (autoGenerateInterval) {
+        clearInterval(autoGenerateInterval);
+      }
+    };
+  }, [isRunning, isPaused, agents.length]); // Dependencies: when these change, restart/stop interval
 
   const showNotification = (text) => {
     setNotificationText(text);
@@ -298,68 +469,168 @@ const SimulationControl = () => {
     }, 3000);
   };
 
-  const fetchSimulationState = async () => {
+  // Optimized simulation control with optimistic updates
+  const playPauseSimulation = async () => {
+    console.log('🎯 Play button clicked - playPauseSimulation started');
+    console.log('🎯 Current state:', { isRunning, isPaused, loading, agentsCount: agents.length });
+    
     try {
-      const response = await axios.get(`${API}/simulation/state`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
-      });
-      setSimulationState(response.data);
-      setAgents(response.data.agents || []);
-      setConversations(response.data.conversations || []);
-      setIsRunning(response.data.is_active || false);
-      setIsPaused(response.data.is_paused || false);
+      setLoading(true);
       
-      // Also try to fetch available agents that might not be in simulation yet
-      try {
-        const agentsResponse = await axios.get(`${API}/agents`, {
-          headers: { Authorization: `Bearer ${user?.token}` }
+      // Optimistic update: Update UI immediately for better perceived performance
+      const targetState = isRunning && !isPaused ? false : true;
+      setIsRunning(targetState);
+      
+      const endpoint = isRunning && !isPaused ? '/simulation/pause' : '/simulation/start';
+      console.log('🎯 Calling endpoint:', endpoint);
+      
+      // Perform API call
+      const response = await axios.post(`${API}${endpoint}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('🎯 API call successful, response:', response.data);
+      
+      // Update with actual server response
+      if (response.data) {
+        console.log('🎯 Play button response:', response.data);
+        
+        // Parse state from nested state object
+        const simState = response.data.state || response.data;
+        setIsRunning(simState.is_active || false);
+        setIsPaused(simState.is_paused || false);
+        
+        console.log('🎯 Parsed simulation state:', {
+          is_active: simState.is_active,
+          is_paused: simState.is_paused
         });
-        console.log('Available agents:', agentsResponse.data);
-      } catch (agentError) {
-        console.log('Could not fetch additional agents:', agentError);
+        
+        // Generate conversation whenever simulation becomes active (not paused)
+        if (simState.is_active && !simState.is_paused) {
+          console.log('🎯 Simulation is active, generating first conversation...');
+          // Generate first conversation immediately, then interval takes over
+          setTimeout(() => {
+            generateNewConversation();
+          }, 1000); // Small delay to ensure simulation state is updated
+        } else {
+          console.log('🎯 Simulation not active for conversation:', {
+            is_active: simState.is_active,
+            is_paused: simState.is_paused
+          });
+        }
       }
+      
+      // Debounced state fetch (only if needed)
+      setTimeout(() => fetchSimulationState(), 100);
+      
     } catch (error) {
-      console.error('Error fetching simulation state:', error);
+      console.error('❌ Error controlling simulation:', error);
+      console.log('❌ Full error details:', error.response?.data || error.message);
+      // Revert optimistic update on error
+      setIsRunning(!isRunning);
+    } finally {
+      setLoading(false);
+      console.log('🎯 playPauseSimulation completed');
     }
   };
 
-  const playPauseSimulation = async () => {
+  // Generate new conversation
+  const generateNewConversation = async (isAuto = false) => {
     try {
-      setLoading(true);
-      const endpoint = isRunning && !isPaused ? '/simulation/pause' : '/simulation/start';
-      await axios.post(`${API}${endpoint}`, {}, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+      const logPrefix = isAuto ? '⏰ Auto' : '💬 Manual';
+      console.log(`${logPrefix} - Starting conversation generation...`);
+      setConversationLoading(true);
+      
+      const response = await axios.post(`${API}/conversation/generate`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      await fetchSimulationState();
+      
+      if (response.data) {
+        console.log(`${logPrefix} - New conversation generated:`, response.data);
+        console.log(`${logPrefix} - Conversation has`, response.data.messages?.length || 0, 'messages');
+        
+        // Refresh conversations to show the new one
+        setTimeout(() => fetchSimulationState(), 500);
+      }
+      
     } catch (error) {
-      console.error('Error controlling simulation:', error);
+      console.error(`❌ Error generating ${isAuto ? 'auto' : 'manual'} conversation:`, error);
+      console.log('❌ Full error details:', error.response?.data || error.message);
     } finally {
-      setLoading(false);
+      setConversationLoading(false);
     }
   };
 
   const toggleFastForward = async () => {
     try {
       await axios.post(`${API}/simulation/fast-forward`, {}, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
-      await fetchSimulationState();
+      // Debounced refresh instead of immediate
+      setTimeout(() => fetchSimulationState(), 200);
     } catch (error) {
       console.error('Error fast forwarding:', error);
     }
   };
 
   const startFreshSimulation = async () => {
+    // Show confirmation modal instead of immediate action
+    setShowStartFreshModal(true);
+  };
+
+  const confirmStartFresh = async () => {
+    setShowStartFreshModal(false);
+    
     try {
       setLoading(true);
-      await axios.post(`${API}/simulation/reset`, {}, {
-        headers: { Authorization: `Bearer ${user?.token}` }
-      });
-      await fetchSimulationState();
+      
+      // Step 1: Clear all agents (delete from database)
+      if (agents.length > 0) {
+        console.log('🗑️ Clearing all agents...');
+        const agentIds = agents.map(agent => agent.id);
+        
+        await axios.post(`${API}/agents/bulk-delete`, agentIds, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        // Optimistically clear agents from UI
+        setAgents([]);
+      }
+      
+      // Step 2: Stop simulation and clear all data (don't restart)
+      console.log('🧹 Clearing simulation data...');
+      
+      // Stop any running simulation first
+      if (isRunning) {
+        await axios.post(`${API}/simulation/pause`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      
+      // Clear conversations and observer messages from UI immediately
       setConversations([]);
       setObserverMessages([]);
+      setIsRunning(false);
+      setIsPaused(false);
+      
+      // Reset scenario if there's an endpoint for it (optional)
+      try {
+        await axios.post(`${API}/simulation/reset`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (resetError) {
+        console.log('ℹ️ No reset endpoint available, state cleared locally');
+      }
+      
+      console.log('✅ Fresh state created - all data cleared, simulation stopped');
+      
+      // Delayed refresh to sync with server
+      setTimeout(() => fetchSimulationState(), 500);
+      
     } catch (error) {
-      console.error('Error starting fresh:', error);
+      console.error('❌ Error clearing data:', error);
+      // Revert optimistic updates on error
+      fetchSimulationState(true);
     } finally {
       setLoading(false);
     }
@@ -372,16 +643,18 @@ const SimulationControl = () => {
   const handleCreateAgent = async (agentData) => {
     try {
       const response = await axios.post(`${API}/agents`, agentData, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Add to simulation
-      await axios.post(`${API}/simulation/agents`, { agent_id: response.data.id }, {
-        headers: { Authorization: `Bearer ${user?.token}` }
-      });
+      // Optimistic update: Add agent to UI immediately
+      if (response.data) {
+        setAgents(prevAgents => [...prevAgents, response.data]);
+      }
       
-      await fetchSimulationState();
       setShowCreateAgentModal(false);
+      
+      // Debounced refresh for consistency
+      setTimeout(() => fetchSimulationState(), 100);
     } catch (error) {
       console.error('Error creating agent:', error);
     }
@@ -389,12 +662,59 @@ const SimulationControl = () => {
 
   const handleRemoveAgent = async (agentId) => {
     try {
-      await axios.delete(`${API}/simulation/agents/${agentId}`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+      // Optimistic update: Remove agent from UI immediately
+      setAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId));
+      
+      await axios.delete(`${API}/agents/${agentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      await fetchSimulationState();
+      
+      // Debounced refresh for consistency
+      setTimeout(() => fetchSimulationState(), 100);
     } catch (error) {
       console.error('Error removing agent:', error);
+      // Revert optimistic update on error
+      fetchSimulationState(true);
+    }
+  };
+
+  const handleClearAllAgents = async () => {
+    if (agents.length === 0) return;
+    
+    // Show custom confirmation modal instead of window.confirm
+    setShowClearAllModal(true);
+  };
+
+  const confirmClearAllAgents = async () => {
+    setShowClearAllModal(false);
+    
+    try {
+      setLoading(true);
+      
+      // Get all agent IDs
+      const agentIds = agents.map(agent => agent.id);
+      
+      // Call the existing bulk delete endpoint
+      const response = await axios.post(`${API}/agents/bulk-delete`, agentIds, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data) {
+        console.log('✅ All agents cleared successfully:', response.data.message);
+        
+        // Optimistic update: Clear agents from UI immediately
+        setAgents([]);
+        
+        // Trigger Observatory refresh
+        setTimeout(() => fetchSimulationState(), 100);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error clearing all agents:', error);
+      // Revert optimistic update on error
+      fetchSimulationState();
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -405,12 +725,24 @@ const SimulationControl = () => {
 
   const handleSaveAgent = async (formData) => {
     try {
-      await axios.put(`${API}/agents/${editingAgent.id}`, formData, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+      const response = await axios.put(`${API}/agents/${editingAgent.id}`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      await fetchSimulationState();
+      
+      // Optimistic update: Update agent in UI immediately
+      if (response.data) {
+        setAgents(prevAgents => 
+          prevAgents.map(agent => 
+            agent.id === editingAgent.id ? response.data : agent
+          )
+        );
+      }
+      
       setShowEditModal(false);
       setEditingAgent(null);
+      
+      // Debounced refresh for consistency
+      setTimeout(() => fetchSimulationState(), 100);
     } catch (error) {
       console.error('Error saving agent:', error);
     }
@@ -419,11 +751,11 @@ const SimulationControl = () => {
   const getRandomScenario = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/scenarios/random`, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+      const response = await axios.get(`${API}/simulation/random-scenario`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      setCustomScenario(response.data.description);
-      setScenarioName(response.data.name);
+      setCustomScenario(response.data.scenario);
+      setScenarioName(response.data.scenario_name);
     } catch (error) {
       console.error('Error getting random scenario:', error);
     } finally {
@@ -434,17 +766,24 @@ const SimulationControl = () => {
   const handleSetScenario = async () => {
     try {
       setLoading(true);
-      await axios.post(`${API}/simulation/scenario`, {
+      
+      // Optimistic update
+      setScenario(customScenario);
+      setShowSetScenario(false);
+      
+      await axios.post(`${API}/simulation/set-scenario`, { // Fixed endpoint name
         scenario: customScenario,
         scenario_name: scenarioName
       }, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
-      setScenario(customScenario);
-      setShowSetScenario(false);
-      await fetchSimulationState();
+      
+      // Debounced refresh
+      setTimeout(() => fetchSimulationState(), 200);
     } catch (error) {
       console.error('Error setting scenario:', error);
+      // Revert optimistic update on error
+      setScenario('');
     } finally {
       setLoading(false);
     }
@@ -466,27 +805,34 @@ const SimulationControl = () => {
   const handleSendObserverMessage = async () => {
     if (!observerMessage.trim()) return;
 
+    const newMessage = {
+      id: Date.now(),
+      agent_name: "Observer (You)",
+      message: observerMessage,
+      timestamp: new Date().toISOString()
+    };
+    const messageToSend = observerMessage;
+
     try {
       setIsObserverLoading(true);
-      const newMessage = {
-        id: Date.now(),
-        agent_name: "Observer (You)",
-        message: observerMessage,
-        timestamp: new Date().toISOString()
-      };
       
+      // Optimistic update: Add message to UI immediately
       setObserverMessages(prev => [...prev, newMessage]);
-      setObserverMessage('');
+      setObserverMessage(''); // Clear input immediately for better UX
 
-      await axios.post(`${API}/simulation/observer-message`, {
-        message: observerMessage
+      await axios.post(`${API}/observer/send-message`, { // Fixed endpoint name
+        observer_message: messageToSend
       }, {
-        headers: { Authorization: `Bearer ${user?.token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      await fetchSimulationState();
+      // Debounced refresh for new agent responses
+      setTimeout(() => fetchSimulationState(), 300);
     } catch (error) {
       console.error('Error sending observer message:', error);
+      // Revert optimistic updates on error
+      setObserverMessages(prev => prev.filter(msg => msg.id !== newMessage.id));
+      setObserverMessage(messageToSend);
     } finally {
       setIsObserverLoading(false);
     }
@@ -586,10 +932,27 @@ const SimulationControl = () => {
         <div className="lg:col-span-1">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">🤖 Agent List</h3>
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${agents.length > 0 ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-                <span className="text-white/60 text-sm">{agents.length}</span>
+                <h3 className="text-lg font-bold text-white">🤖 Agent List</h3>
+                <div className="flex items-center space-x-1">
+                  <div className={`w-2 h-2 rounded-full ${agents.length > 0 ? 'bg-green-400' : 'bg-gray-400'}`}></div>
+                  <span className="text-white/60 text-sm">{agents.length}</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                
+                {/* Clear All button - only show when there are agents */}
+                {agents.length > 0 && (
+                  <button
+                    onClick={handleClearAllAgents}
+                    disabled={loading}
+                    className="w-6 h-6 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white rounded-full flex items-center justify-center transition-colors text-xs"
+                    title={`Clear all ${agents.length} agents`}
+                  >
+                    ✕
+                  </button>
+                )}
+                
                 <button
                   onClick={() => {
                     // Click the Agent Library tab in the navigation
@@ -601,7 +964,7 @@ const SimulationControl = () => {
                       }
                     }
                   }}
-                  className="ml-2 w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center transition-colors text-sm"
+                  className="w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center transition-colors text-sm"
                   title="Open Agent Library"
                 >
                   +
@@ -636,14 +999,14 @@ const SimulationControl = () => {
                       <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleEditAgent(agent)}
-                          className="text-white/60 hover:text-white p-1 rounded transition-colors"
+                          className="w-6 h-6 text-white/60 hover:text-white rounded transition-colors flex items-center justify-center text-xs"
                           title="Edit Agent"
                         >
                           ✏️
                         </button>
                         <button
                           onClick={() => handleRemoveAgent(agent.id)}
-                          className="text-white/60 hover:text-red-400 p-1 rounded transition-colors"
+                          className="w-6 h-6 text-white/60 hover:text-red-400 rounded transition-colors flex items-center justify-center text-xs"
                           title="Remove Agent"
                         >
                           🗑️
@@ -740,7 +1103,7 @@ const SimulationControl = () => {
 
             {/* Conversations Display */}
             <div className="flex-1 overflow-y-auto max-h-[300px] md:max-h-[350px] lg:max-h-[400px] xl:max-h-[450px] 2xl:max-h-[500px] space-y-3 mb-4">
-              {conversations.length === 0 && observerMessages.length === 0 ? (
+              {conversations.length === 0 ? (
                 <div className="text-center py-8 space-y-4">
                   <div className="text-4xl">💬</div>
                   <div>
@@ -750,52 +1113,51 @@ const SimulationControl = () => {
                 </div>
               ) : (
                 <>
-                  {observerMessages.map((message, messageIndex) => {
-                    const isCurrentSearch = searchResults.length > 0 && 
-                      searchResults[currentSearchIndex]?.conversationIndex === -1 && 
-                      searchResults[currentSearchIndex]?.messageIndex === messageIndex;
-                    const isHighlighted = searchResults.some(result => 
-                      result.conversationIndex === -1 && result.messageIndex === messageIndex
-                    );
+                  {conversations.map((conversation, conversationIndex) => (
+                    <div key={conversation.id || conversationIndex} className="space-y-2">
+                      {conversation.messages?.map((message, messageIndex) => {
+                        const isCurrentSearch = searchResults.length > 0 && 
+                          searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
+                          searchResults[currentSearchIndex]?.messageIndex === messageIndex;
+                        const isHighlighted = searchResults.some(result => 
+                          result.conversationIndex === conversationIndex && result.messageIndex === messageIndex
+                        );
 
-                    return (
-                      <div
-                        key={message.id || messageIndex}
-                        ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
-                        className={`rounded-lg p-3 border-l-4 ${
-                          message.agent_name === "Observer (You)"
-                            ? 'bg-blue-500/20 border-blue-500 shadow-lg'
-                            : isCurrentSearch 
-                              ? 'border-yellow-400 bg-yellow-400/10' 
-                              : isHighlighted 
-                                ? 'border-blue-400 bg-blue-400/10' 
-                                : 'bg-white/5 border-white/20'
-                        } transition-all duration-200`}
-                      >
+                        return (
+                          <div
+                            key={message.id || messageIndex}
+                            ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
+                            className={`rounded-lg p-3 border-l-4 ${
+                              message.agent_name === "Observer (You)"
+                                ? 'bg-blue-500/20 border-blue-500 shadow-lg'
+                                : isCurrentSearch 
+                                  ? 'border-yellow-400 bg-yellow-400/10' 
+                                  : isHighlighted 
+                                    ? 'border-blue-400 bg-blue-400/10' 
+                                    : 'bg-white/5 border-white/20'
+                            } transition-all duration-200`}
+                          >
                         <div className="flex items-start space-x-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            message.agent_name === "Observer (You)"
-                              ? 'bg-gradient-to-br from-blue-600 to-blue-800'
-                              : 'bg-gradient-to-br from-purple-500 to-pink-500'
-                          }`}>
-                            <span className="text-white text-xs font-semibold">
-                              {message.agent_name === "Observer (You)" ? '👁️' : (message.agent_name?.[0] || '🤖')}
-                            </span>
+                          <div className="flex-shrink-0">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                              message.agent_name === "Observer (You)"
+                                ? 'bg-blue-600'
+                                : `bg-gradient-to-br from-purple-500 to-pink-500`
+                            }`}>
+                              {message.agent_name === "Observer (You)" ? '👁️' : message.agent_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                            </div>
                           </div>
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
-                              <span className={`font-medium text-sm ${
+                              <span className={`font-bold ${
                                 message.agent_name === "Observer (You)"
                                   ? 'text-blue-300'
                                   : 'text-white'
                               }`}>
                                 {message.agent_name}
-                                {message.agent_name === "Observer (You)" && (
-                                  <span className="ml-1 text-xs bg-blue-600 px-1 py-0.5 rounded">CEO</span>
-                                )}
                               </span>
                               <span className="text-white/40 text-xs">
-                                {new Date(message.timestamp).toLocaleTimeString()}
+                                {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Now'}
                               </span>
                             </div>
                             <p className={`text-sm leading-relaxed ${
@@ -812,7 +1174,7 @@ const SimulationControl = () => {
                   })}
 
                   {conversations.map((conversation, conversationIndex) => (
-                    <div key={conversationIndex} className="space-y-2">
+                    <div key={conversation.id || conversationIndex} className="space-y-2">
                       {conversation.messages?.map((message, messageIndex) => {
                         const isCurrentSearch = searchResults.length > 0 && 
                           searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
@@ -836,29 +1198,26 @@ const SimulationControl = () => {
                             } transition-all duration-200`}
                           >
                             <div className="flex items-start space-x-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                message.agent_name === "Observer (You)"
-                                  ? 'bg-gradient-to-br from-blue-600 to-blue-800'
-                                  : 'bg-gradient-to-br from-purple-500 to-pink-500'
-                              }`}>
-                                <span className="text-white text-xs font-semibold">
-                                  {message.agent_name === "Observer (You)" ? '👁️' : (message.agent_name?.[0] || '🤖')}
-                                </span>
+                              <div className="flex-shrink-0">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                                  message.agent_name === "Observer (You)"
+                                    ? 'bg-blue-600'
+                                    : `bg-gradient-to-br from-purple-500 to-pink-500`
+                                }`}>
+                                  {message.agent_name === "Observer (You)" ? '👁️' : message.agent_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                </div>
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2 mb-1">
-                                  <span className={`font-medium text-sm ${
+                                  <span className={`font-bold ${
                                     message.agent_name === "Observer (You)"
                                       ? 'text-blue-300'
                                       : 'text-white'
                                   }`}>
                                     {message.agent_name}
-                                    {message.agent_name === "Observer (You)" && (
-                                      <span className="ml-1 text-xs bg-blue-600 px-1 py-0.5 rounded">CEO</span>
-                                    )}
                                   </span>
                                   <span className="text-white/40 text-xs">
-                                    {new Date(message.timestamp).toLocaleTimeString()}
+                                    {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Now'}
                                   </span>
                                 </div>
                                 <p className={`text-sm leading-relaxed ${
@@ -1022,57 +1381,79 @@ const SimulationControl = () => {
             )}
 
             {/* Control Buttons - Icon only at bottom of Live Conversations */}
-            <div className="mt-auto pt-4 flex justify-center space-x-3">
-              {/* Play/Pause Button */}
-              <button
-                onClick={playPauseSimulation}
-                className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
-                  isRunning && !isPaused
-                    ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                }`}
-                title={isRunning && !isPaused ? 'Pause' : 'Play'}
-              >
-                <span className="text-sm">
-                  {isRunning && !isPaused ? '⏸️' : '▶️'}
-                </span>
-              </button>
+            <div className="mt-auto pt-4 space-y-2">
+              <div className="flex justify-center space-x-3">
+                {/* Play/Pause Button */}
+                <div className="flex flex-col items-center group">
+                  <button
+                    onClick={playPauseSimulation}
+                    className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
+                      isRunning && !isPaused
+                        ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    }`}
+                    title={isRunning && !isPaused ? 'Pause' : 'Play'}
+                  >
+                    <span className="text-sm">
+                      {isRunning && !isPaused ? '⏸️' : '▶️'}
+                    </span>
+                  </button>
+                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isRunning && !isPaused ? 'Pause' : 'Play'}
+                  </span>
+                </div>
 
-              {/* Observer Button */}
-              <button
-                onClick={() => setShowObserverChat(!showObserverChat)}
-                className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
-                  showObserverChat 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'bg-gray-600 hover:bg-gray-700 text-white'
-                }`}
-                title="Observer"
-              >
-                <span className="text-sm">👁️</span>
-              </button>
+                {/* Observer Button */}
+                <div className="flex flex-col items-center group">
+                  <button
+                    onClick={() => setShowObserverChat(!showObserverChat)}
+                    className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
+                      showObserverChat 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                    title="Observer"
+                  >
+                    <span className="text-sm">👁️</span>
+                  </button>
+                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Observer
+                  </span>
+                </div>
 
-              {/* Fast Forward Button */}
-              <button
-                onClick={toggleFastForward}
-                disabled={!isRunning || isPaused}
-                className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
-                  isRunning && !isPaused
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                    : 'bg-gray-600 cursor-not-allowed text-gray-400'
-                }`}
-                title="Fast Forward"
-              >
-                <span className="text-sm">⏩</span>
-              </button>
+                {/* Fast Forward Button */}
+                <div className="flex flex-col items-center group">
+                  <button
+                    onClick={toggleFastForward}
+                    disabled={!isRunning || isPaused}
+                    className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
+                      isRunning && !isPaused
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                        : 'bg-gray-600 cursor-not-allowed text-gray-400'
+                    }`}
+                    title="Fast Forward"
+                  >
+                    <span className="text-sm">⏩</span>
+                  </button>
+                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Fast
+                  </span>
+                </div>
 
-              {/* Start Fresh Button */}
-              <button
-                onClick={startFreshSimulation}
-                className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 flex items-center justify-center"
-                title="Start Fresh"
-              >
-                <span className="text-sm">🔄</span>
-              </button>
+                {/* Start Fresh Button */}
+                <div className="flex flex-col items-center group">
+                  <button
+                    onClick={startFreshSimulation}
+                    className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 flex items-center justify-center"
+                    title="Start Fresh"
+                  >
+                    <span className="text-sm">🔄</span>
+                  </button>
+                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    Fresh
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* Status Display */}
@@ -1089,6 +1470,64 @@ const SimulationControl = () => {
           </div>
         </div>
       </div>
+
+      {/* Custom Start Fresh Confirmation Modal */}
+      {showStartFreshModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-gradient-to-br from-purple-900 to-pink-900 p-6 rounded-xl shadow-2xl border border-purple-500/30 max-w-md mx-4">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-white mb-3">Are you sure?</h3>
+              <p className="text-white/70 mb-6">
+                This will delete <strong>all {agents.length} agents</strong>, clear all conversations, and reset the scenario. This action cannot be undone.
+              </p>
+              <div className="flex space-x-3 justify-center">
+                <button
+                  onClick={() => setShowStartFreshModal(false)}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmStartFresh}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+                >
+                  {loading ? 'Clearing...' : 'Start Fresh'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Clear All Confirmation Modal */}
+      {showClearAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-gradient-to-br from-purple-900 to-pink-900 p-6 rounded-xl shadow-2xl border border-purple-500/30 max-w-md mx-4">
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-white mb-3">Are you sure?</h3>
+              <p className="text-white/70 mb-6">
+                This will remove all {agents.length} agents from the list. This action cannot be undone.
+              </p>
+              <div className="flex space-x-3 justify-center">
+                <button
+                  onClick={() => setShowClearAllModal(false)}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmClearAllAgents}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white rounded-lg transition-colors"
+                >
+                  {loading ? 'Removing...' : 'Remove All'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Agent Edit Modal */}
       <AgentEditModal

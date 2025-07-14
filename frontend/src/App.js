@@ -255,6 +255,13 @@ const AppContent = () => {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  
+  // Observatory refresh trigger for Agent Library synchronization
+  const [observatoryRefreshTrigger, setObservatoryRefreshTrigger] = useState(0);
+  const triggerObservatoryRefresh = () => {
+    setObservatoryRefreshTrigger(prev => prev + 1);
+    console.log('🔄 Observatory refresh triggered from Agent Library');
+  };
 
   console.log('🔍 AppContent: User data:', user);
   console.log('🔍 AppContent: Active tab:', activeTab);
@@ -967,7 +974,11 @@ const AppContent = () => {
           {activeTab === 'simulation' && (
             <div>
               {console.log('🔍 AppContent: Rendering simulation content')}
-              <SimulationControl setActiveTab={setActiveTab} activeTab={activeTab} />
+              <SimulationControl 
+                setActiveTab={setActiveTab} 
+                activeTab={activeTab} 
+                refreshTrigger={observatoryRefreshTrigger}
+              />
             </div>
           )}
           
@@ -984,6 +995,10 @@ const AppContent = () => {
                     }
 
                     const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
+                    
+                    // Create agent in user's agent database
+                    // Since the backend automatically includes all user agents in simulations,
+                    // this agent will immediately appear in the Observatory
                     const response = await fetch(`${API}/agents`, {
                       method: 'POST',
                       headers: {
@@ -995,12 +1010,17 @@ const AppContent = () => {
 
                     const result = await response.json();
                     if (response.ok) {
-                      console.log('✅ Agent added successfully:', result);
+                      console.log('✅ Agent added successfully and will appear in Observatory:', result);
+                      
+                      // Trigger Observatory refresh to show the new agent
+                      triggerObservatoryRefresh();
+                      
                       return { success: true, message: 'Agent added successfully' };
                     } else {
                       console.error('❌ Failed to add agent:', result);
-                      return { success: false, message: result.detail || 'Unknown error' };
+                      return { success: false, message: result.detail || 'Failed to create agent' };
                     }
+
                   } catch (error) {
                     console.error('❌ Error adding agent:', error);
                     return { success: false, message: error.message };
@@ -1014,8 +1034,31 @@ const AppContent = () => {
                       return { success: false, message: 'Not authenticated' };
                     }
 
-                    console.log('🗑️ Agent removed from simulation:', agent);
-                    return { success: true, message: 'Agent removed successfully' };
+                    const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
+                    
+                    // Remove agent from user's agent database
+                    // Since the backend automatically includes all user agents in simulations,
+                    // removing the agent from the database will remove it from simulations too
+                    const response = await fetch(`${API}/agents/${agent.id}`, {
+                      method: 'DELETE',
+                      headers: {
+                        'Authorization': `Bearer ${token}`
+                      }
+                    });
+
+                    if (response.ok) {
+                      console.log('✅ Agent removed successfully:', agent.name);
+                      
+                      // Trigger Observatory refresh to update the agent list
+                      triggerObservatoryRefresh();
+                      
+                      return { success: true, message: 'Agent removed successfully' };
+                    } else {
+                      const error = await response.json();
+                      console.error('❌ Failed to remove agent:', error);
+                      return { success: false, message: error.detail || 'Failed to remove agent' };
+                    }
+                    
                   } catch (error) {
                     console.error('❌ Error removing agent:', error);
                     return { success: false, message: error.message };

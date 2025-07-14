@@ -1557,14 +1557,32 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     setAddingAgents(prev => new Set(prev).add(agent.id));
     
     try {
+      // Generate personality based on archetype if not provided
+      const generatePersonalityForArchetype = (archetype) => {
+        const personalityProfiles = {
+          scientist: { extroversion: 4, optimism: 6, curiosity: 9, cooperativeness: 7, energy: 6 },
+          optimist: { extroversion: 8, optimism: 9, curiosity: 7, cooperativeness: 8, energy: 8 },
+          leader: { extroversion: 9, optimism: 7, curiosity: 6, cooperativeness: 6, energy: 8 },
+          adventurer: { extroversion: 7, optimism: 8, curiosity: 8, cooperativeness: 5, energy: 9 },
+          mediator: { extroversion: 6, optimism: 7, curiosity: 6, cooperativeness: 9, energy: 5 },
+          analyst: { extroversion: 3, optimism: 5, curiosity: 8, cooperativeness: 6, energy: 5 },
+          innovator: { extroversion: 6, optimism: 8, curiosity: 9, cooperativeness: 6, energy: 7 },
+          strategist: { extroversion: 5, optimism: 6, curiosity: 7, cooperativeness: 5, energy: 6 }
+        };
+        
+        return personalityProfiles[archetype] || { extroversion: 5, optimism: 5, curiosity: 5, cooperativeness: 5, energy: 5 };
+      };
+
       const agentData = {
         name: agent.name,
         archetype: agent.archetype,
+        personality: agent.personality || generatePersonalityForArchetype(agent.archetype),
         goal: agent.goal,
         background: agent.background,
         expertise: agent.expertise,
-        memory_summary: `${agent.memories} Knowledge Sources: ${agent.knowledge}`,
-        avatar_url: agent.avatar,
+        memory_summary: `${agent.memories || ''} Knowledge Sources: ${agent.knowledge || ''}`,
+        avatar_url: agent.avatar || '',
+        avatar_prompt: agent.avatar_prompt || `Professional ${agent.archetype} agent`
       };
       
       const result = await onAddAgent(agentData);

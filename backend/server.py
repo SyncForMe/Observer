@@ -2822,7 +2822,7 @@ async def test_login():
             await db.users.insert_one(user.dict())
         
         # Create JWT token
-        access_token = create_access_token(data={"sub": user.id})
+        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
         
         return TokenResponse(
             access_token=access_token,
