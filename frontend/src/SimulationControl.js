@@ -584,53 +584,58 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     try {
       setLoading(true);
       
-      // Step 1: Clear all agents (delete from database)
-      if (agents.length > 0) {
-        console.log('🗑️ Clearing all agents...');
-        const agentIds = agents.map(agent => agent.id);
-        
-        await axios.post(`${API}/agents/bulk-delete`, agentIds, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        // Optimistically clear agents from UI
+      console.log('🧹 Starting fresh - clearing all data...');
+      
+      // Call the backend reset endpoint to clear everything
+      const response = await axios.post(`${API}/simulation/reset`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.success) {
+        // Clear all frontend state immediately
         setAgents([]);
+        setConversations([]);
+        setObserverMessages([]);
+        setIsRunning(false);
+        setIsPaused(false);
+        setSimulationState(response.data.state);
+        
+        // Clear scenario states
+        setScenario('');
+        setCustomScenario('');
+        setScenarioName('');
+        setShowSetScenario(false);
+        
+        console.log('✅ Fresh state created - all data cleared successfully');
+        
+        // Trigger Observatory refresh if needed
+        if (refreshTrigger) {
+          // This will update the Observatory component
+          console.log('🔄 Triggering Observatory refresh');
+        }
+      } else {
+        throw new Error(response.data.message || 'Failed to reset simulation');
       }
       
-      // Step 2: Stop simulation and clear all data (don't restart)
-      console.log('🧹 Clearing simulation data...');
+    } catch (error) {
+      console.error('❌ Error clearing data:', error);
       
-      // Stop any running simulation first
-      if (isRunning) {
-        await axios.post(`${API}/simulation/pause`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
-      
-      // Clear conversations and observer messages from UI immediately
+      // Fallback: manual clearing if backend fails
+      setAgents([]);
       setConversations([]);
       setObserverMessages([]);
       setIsRunning(false);
       setIsPaused(false);
       
-      // Reset scenario if there's an endpoint for it (optional)
-      try {
-        await axios.post(`${API}/simulation/reset`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      } catch (resetError) {
-        console.log('ℹ️ No reset endpoint available, state cleared locally');
-      }
+      // Clear scenario states
+      setScenario('');
+      setCustomScenario('');
+      setScenarioName('');
+      setShowSetScenario(false);
       
-      console.log('✅ Fresh state created - all data cleared, simulation stopped');
+      // Show error message
+      alert('Some data may not have been cleared. Please refresh the page if issues persist.');
       
-      // Delayed refresh to sync with server
-      setTimeout(() => fetchSimulationState(), 500);
-      
-    } catch (error) {
-      console.error('❌ Error clearing data:', error);
-      // Revert optimistic updates on error
-      fetchSimulationState(true);
     } finally {
       setLoading(false);
     }
@@ -905,9 +910,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       <div className="relative">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-white mb-0">🔬 Observatory</h2>
-          <div className="text-white/60 text-sm">
-            {agents.length} agents • {conversations.length} rounds
-          </div>
         </div>
         
         {/* Notification Bar - Between header and cards */}
@@ -930,7 +932,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         
         {/* Agent List Section - 25% width on large screens (Left Position) */}
         <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px]">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[350px] md:min-h-[380px] lg:min-h-[420px] xl:min-h-[450px] 2xl:min-h-[480px]">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-white">🤖 Agent List</h3>
@@ -1028,7 +1030,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <div className="text-4xl mb-2">🤖</div>
                 <p className="text-white/60 text-sm mb-4">No Agents in List</p>
                 <p className="text-white/40 text-xs mb-4">Click + to add agents from library</p>
               </div>
@@ -1038,15 +1039,15 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
         {/* Live Conversations Section - 50% width on large screens (Middle Position) */}
         <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-4 sm:p-5 md:p-5 lg:p-6 xl:p-6 2xl:p-8 h-full min-h-[400px] md:min-h-[450px] lg:min-h-[500px] xl:min-h-[550px] 2xl:min-h-[600px] flex flex-col">
-            <div className="flex flex-col sm:flex-col md:flex-row lg:flex-row xl:flex-row 2xl:flex-row justify-between items-start md:items-center mb-4 space-y-2 md:space-y-0">
-              <h3 className="text-lg sm:text-lg md:text-xl lg:text-xl xl:text-2xl 2xl:text-2xl font-bold text-white">💬 Live Conversations</h3>
-              <div className="flex flex-wrap items-center space-x-2 sm:space-x-2 md:space-x-3 lg:space-x-3 xl:space-x-3 2xl:space-x-4">
-                <div className={`w-2 h-2 sm:w-2 h-2 md:w-3 h-3 lg:w-3 h-3 xl:w-3 h-3 2xl:w-4 h-4 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[350px] md:min-h-[380px] lg:min-h-[420px] xl:min-h-[450px] 2xl:min-h-[480px] flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white">💬 Live Conversations</h3>
+              <div className="flex items-center space-x-1">
+                <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
                 {autoGenerating && (
-                  <div className="w-1.5 h-1.5 sm:w-1.5 h-1.5 md:w-2 h-2 lg:w-2 h-2 xl:w-2 h-2 2xl:w-2 h-2 rounded-full bg-blue-400 animate-ping"></div>
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></div>
                 )}
-                <span className="text-white/60 text-xs sm:text-xs md:text-sm lg:text-sm xl:text-sm 2xl:text-base">
+                <span className="text-white/60 text-sm">
                   {conversations.length} rounds, {observerMessages.length} messages
                 </span>
               </div>
@@ -1063,36 +1064,27 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       setSearchTerm(e.target.value);
                       performSearch(e.target.value);
                     }}
-                    placeholder="Search..."
-                    className="w-full px-3 py-1 text-sm bg-white/10 border border-white/20 rounded text-white placeholder-white/40 focus:ring-1 focus:ring-blue-500"
+                    placeholder="Search conversations..."
+                    className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 pl-8 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
-                  {searchTerm && (
-                    <button
-                      onClick={() => {
-                        setSearchTerm('');
-                        setSearchResults([]);
-                        setCurrentSearchIndex(0);
-                      }}
-                      className="absolute right-1 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white text-xs"
-                    >
-                      ✕
-                    </button>
-                  )}
+                  <svg className="absolute left-2 top-2.5 w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
                 {searchResults.length > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <span className="text-white/60 text-xs">
-                      {currentSearchIndex + 1}/{searchResults.length}
-                    </span>
+                  <div className="flex space-x-1">
                     <button
                       onClick={() => navigateSearch('prev')}
-                      className="px-1 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs"
                     >
                       ↑
                     </button>
+                    <span className="px-2 py-1 text-white/60 text-xs">
+                      {currentSearchIndex + 1}/{searchResults.length}
+                    </span>
                     <button
                       onClick={() => navigateSearch('next')}
-                      className="px-1 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs"
                     >
                       ↓
                     </button>
@@ -1102,13 +1094,16 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
             </div>
 
             {/* Conversations Display */}
-            <div className="flex-1 overflow-y-auto max-h-[300px] md:max-h-[350px] lg:max-h-[400px] xl:max-h-[450px] 2xl:max-h-[500px] space-y-3 mb-4">
+            <div className="flex-1 overflow-y-auto max-h-[250px] md:max-h-[280px] lg:max-h-[320px] xl:max-h-[350px] 2xl:max-h-[380px] space-y-3 mb-4">
               {conversations.length === 0 ? (
                 <div className="text-center py-8 space-y-4">
-                  <div className="text-4xl">💬</div>
                   <div>
                     <p className="text-white/60 text-sm mb-2">No conversations yet</p>
-                    <p className="text-white/40 text-xs">Start simulation to see agent conversations</p>
+                    <div className="text-white/40 text-xs space-y-1">
+                      <p>1. add agents</p>
+                      <p>2. set scenario</p>
+                      <p>3. observe</p>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -1171,66 +1166,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                         </div>
                       </div>
                     );
-                  })}
-
-                  {conversations.map((conversation, conversationIndex) => (
-                    <div key={conversation.id || conversationIndex} className="space-y-2">
-                      {conversation.messages?.map((message, messageIndex) => {
-                        const isCurrentSearch = searchResults.length > 0 && 
-                          searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
-                          searchResults[currentSearchIndex]?.messageIndex === messageIndex;
-                        const isHighlighted = searchResults.some(result => 
-                          result.conversationIndex === conversationIndex && result.messageIndex === messageIndex
-                        );
-
-                        return (
-                          <div
-                            key={message.id || messageIndex}
-                            ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
-                            className={`rounded-lg p-3 border-l-4 ${
-                              message.agent_name === "Observer (You)"
-                                ? 'bg-blue-500/20 border-blue-500 shadow-lg'
-                                : isCurrentSearch 
-                                  ? 'border-yellow-400 bg-yellow-400/10' 
-                                  : isHighlighted 
-                                    ? 'border-blue-400 bg-blue-400/10' 
-                                    : 'bg-white/5 border-white/20'
-                            } transition-all duration-200`}
-                          >
-                            <div className="flex items-start space-x-3">
-                              <div className="flex-shrink-0">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
-                                  message.agent_name === "Observer (You)"
-                                    ? 'bg-blue-600'
-                                    : `bg-gradient-to-br from-purple-500 to-pink-500`
-                                }`}>
-                                  {message.agent_name === "Observer (You)" ? '👁️' : message.agent_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                                </div>
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-1">
-                                  <span className={`font-bold ${
-                                    message.agent_name === "Observer (You)"
-                                      ? 'text-blue-300'
-                                      : 'text-white'
-                                  }`}>
-                                    {message.agent_name}
-                                  </span>
-                                  <span className="text-white/40 text-xs">
-                                    {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Now'}
-                                  </span>
-                                </div>
-                                <p className={`text-sm leading-relaxed ${
-                                  message.agent_name === "Observer (You)"
-                                    ? 'text-blue-100 font-medium'
-                                    : 'text-white/90'
-                                }`}>
-                                  {highlightSearchTerm(message.message, searchTerm)}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
                       })}
                     </div>
                   ))}
@@ -1270,203 +1205,179 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               </div>
             )}
           </div>
+          
+          {/* Control Buttons - Outside of Live Conversations card but in same column */}
+          <div className="mt-4">
+            <div className="grid grid-cols-4 gap-1 py-3 max-w-xs mx-auto">
+              {/* Play/Pause Button */}
+              <div className="flex flex-col items-center group">
+                <button
+                  onClick={playPauseSimulation}
+                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-white text-sm ${
+                    isRunning && !isPaused
+                      ? 'bg-orange-600 hover:bg-orange-700' 
+                      : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                  title={isRunning && !isPaused ? 'Pause' : 'Play'}
+                >
+                  {isRunning && !isPaused ? '⏸' : '▶'}
+                </button>
+                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  {isRunning && !isPaused ? 'Pause' : 'Play'}
+                </span>
+              </div>
+
+              {/* Observer Button */}
+              <div className="flex flex-col items-center group">
+                <button
+                  onClick={() => setShowObserverChat(!showObserverChat)}
+                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-white text-sm ${
+                    showObserverChat 
+                      ? 'bg-blue-600 hover:bg-blue-700' 
+                      : 'bg-gray-600 hover:bg-gray-700'
+                  }`}
+                  title="Observer"
+                >
+                  👁
+                </button>
+                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Observer
+                </span>
+              </div>
+
+              {/* Fast Forward Button */}
+              <div className="flex flex-col items-center group">
+                <button
+                  onClick={toggleFastForward}
+                  disabled={!isRunning || isPaused}
+                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-white text-sm ${
+                    isRunning && !isPaused
+                      ? 'bg-purple-600 hover:bg-purple-700' 
+                      : 'bg-gray-600 cursor-not-allowed text-gray-400'
+                  }`}
+                  title="Fast Forward"
+                >
+                  »
+                </button>
+                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Fast Forward
+                </span>
+              </div>
+
+              {/* Start Fresh Button */}
+              <div className="flex flex-col items-center group">
+                <button
+                  onClick={startFreshSimulation}
+                  className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 flex items-center justify-center text-sm"
+                  title="Start Fresh"
+                >
+                  ↻
+                </button>
+                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Fresh Start
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
         <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full flex flex-col">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">📝 Scenario Setup</h3>
-              <button
-                onClick={() => setShowSetScenario(!showSetScenario)}
-                className="flex items-center space-x-2 text-white text-sm font-medium hover:text-blue-300 transition-colors"
-              >
-                <span className={`transform transition-transform duration-200 ${showSetScenario ? 'rotate-180' : ''}`}>
-                  ⬇️
-                </span>
-              </button>
+              <h3 className="text-lg font-bold text-white">🎛️ Control Desk</h3>
             </div>
             
-            {/* Expandable Scenario Input */}
-            {showSetScenario && (
-              <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-white/60 text-sm">Enter custom scenario or generate random:</span>
-                  <button
-                    onClick={getRandomScenario}
-                    disabled={loading || isRunning}
-                    className="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {loading ? '⏳' : '🎲 Random'}
-                  </button>
-                </div>
-                <div className="relative">
-                  <textarea
-                    value={customScenario}
-                    onChange={(e) => setCustomScenario(e.target.value)}
-                    placeholder="Enter your scenario here... (e.g., 'A team of researchers discovers an unexpected signal from deep space')"
-                    disabled={loading || isRunning || isRecording}
-                    className="w-full px-3 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
-                    rows="6"
-                  />
-                  <button
-                    onClick={handleVoiceInput}
-                    disabled={loading || isRunning}
-                    className={`absolute right-2 top-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${
-                      isRecording 
-                        ? 'bg-red-500/20 text-red-400 animate-pulse' 
-                        : 'text-white/60 hover:text-white hover:bg-white/10'
-                    }`}
-                    title={isRecording ? 'Recording... Click to stop' : 'Click to record scenario with voice'}
-                  >
-                    <svg 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="currentColor"
-                    >
-                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                      <path d="M12 19v4"/>
-                      <path d="M8 23h8"/>
-                    </svg>
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    value={scenarioName}
-                    onChange={(e) => setScenarioName(e.target.value)}
-                    placeholder="Scenario name (optional)"
-                    disabled={loading || isRunning}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                  />
-                  <button
-                    onClick={handleSetScenario}
-                    disabled={loading || isRunning || !customScenario.trim()}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
-                  >
-                    {loading ? 'Setting...' : 'Set Scenario'}
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Current Scenario Display */}
-            {!showSetScenario && (simulationState?.scenario || scenario) && (
-              <div className="bg-white/5 rounded-lg p-3 animate-fadeIn">
-                <h4 className="text-white font-medium text-sm mb-2">Current Scenario:</h4>
-                <p className="text-white/80 text-sm mb-3">{simulationState?.scenario_name || scenarioName || 'Custom Scenario'}</p>
-                <p className="text-white/60 text-xs mb-3 line-clamp-3">{simulationState?.scenario || scenario}</p>
-                <button 
-                  onClick={() => setShowSetScenario(true)}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+            {/* Set Scenario Section with expandable functionality */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-white/80 text-sm font-medium">Set Scenario</h4>
+                <button
+                  onClick={() => setShowSetScenario(!showSetScenario)}
+                  className="text-white/60 hover:text-white transition-all duration-200"
+                  style={{ transform: showSetScenario ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 >
-                  Change Scenario
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
               </div>
-            )}
-            
-            {/* No Scenario Set */}
-            {!showSetScenario && !simulationState?.scenario && !scenario && (
-              <div className="bg-white/5 rounded-lg p-3 text-center animate-fadeIn">
-                <p className="text-white/60 text-xs mb-3">Set a scenario to guide your simulation</p>
-                <button 
-                  onClick={() => setShowSetScenario(true)}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-                >
-                  Set Scenario
-                </button>
-              </div>
-            )}
-
-            {/* Control Buttons - Icon only at bottom of Live Conversations */}
-            <div className="mt-auto pt-4 space-y-2">
-              <div className="flex justify-center space-x-3">
-                {/* Play/Pause Button */}
-                <div className="flex flex-col items-center group">
-                  <button
-                    onClick={playPauseSimulation}
-                    className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
-                      isRunning && !isPaused
-                        ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    }`}
-                    title={isRunning && !isPaused ? 'Pause' : 'Play'}
-                  >
-                    <span className="text-sm">
-                      {isRunning && !isPaused ? '⏸️' : '▶️'}
-                    </span>
-                  </button>
-                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {isRunning && !isPaused ? 'Pause' : 'Play'}
-                  </span>
-                </div>
-
-                {/* Observer Button */}
-                <div className="flex flex-col items-center group">
-                  <button
-                    onClick={() => setShowObserverChat(!showObserverChat)}
-                    className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
-                      showObserverChat 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                        : 'bg-gray-600 hover:bg-gray-700 text-white'
-                    }`}
-                    title="Observer"
-                  >
-                    <span className="text-sm">👁️</span>
-                  </button>
-                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Observer
-                  </span>
-                </div>
-
-                {/* Fast Forward Button */}
-                <div className="flex flex-col items-center group">
-                  <button
-                    onClick={toggleFastForward}
-                    disabled={!isRunning || isPaused}
-                    className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center ${
-                      isRunning && !isPaused
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                        : 'bg-gray-600 cursor-not-allowed text-gray-400'
-                    }`}
-                    title="Fast Forward"
-                  >
-                    <span className="text-sm">⏩</span>
-                  </button>
-                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Fast
-                  </span>
-                </div>
-
-                {/* Start Fresh Button */}
-                <div className="flex flex-col items-center group">
-                  <button
-                    onClick={startFreshSimulation}
-                    className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 flex items-center justify-center"
-                    title="Start Fresh"
-                  >
-                    <span className="text-sm">🔄</span>
-                  </button>
-                  <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    Fresh
-                  </span>
-                </div>
+              
+              {/* Scenario Content Section */}
+              <div className="flex-1">
+                {/* Expandable Scenario Input */}
+                {showSetScenario && (
+                  <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
+                    <input
+                      type="text"
+                      value={scenarioName}
+                      onChange={(e) => setScenarioName(e.target.value)}
+                      placeholder="Scenario name"
+                      disabled={loading || isRunning}
+                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                    />
+                    <div className="relative">
+                      <textarea
+                        value={customScenario}
+                        onChange={(e) => setCustomScenario(e.target.value)}
+                        placeholder="enter your scenario here..."
+                        disabled={loading || isRunning || isRecording}
+                        className="w-full px-3 py-2 pb-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 resize-none"
+                        rows="6"
+                      />
+                      <button
+                        onClick={handleVoiceInput}
+                        disabled={loading || isRunning}
+                        className={`absolute left-2 bottom-2 p-2 rounded-lg transition-colors disabled:opacity-50 ${
+                          isRecording 
+                            ? 'bg-red-500/20 text-red-400 animate-pulse' 
+                            : 'text-white/60 hover:text-white hover:bg-white/10'
+                        }`}
+                        title={isRecording ? 'Recording... Click to stop' : 'Click to record scenario with voice'}
+                      >
+                        <svg 
+                          width="16" 
+                          height="16" 
+                          viewBox="0 0 24 24" 
+                          fill="currentColor"
+                        >
+                          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                          <path d="M12 19v4"/>
+                          <path d="M8 23h8"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={handleSetScenario}
+                        disabled={loading || isRunning || !customScenario.trim()}
+                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                      >
+                        {loading ? 'Setting...' : 'Set Scenario'}
+                      </button>
+                      <button
+                        onClick={getRandomScenario}
+                        disabled={loading || isRunning}
+                        className="px-3 py-2 text-white/60 hover:text-white transition-colors disabled:opacity-50"
+                        title="Generate random scenario"
+                      >
+                        🎲
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Current Scenario Display */}
+                {!showSetScenario && (simulationState?.scenario || scenario) && (
+                  <div className="bg-white/5 rounded-lg p-3 animate-fadeIn">
+                    <h4 className="text-white font-medium text-sm mb-2">Current Scenario:</h4>
+                    <p className="text-white/80 text-sm">{simulationState?.scenario_name || scenarioName || 'Custom Scenario'}</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Status Display */}
-            <div className="mt-3 text-center">
-              <div className="inline-flex items-center space-x-2 bg-white/10 rounded-full px-3 py-1">
-                <div className={`w-1.5 h-1.5 rounded-full ${
-                  isRunning && !isPaused ? 'bg-green-500 animate-pulse' : 'bg-gray-500'
-                }`}></div>
-                <span className="text-white text-xs">
-                  Status: {isRunning && !isPaused ? 'Running' : isPaused ? 'Paused' : 'Stopped'}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

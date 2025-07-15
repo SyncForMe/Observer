@@ -1554,7 +1554,9 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const handleAddAgent = async (agent) => {
     if (!onAddAgent) return;
     
+    // IMMEDIATE OPTIMISTIC UPDATE - Show as added right away for instant feedback
     setAddingAgents(prev => new Set(prev).add(agent.id));
+    setAddedAgents(prev => new Set(prev).add(agent.id));
     
     try {
       // Generate personality based on archetype if not provided
@@ -1585,19 +1587,33 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
         avatar_prompt: agent.avatar_prompt || `Professional ${agent.archetype} agent`
       };
       
+      // Start the API call in background while UI shows immediate feedback
       const result = await onAddAgent(agentData);
       
       if (result && result.success) {
-        setAddedAgents(prev => new Set(prev).add(agent.id));
-        console.log('Agent added successfully:', result.message);
+        console.log('✅ Agent added successfully (confirmed by backend):', result.message);
+        // Agent is already optimistically added, so no need to update UI again
       } else {
-        console.error('Failed to add agent:', result?.message || 'Unknown error');
+        console.error('❌ Failed to add agent, reverting optimistic update:', result?.message || 'Unknown error');
+        // Revert the optimistic update on failure
+        setAddedAgents(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(agent.id);
+          return newSet;
+        });
       }
       
     } catch (error) {
-      console.error('Failed to add agent:', error);
+      console.error('❌ Error adding agent, reverting optimistic update:', error);
+      // Revert the optimistic update on error
+      setAddedAgents(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(agent.id);
+        return newSet;
+      });
     }
     
+    // Always remove from adding state after completion
     setAddingAgents(prev => {
       const newSet = new Set(prev);
       newSet.delete(agent.id);
@@ -2102,22 +2118,47 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                               <button
                                 onClick={() => handleAddAgent(agent)}
                                 disabled={addingAgents.has(agent.id)}
-                                className="flex-1 py-2 px-2 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                                className={`flex-1 py-2 px-2 rounded text-xs font-medium transition-all duration-200 ${
+                                  addingAgents.has(agent.id)
+                                    ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                                    : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
+                                }`}
                               >
-                                {addingAgents.has(agent.id) ? '...' : '+ Again'}
+                                <div className="flex items-center justify-center space-x-1">
+                                  {addingAgents.has(agent.id) ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-yellow-600 border-t-transparent"></div>
+                                      <span>Adding...</span>
+                                    </>
+                                  ) : (
+                                    <span>+ Again</span>
+                                  )}
+                                </div>
                               </button>
                             </div>
                           ) : (
                             <button
                               onClick={() => handleAddAgent(agent)}
                               disabled={addingAgents.has(agent.id)}
-                              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                              className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                                 addingAgents.has(agent.id)
-                                  ? 'bg-gray-300 text-gray-500'
-                                  : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                                  ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                                  : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:scale-105'
                               }`}
                             >
-                              {addingAgents.has(agent.id) ? 'Adding...' : '➕ Add Agent'}
+                              <div className="flex items-center justify-center space-x-1">
+                                {addingAgents.has(agent.id) ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
+                                    <span>Adding...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>➕</span>
+                                    <span>Add Agent</span>
+                                  </>
+                                )}
+                              </div>
                             </button>
                           )}
                         </div>
@@ -2398,9 +2439,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                               <button
                                 onClick={() => handleAddAgent(agent)}
                                 disabled={addingAgents.has(agent.id)}
-                                className="flex-1 py-2 px-2 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                                className={`flex-1 py-2 px-2 rounded text-xs font-medium transition-all duration-200 ${
+                                  addingAgents.has(agent.id)
+                                    ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                                    : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
+                                }`}
                               >
-                                {addingAgents.has(agent.id) ? 'Adding...' : 'Add Again'}
+                                <div className="flex items-center justify-center space-x-1">
+                                  {addingAgents.has(agent.id) ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-3 w-3 border-2 border-yellow-600 border-t-transparent"></div>
+                                      <span>Adding...</span>
+                                    </>
+                                  ) : (
+                                    <span>Add Again</span>
+                                  )}
+                                </div>
                               </button>
                               <button
                                 onClick={() => handleRemoveAgent(agent)}
@@ -2415,13 +2469,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                             <button
                               onClick={() => handleAddAgent(agent)}
                               disabled={addingAgents.has(agent.id)}
-                              className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+                              className={`w-full py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${
                                 addingAgents.has(agent.id)
-                                  ? 'bg-gray-300 text-gray-500'
-                                  : 'bg-purple-600 text-white hover:bg-purple-700'
+                                  ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                                  : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
                               }`}
                             >
-                              {addingAgents.has(agent.id) ? 'Adding...' : 'Add Agent'}
+                              <div className="flex items-center justify-center space-x-1">
+                                {addingAgents.has(agent.id) ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
+                                    <span>Adding...</span>
+                                  </>
+                                ) : (
+                                  <span>Add Agent</span>
+                                )}
+                              </div>
                             </button>
                           )}
                         </div>
@@ -2533,9 +2596,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                                 <button
                                   onClick={() => handleAddAgent(agent)}
                                   disabled={addingAgents.has(agent.id)}
-                                  className="flex-1 py-2 px-2 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                                  className={`flex-1 py-2 px-2 rounded text-xs font-medium transition-all duration-200 ${
+                                    addingAgents.has(agent.id)
+                                      ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                                      : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
+                                  }`}
                                 >
-                                  {addingAgents.has(agent.id) ? 'Adding...' : 'Add Again'}
+                                  <div className="flex items-center justify-center space-x-1">
+                                    {addingAgents.has(agent.id) ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-yellow-600 border-t-transparent"></div>
+                                        <span>Adding...</span>
+                                      </>
+                                    ) : (
+                                      <span>Add Again</span>
+                                    )}
+                                  </div>
                                 </button>
                                 <button
                                   onClick={() => handleRemoveAgent(agent)}
@@ -2550,13 +2626,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                               <button
                                 onClick={() => handleAddAgent(agent)}
                                 disabled={addingAgents.has(agent.id)}
-                                className={`w-full py-2 px-3 rounded text-sm font-medium transition-colors ${
+                                className={`w-full py-2 px-3 rounded text-sm font-medium transition-all duration-200 ${
                                   addingAgents.has(agent.id)
-                                    ? 'bg-gray-300 text-gray-500'
-                                    : 'bg-purple-600 text-white hover:bg-purple-700'
+                                    ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                                    : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
                                 }`}
                               >
-                                {addingAgents.has(agent.id) ? 'Adding...' : 'Add Agent'}
+                                <div className="flex items-center justify-center space-x-1">
+                                  {addingAgents.has(agent.id) ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
+                                      <span>Adding...</span>
+                                    </>
+                                  ) : (
+                                    <span>Add Agent</span>
+                                  )}
+                                </div>
                               </button>
                             )}
                           </div>
@@ -2665,9 +2750,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   <button
                     onClick={() => handleAddAgent(selectedAgentDetails)}
                     disabled={addingAgents.has(selectedAgentDetails.id)}
-                    className="flex-1 py-3 px-4 rounded-lg font-medium bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-300 disabled:text-gray-500 transition-colors"
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
+                      addingAgents.has(selectedAgentDetails.id)
+                        ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                        : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
+                    }`}
                   >
-                    {addingAgents.has(selectedAgentDetails.id) ? 'Adding...' : 'Add Again'}
+                    <div className="flex items-center justify-center space-x-2">
+                      {addingAgents.has(selectedAgentDetails.id) ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
+                          <span>Adding...</span>
+                        </>
+                      ) : (
+                        <span>Add Again</span>
+                      )}
+                    </div>
                   </button>
                   <button
                     onClick={() => handleRemoveAgent(selectedAgentDetails)}
@@ -2682,13 +2780,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 <button
                   onClick={() => handleAddAgent(selectedAgentDetails)}
                   disabled={addingAgents.has(selectedAgentDetails.id)}
-                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
+                  className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all duration-200 ${
                     addingAgents.has(selectedAgentDetails.id)
-                      ? 'bg-gray-300 text-gray-500'
-                      : 'bg-purple-600 text-white hover:bg-purple-700'
+                      ? 'bg-yellow-100 text-yellow-800 cursor-wait'
+                      : 'bg-purple-600 text-white hover:bg-purple-700 transform hover:scale-105'
                   }`}
                 >
-                  {addingAgents.has(selectedAgentDetails.id) ? 'Adding...' : 'Add Agent'}
+                  <div className="flex items-center justify-center space-x-2">
+                    {addingAgents.has(selectedAgentDetails.id) ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-600 border-t-transparent"></div>
+                        <span>Adding...</span>
+                      </>
+                    ) : (
+                      <span>Add Agent</span>
+                    )}
+                  </div>
                 </button>
               )}
             </div>

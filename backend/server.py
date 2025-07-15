@@ -523,6 +523,7 @@ class SimulationState(BaseModel):
     daily_api_requests: int = 0
     last_reset_date: str = Field(default_factory=lambda: str(date.today()))
     scenario: str = "The Research Station"
+    scenario_name: str = ""  # Name/title of the scenario
     is_active: bool = False
     time_limit_hours: Optional[int] = None  # Time limit in hours
     time_limit_display: Optional[str] = None  # Human readable time limit
@@ -4282,6 +4283,47 @@ async def advance_time_period():
     )
     
     return {"message": f"Advanced to {new_period}", "new_period": new_period}
+
+@api_router.post("/simulation/reset")
+async def reset_simulation(current_user: User = Depends(get_current_user)):
+    """Reset/clear all simulation data for the current user - Start Fresh functionality"""
+    try:
+        # Clear all user's simulation data
+        await db.simulation_state.delete_many({"user_id": current_user.id})
+        await db.conversations.delete_many({"user_id": current_user.id})
+        await db.relationships.delete_many({"user_id": current_user.id})
+        await db.summaries.delete_many({"user_id": current_user.id})
+        await db.agents.delete_many({"user_id": current_user.id})
+        
+        # Create a clean default simulation state
+        default_state = SimulationState(
+            is_active=False,
+            is_paused=False,
+            time_limit_hours=None,
+            time_limit_display=None,
+            simulation_start_time=None,
+            time_remaining_hours=None,
+            user_id=current_user.id,
+            scenario="",  # Clear scenario completely
+            scenario_name="",  # Clear scenario name completely
+            current_day=1,
+            current_time_period="morning",
+            daily_api_requests=0,
+            last_reset_date=str(date.today())
+        )
+        
+        # Insert the clean state
+        await db.simulation_state.insert_one(default_state.dict())
+        
+        return {
+            "message": "Simulation reset successfully - all data cleared",
+            "success": True,
+            "state": default_state.dict()
+        }
+        
+    except Exception as e:
+        logging.error(f"Error resetting simulation: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset simulation: {str(e)}")
 
 @api_router.get("/debug/agents")
 async def debug_agents():
