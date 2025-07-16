@@ -466,7 +466,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     setNotificationVisible(true);
     setTimeout(() => {
       setNotificationVisible(false);
-    }, 3000);
+    }, 8000);
   };
 
   // Optimized simulation control with optimistic updates
@@ -908,27 +908,29 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   return (
     <>
       <div className="relative">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-white mb-0">🔬 Observatory</h2>
+        {/* Notification Bar - Always reserve space, invisible background */}
+        <div className="mb-1 h-[2rem] flex items-center justify-center -mt-1">
+          <AnimatePresence>
+            {notificationVisible && (
+              <motion.div
+                initial={{ opacity: 0, x: 400 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -400 }}
+                transition={{
+                  duration: 1.2,
+                  ease: "easeOut"
+                }}
+                className="text-white text-lg font-semibold"
+              >
+                {notificationText}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-        
-        {/* Notification Bar - Between header and cards */}
-        <AnimatePresence>
-          {notificationVisible && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="text-center mt-4 mb-2 text-white text-sm font-medium"
-            >
-              {notificationText}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Main Grid Layout - 3 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-6 2xl:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4 md:gap-5 lg:gap-6 xl:gap-6 2xl:gap-8 mt-1">
         
         {/* Agent List Section - 25% width on large screens (Left Position) */}
         <div className="lg:col-span-1">
@@ -1019,12 +1021,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     <p className="text-white/70 text-xs line-clamp-2 mb-2">
                       {agent.background || agent.expertise}
                     </p>
-                    
-                    {agent.goal && (
-                      <div className="text-white/50 text-xs">
-                        Goal: {agent.goal}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

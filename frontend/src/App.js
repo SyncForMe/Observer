@@ -446,7 +446,7 @@ const AppContent = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
         {console.log('🔍 AppContent: About to render main content, activeTab:', activeTab)}
         
         <div style={{ minHeight: '400px' }}>

@@ -1809,22 +1809,7 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const currentCategory = selectedCategory ? currentSector?.categories[selectedCategory] : null;
 
   return (
-    <div className="space-y-6">
-      {/* Clean Hero Section */}
-      <div className="bg-gradient-to-br from-purple-900/40 to-blue-900/40 backdrop-blur-lg rounded-2xl p-8 border border-white/10">
-        <div className="text-center">
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-4">
-            🤖 Agent{' '}
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Library
-            </span>
-          </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Build your perfect AI team from 200+ expert agents across all industries
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-6 mt-6">
       {/* Main Agent Library Content */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl overflow-hidden">
         <div className="flex h-[700px]">
@@ -2041,6 +2026,19 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
 
             {/* Scrollable Content Area */}
             <div className="flex-1 p-6 overflow-y-auto">
+              {/* Agent Library Header - moved from top */}
+              <div className="text-center mb-8">
+                <h2 className="text-3xl lg:text-4xl font-bold text-white mb-2">
+                  Agent{' '}
+                  <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                    Library
+                  </span>
+                </h2>
+                <p className="text-lg text-gray-300">
+                  Use the search bar above or browse the sidebar to find agents
+                </p>
+              </div>
+              
             {searchQuery ? (
               // Search Results View - Always prioritize search when user is typing
               <div>
@@ -2096,10 +2094,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                           <div className="flex items-center space-x-2 text-xs text-gray-500">
                             <span>🏆</span>
                             <span className="truncate">{agent.expertise.split(',')[0]}</span>
-                          </div>
-                          <div className="flex items-center space-x-2 text-xs text-gray-500">
-                            <span>🎯</span>
-                            <span className="truncate">{agent.goal.substring(0, 50)}...</span>
                           </div>
                         </div>
                         
@@ -2344,7 +2338,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                                 <div className="flex items-start justify-between">
                                   <div>
                                     <h4 className="font-semibold text-gray-800">{agent.name}</h4>
-                                    <p className="text-sm text-gray-600">{agent.goal || 'Saved Agent'}</p>
                                     <p className="text-xs text-purple-600 mt-1 capitalize">{agent.archetype}</p>
                                   </div>
                                   {agent.is_favorite && (
@@ -2658,10 +2651,10 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 )}
               </div>
             ) : (
-              // Default landing - no content needed, search is always at top
+              // Default landing - show same message as header
               <div className="flex items-center justify-center h-full text-center">
                 <div className="text-white/60">
-                  <div className="text-4xl mb-4">🤖</div>
+                  <div className="text-4xl mb-4">🔍</div>
                   <p className="text-lg">Use the search bar above or browse the sidebar to find agents</p>
                 </div>
               </div>

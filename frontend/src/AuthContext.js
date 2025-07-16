@@ -79,17 +79,22 @@ export const AuthProvider = ({ children }) => {
 
   const testLogin = async () => {
     try {
+      console.log('🔍 AuthContext: Starting testLogin');
       const response = await axios.post(`${API}/auth/test-login`);
+      console.log('🔍 AuthContext: testLogin response:', response.data);
       
       if (response.data && response.data.access_token) {
         const newToken = response.data.access_token;
         localStorage.setItem('auth_token', newToken);
         setToken(newToken);
         setUser(response.data.user);
+        console.log('🔍 AuthContext: testLogin successful, user set:', response.data.user);
         return { success: true };
       }
+      console.log('🔍 AuthContext: testLogin failed - no access_token');
       return { success: false, error: 'Test login failed' };
     } catch (error) {
+      console.error('🔍 AuthContext: testLogin error:', error);
       return { success: false, error: error.response?.data?.error || 'Test login failed' };
     }
   };

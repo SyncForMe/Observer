@@ -328,32 +328,31 @@ cd frontend && yarn test
 
 ---
 
-## 🎯 Recent Updates (v1.4.0)
+## 🎯 Recent Updates (v1.5.0)
 
-### ⭐ Enhanced Agent Library
-- **Star Icons System**: Click to favorite any agent from the library
-- **My Agents Redesign**: Expandable section with Created Agents and Favourites
-- **Auto-Save Integration**: Created agents automatically saved to library
-- **Improved Filtering**: Clear separation between created and favorited agents
-- **Visual Feedback**: Immediate star icon updates and count changes
+### ⭐ Enhanced User Experience
+- **Notification System Redesign**: Professional notification display in header space
+- **Right-to-Left Animation**: Smooth sliding text animations with invisible background
+- **Observatory Interface**: Removed header text to create dedicated notification space
+- **Symmetric Spacing**: Optimized layout with minimal, equal spacing above and below notifications
 
-### 🛠️ Agent Creation Improvements
-- **Integrated Create Button**: "+ Create" card directly in Created Agents grid
-- **Modal Integration**: Same creation modal used across Observatory and Library
-- **Enhanced Workflow**: Seamless flow from creation to library management
-- **Avatar Generation**: Professional avatar creation using fal.ai integration
+### 🤖 Agent Library Improvements
+- **Simplified Agent Cards**: Removed goal information for cleaner, more focused displays
+- **Consistent Design**: Unified agent card appearance across all sections
+- **Enhanced Readability**: Reduced information density for better user comprehension
+- **Professional Appearance**: Clean, minimalist design emphasizing agent capabilities
 
 ### 🎨 UI/UX Enhancements
-- **Industry Sectors**: Now collapsed by default for cleaner interface
-- **Responsive Design**: Optimized for all screen sizes and devices
-- **Modern Card Layouts**: Dashed borders and hover effects for create buttons
-- **Professional Styling**: Consistent design language throughout
+- **Layout Stability**: Eliminated card movement during notification display
+- **Visual Cleanliness**: Text-only notifications without background containers
+- **Seamless Animations**: Professional sliding effects that enhance user engagement
+- **Responsive Design**: Optimized spacing and positioning across all screen sizes
 
-### 🔧 Backend Improvements
-- **Favorites API**: Complete CRUD operations for agent favorites
-- **User Data Isolation**: Enhanced security and data separation
-- **Performance Optimization**: Faster API responses and database queries
-- **Error Handling**: Comprehensive error messages and status codes
+### 🔧 Technical Improvements
+- **Container Optimization**: Fixed main container padding for symmetric spacing
+- **Animation Performance**: Smooth 60fps sliding animations with proper timing
+- **Space Reservation**: Fixed height containers prevent layout shifts
+- **Code Maintainability**: Simplified component logic and improved separation of concerns
 
 ---
 
@@ -475,12 +474,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🎯 Roadmap
 
-### Upcoming Features (v1.5.0)
-- [ ] **Agent Collaboration**: Multi-agent conversations with dynamic participation
-- [ ] **Advanced Analytics**: ML-powered insights and trend analysis
-- [ ] **Voice Integration**: Real-time voice conversations with agents
-- [ ] **Agent Marketplace**: Share and discover community-created agents
-- [ ] **Export/Import**: Agent and simulation data portability
+### Upcoming Features (v1.6.0)
+- [ ] **Notification Variants**: Multiple notification types (success, warning, error)
+- [ ] **Agent Card Customization**: User-configurable information display options
+- [ ] **Animation Presets**: Multiple animation styles for different contexts
+- [ ] **Enhanced Accessibility**: Screen reader support and keyboard navigation
+- [ ] **Notification Queue**: Support for multiple simultaneous notifications
 
 ### Future Enhancements
 - [ ] **Multi-language Support**: Full internationalization
@@ -490,7 +489,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] **Plugin System**: Extensible architecture for custom integrations
 
 ### Version History
-- **v1.4.0** - Enhanced Agent Library with favorites and improved management *(Current)*
+- **v1.5.0** - Enhanced UI/UX with notification system redesign and agent card improvements *(Current)*
+- **v1.4.0** - Enhanced Agent Library with favorites and improved management
 - **v1.3.0** - Enhanced UI/UX with modern design system
 - **v1.2.0** - Added agent library and saved agents functionality
 - **v1.1.0** - Performance optimizations and conversation improvements
