@@ -1233,7 +1233,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
         {/* Live Conversations Section - 50% width on large screens (Middle Position) */}
         <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-96 flex flex-col">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[500px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">💬 Live Conversations</h3>
               <div className="flex items-center space-x-1">
