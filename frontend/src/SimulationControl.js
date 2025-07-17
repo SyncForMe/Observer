@@ -1289,7 +1289,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
             {/* Conversations Display */}
             <div className="flex-1 overflow-y-auto space-y-3">
-              {conversations.length === 0 ? (
+              {conversations.length === 0 && observerMessages.length === 0 ? (
                 <div className="text-center py-8 space-y-4">
                   <div>
                     <p className="text-white/60 text-sm mb-2">No conversations yet</p>
@@ -1302,6 +1302,36 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 </div>
               ) : (
                 <>
+                  {/* Display Observer Messages */}
+                  {observerMessages.map((message, messageIndex) => (
+                    <div
+                      key={`observer-${message.id || messageIndex}`}
+                      className="rounded-2xl p-3 border-l-4 bg-blue-500/20 border-blue-500 shadow-lg transition-all duration-200"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-blue-600">
+                            👁️
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="font-bold text-blue-300">
+                              Observer (You)
+                            </span>
+                            <span className="text-white/40 text-xs">
+                              {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Now'}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed text-blue-100 font-medium">
+                            {message.message}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Display Regular Conversations */}
                   {conversations.map((conversation, conversationIndex) => (
                     <div key={conversation.id || conversationIndex} className="space-y-2">
                       {conversation.messages?.map((message, messageIndex) => {
