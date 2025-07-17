@@ -1477,7 +1477,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
         {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
         <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full flex flex-col">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-96 flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">🎛️ Control Desk</h3>
             </div>
