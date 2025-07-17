@@ -1391,7 +1391,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   <button
                     onClick={handleSendObserverMessage}
                     disabled={!observerMessage.trim() || isObserverLoading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-2xl transition-colors duration-200 disabled:cursor-not-allowed"
                   >
                     {isObserverLoading ? 'Sending...' : 'Send'}
                   </button>
