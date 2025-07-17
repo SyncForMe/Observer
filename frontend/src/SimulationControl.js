@@ -988,22 +988,31 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
 
     const results = [];
-    [...conversations, ...observerMessages].forEach((conversation, conversationIndex) => {
+    
+    // Search observer messages
+    observerMessages.forEach((message, messageIndex) => {
+      if (message.message.toLowerCase().includes(term.toLowerCase())) {
+        results.push({
+          type: 'observer',
+          conversationIndex: -1,
+          messageIndex,
+          message
+        });
+      }
+    });
+    
+    // Search regular conversations
+    conversations.forEach((conversation, conversationIndex) => {
       if (conversation.messages) {
         conversation.messages.forEach((message, messageIndex) => {
           if (message.message.toLowerCase().includes(term.toLowerCase())) {
             results.push({
+              type: 'conversation',
               conversationIndex,
               messageIndex,
               message
             });
           }
-        });
-      } else if (conversation.message && conversation.message.toLowerCase().includes(term.toLowerCase())) {
-        results.push({
-          conversationIndex: -1,
-          messageIndex: conversationIndex,
-          message: conversation
         });
       }
     });
