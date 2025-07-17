@@ -1316,7 +1316,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                           <div
                             key={message.id || messageIndex}
                             ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
-                            className={`rounded-lg p-3 border-l-4 ${
+                            className={`rounded-2xl p-3 border-l-4 ${
                               message.agent_name === "Observer (You)"
                                 ? 'bg-blue-500/20 border-blue-500 shadow-lg'
                                 : isCurrentSearch 
