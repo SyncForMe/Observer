@@ -1136,7 +1136,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         
         {/* Agent List Section - 25% width on large screens (Left Position) */}
         <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[350px] md:min-h-[380px] lg:min-h-[420px] xl:min-h-[450px] 2xl:min-h-[480px]">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-96">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-white">🤖 Agent List</h3>
