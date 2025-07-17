@@ -1381,7 +1381,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     value={observerMessage}
                     onChange={(e) => setObserverMessage(e.target.value)}
                     placeholder="Enter observer message..."
-                    className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleSendObserverMessage();
