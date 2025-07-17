@@ -1370,7 +1370,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
             {/* Observer Input Section */}
             {showObserverChat && (
-              <div className="mt-4 p-4 bg-white/5 rounded-2xl border border-purple-500/30">
+              <div className="mt-2 p-4 bg-white/5 rounded-2xl border border-purple-500/30">
                 <h4 className="text-white font-medium mb-3 flex items-center space-x-2">
                   <span className="text-blue-400">👁️</span>
                   <span>Observer Control</span>
