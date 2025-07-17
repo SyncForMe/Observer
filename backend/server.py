@@ -448,6 +448,12 @@ async def get_usage():
 async def get_observer_messages(current_user: User = Depends(get_current_user)):
     """Get all observer messages for the current user"""
     messages = await db.observer_messages.find({"user_id": current_user.id}).sort("timestamp", -1).to_list(100)
+    
+    # Convert ObjectId to string for JSON serialization
+    for message in messages:
+        if '_id' in message:
+            message['_id'] = str(message['_id'])
+    
     return messages
 
 
