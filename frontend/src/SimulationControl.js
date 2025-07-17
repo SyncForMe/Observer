@@ -1288,7 +1288,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
             </div>
 
             {/* Conversations Display */}
-            <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+            <div className="flex-1 overflow-y-auto space-y-3">
               {conversations.length === 0 ? (
                 <div className="text-center py-8 space-y-4">
                   <div>
