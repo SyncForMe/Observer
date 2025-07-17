@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || import.meta.env.REACT_A
 const API = `${BACKEND_URL}/api`;
 
 // Profile Settings Modal Component
-export const ProfileSettingsModal = ({ isOpen, onClose, user, analyticsData, token }) => {
+export const ProfileSettingsModal = ({ isOpen, onClose, user, analyticsData, token, updateUser }) => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -123,6 +123,17 @@ export const ProfileSettingsModal = ({ isOpen, onClose, user, analyticsData, tok
       console.log('🔍 Save response:', response.data);
       if (response.data && response.data.success) {
         alert('✅ Profile updated successfully!');
+        
+        // Update the user context with the new data
+        if (updateUser) {
+          updateUser({
+            name: formData.name,
+            email: formData.email,
+            bio: formData.bio,
+            picture: profilePicture
+          });
+        }
+        
         onClose();
         // Don't reload the page to avoid potential null reference errors
         // window.location.reload();

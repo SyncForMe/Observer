@@ -215,16 +215,16 @@ const AppContent = () => {
   // Initialize state with safe defaults
   const [activeTab, setActiveTab] = useState(() => {
     try {
-      return localStorage.getItem('activeTab') || 'home';
+      return localStorage.getItem('activeTab') || 'about';
     } catch (error) {
       console.warn('Error accessing localStorage:', error);
-      return 'home';
+      return 'about';
     }
   });
   
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showAccountModals, setShowAccountModals] = useState(false);
-  const { user, token, logout } = useAuth() || {};
+  const { user, token, logout, updateUser } = useAuth() || {};
 
   // Safely persist active tab
   useEffect(() => {
@@ -239,15 +239,16 @@ const AppContent = () => {
 
   // Safe tab setter with validation
   const safeSetActiveTab = useCallback((tab) => {
-    const validTabs = ['home', 'simulation', 'agents', 'history', 'analytics', 'files', 'account'];
+    const validTabs = ['about', 'simulation', 'agents', 'conversations', 'documents', 'history', 'analytics', 'files', 'account'];
     if (validTabs.includes(tab)) {
       setActiveTab(tab);
     } else {
       console.warn('Invalid tab:', tab);
-      setActiveTab('home');
+      setActiveTab('about');
     }
   }, []);
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
+  const [showLibraryDropdown, setShowLibraryDropdown] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
   const accountButtonRef = useRef(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -272,13 +273,16 @@ const AppContent = () => {
       if (showAccountDropdown && event && event.target && !event.target.closest('.account-dropdown')) {
         setShowAccountDropdown(false);
       }
+      if (showLibraryDropdown && event && event.target && !event.target.closest('.library-dropdown')) {
+        setShowLibraryDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showAccountDropdown]);
+  }, [showAccountDropdown, showLibraryDropdown]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -293,16 +297,16 @@ const AppContent = () => {
             <nav className="hidden md:flex space-x-8">
               <button
                 onClick={() => {
-                  console.log('🔍 AppContent: Home tab clicked');
-                  setActiveTab('home');
+                  console.log('🔍 AppContent: About tab clicked');
+                  setActiveTab('about');
                 }}
                 className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
-                  activeTab === 'home' 
+                  activeTab === 'about' 
                     ? 'text-white bg-white/20' 
                     : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
-                🏠 Home
+                🏠 About
               </button>
               <button
                 onClick={() => {
@@ -317,45 +321,73 @@ const AppContent = () => {
               >
                 🔭 Observatory
               </button>
-              <button
-                onClick={() => {
-                  console.log('🔍 AppContent: Agents tab clicked');
-                  setActiveTab('agents');
-                }}
-                className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
-                  activeTab === 'agents' 
-                    ? 'text-white bg-white/20' 
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                🤖 Agent Library
-              </button>
-              <button
-                onClick={() => {
-                  console.log('🔍 AppContent: Conversations tab clicked');
-                  setActiveTab('conversations');
-                }}
-                className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
-                  activeTab === 'conversations' 
-                    ? 'text-white bg-white/20' 
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                💬 Conversations
-              </button>
-              <button
-                onClick={() => {
-                  console.log('🔍 AppContent: Documents tab clicked');
-                  setActiveTab('documents');
-                }}
-                className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
-                  activeTab === 'documents' 
-                    ? 'text-white bg-white/20' 
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                📄 Documents
-              </button>
+              
+              {/* Library Dropdown */}
+              <div className="relative library-dropdown">
+                <button
+                  onClick={() => {
+                    console.log('🔍 Library button clicked - toggling dropdown');
+                    setShowLibraryDropdown(!showLibraryDropdown);
+                  }}
+                  className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg flex items-center space-x-1 ${
+                    ['agents', 'conversations', 'documents'].includes(activeTab)
+                      ? 'text-white bg-white/20' 
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <span>📚 Library</span>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {/* Library Dropdown Menu */}
+                {showLibraryDropdown && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999]">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          console.log('🔍 Agent Library clicked');
+                          setActiveTab('agents');
+                          setShowLibraryDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2 ${
+                          activeTab === 'agents' ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                        }`}
+                      >
+                        <span>🤖</span>
+                        <span>Agent Library</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log('🔍 Conversations clicked');
+                          setActiveTab('conversations');
+                          setShowLibraryDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2 ${
+                          activeTab === 'conversations' ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                        }`}
+                      >
+                        <span>💬</span>
+                        <span>Conversations</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          console.log('🔍 Documents clicked');
+                          setActiveTab('documents');
+                          setShowLibraryDropdown(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-2 ${
+                          activeTab === 'documents' ? 'bg-gray-100 text-gray-900' : 'text-gray-700'
+                        }`}
+                      >
+                        <span>📄</span>
+                        <span>Documents</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </nav>
             
             {/* User Account Dropdown - WORKING VERSION */}
@@ -367,9 +399,24 @@ const AppContent = () => {
                 }}
                 className="flex items-center space-x-2 text-white hover:text-purple-200 transition-colors duration-200"
               >
-                <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-semibold">{user?.name?.[0] || 'U'}</span>
-                </div>
+                {user?.picture ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white/20 bg-purple-600">
+                    <img 
+                      src={user.picture} 
+                      alt={user.name || 'User'} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // Fallback to initial if image fails to load
+                        e.target.style.display = 'none';
+                        e.target.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center"><span class="text-sm font-semibold text-white">${user?.name?.[0] || 'U'}</span></div>`;
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-semibold">{user?.name?.[0] || 'U'}</span>
+                  </div>
+                )}
                 <span className="hidden sm:block text-sm font-medium">{user?.name || 'User'}</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -451,9 +498,9 @@ const AppContent = () => {
         
         <div style={{ minHeight: '400px' }}>
           {/* Simple content without AnimatePresence to test */}
-          {activeTab === 'home' && (
+          {activeTab === 'about' && (
             <div className="relative overflow-hidden">
-              {console.log('🔍 AppContent: Rendering optimized home content')}
+              {console.log('🔍 AppContent: Rendering optimized about content')}
               
               {/* Preload Critical Images */}
               <div style={{ display: 'none' }}>
@@ -1100,6 +1147,7 @@ const AppContent = () => {
         }}
         user={user}
         token={token}
+        updateUser={updateUser}
         analyticsData={{}} // Can be populated with actual analytics data later
       />
       

@@ -2837,8 +2837,28 @@ async def test_login():
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
-    """Get current user info"""
-    return UserResponse(**current_user.dict())
+    """Get current user info with profile data"""
+    try:
+        # Get base user data
+        user_data = current_user.dict()
+        
+        # Try to get profile data from user_profiles collection
+        profile_data = await db.user_profiles.find_one({"user_id": current_user.id})
+        
+        if profile_data:
+            # Merge profile data with user data
+            user_data.update({
+                "name": profile_data.get("name", user_data.get("name")),
+                "email": profile_data.get("email", user_data.get("email")),
+                "bio": profile_data.get("bio", user_data.get("bio", "")),
+                "picture": profile_data.get("picture", user_data.get("picture"))
+            })
+        
+        return UserResponse(**user_data)
+    except Exception as e:
+        logging.error(f"Error getting user profile: {e}")
+        # Fallback to base user data if profile fetch fails
+        return UserResponse(**current_user.dict())
 
 @api_router.post("/auth/logout")
 async def logout():

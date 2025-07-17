@@ -27,6 +27,7 @@
 - **⭐ Favorites System** - Star agents from the library for quick access
 - **🛠️ Created Agents** - Separate section for user-created agents
 - **Auto-Save Functionality** - Seamless saving of created agents to personal library
+- **One-Click Agent Addition** - Enhanced + button navigation to Agent Library
 
 ### ⚡ **Real-Time Simulation Engine**
 - **Live Conversations** between AI agents with natural, context-aware dialogue
@@ -47,10 +48,40 @@
 ### 🎨 **Modern User Experience**
 - **Professional Design** with glass morphism effects and gradient backgrounds
 - **Responsive Layout** optimized for desktop, tablet, and mobile devices
-- **Expandable Sidebar** with industry sectors and agent categories
+- **Streamlined Navigation** with organized Library dropdown containing Agent Library, Conversations, and Documents
+- **Enhanced Header** with instant-loading user avatars and real-time profile updates
 - **Advanced Search** with filtering by name, expertise, and archetype
 - **Smooth Animations** using Framer Motion for engaging interactions
 - **Intuitive Navigation** with clear visual hierarchy and user feedback
+
+### 🎯 **Enhanced Scenario Management**
+- **Persistent Scenario Display** in notification bar with expandable details
+- **Professional Text Formatting** with intelligent color coding and typography
+- **Smart Highlighting** - Red for critical terms, white bold for important entities
+- **Expandable Scenario Details** with custom scrollbar and clean layout
+- **Scenario Persistence** across page refreshes with localStorage caching
+- **Clean Control Interface** with streamlined scenario controls
+
+---
+
+## 🆕 **Latest Improvements**
+
+### **Enhanced Navigation & UX**
+- **Streamlined Header Navigation** - Reorganized navigation with "About" (renamed from Home) and consolidated Library dropdown
+- **Instant Avatar Loading** - User profile pictures now load instantly on page refresh using localStorage caching
+- **Real-Time Profile Updates** - Profile changes reflect immediately in the header without page refresh
+- **Improved Agent Library Access** - Enhanced + button in Agent List for seamless navigation to Agent Library
+
+### **Advanced Scenario Management**
+- **Persistent Scenario Display** - Scenario name now appears in notification bar when active
+- **Expandable Scenario Details** - Click to expand scenario for full context with professional formatting
+- **Smart Text Formatting** - Intelligent color coding (red for critical terms, white bold for important entities)
+- **Clean Interface** - Removed redundant scenario display from control desk for cleaner UI
+
+### **Backend Enhancements**
+- **Fixed Profile Persistence** - Profile updates now persist correctly across page refreshes
+- **Enhanced Data Merging** - Improved /auth/me endpoint to merge user data from multiple collections
+- **Instant Authentication** - localStorage caching ensures immediate user data display on page load
 
 ---
 

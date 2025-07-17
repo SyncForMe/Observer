@@ -22,8 +22,24 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Initialize token from localStorage
     const savedToken = localStorage.getItem('auth_token');
+    const savedUser = localStorage.getItem('auth_user');
+    
     if (savedToken) {
       setToken(savedToken);
+      
+      // If we have cached user data, set it immediately for instant loading
+      if (savedUser) {
+        try {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          console.log('🔍 AuthContext: Loaded cached user data for instant display');
+        } catch (error) {
+          console.error('Error parsing cached user data:', error);
+          localStorage.removeItem('auth_user');
+        }
+      }
+      
+      // Always fetch fresh data from backend (but user sees cached data immediately)
       checkAuthStatus(savedToken);
     } else {
       setLoading(false);
@@ -39,14 +55,20 @@ export const AuthProvider = ({ children }) => {
       if (response.data && response.data.id) {
         setUser(response.data);
         setToken(authToken);
+        
+        // Cache user data in localStorage for instant loading on next page load
+        localStorage.setItem('auth_user', JSON.stringify(response.data));
+        console.log('🔍 AuthContext: Cached fresh user data from backend');
       } else {
         localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
         setToken(null);
         setUser(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
       setToken(null);
       setUser(null);
     } finally {
@@ -73,6 +95,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     setToken(null);
     setUser(null);
   };
@@ -85,10 +108,15 @@ export const AuthProvider = ({ children }) => {
       
       if (response.data && response.data.access_token) {
         const newToken = response.data.access_token;
+        const userData = response.data.user;
+        
         localStorage.setItem('auth_token', newToken);
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        
         setToken(newToken);
-        setUser(response.data.user);
-        console.log('🔍 AuthContext: testLogin successful, user set:', response.data.user);
+        setUser(userData);
+        
+        console.log('🔍 AuthContext: testLogin successful, user set and cached:', userData);
         return { success: true };
       }
       console.log('🔍 AuthContext: testLogin failed - no access_token');
@@ -99,6 +127,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUserData) => {
+    console.log('🔍 AuthContext: Updating user data:', updatedUserData);
+    const newUserData = {
+      ...user,
+      ...updatedUserData
+    };
+    setUser(newUserData);
+    
+    // Cache the updated user data in localStorage
+    localStorage.setItem('auth_user', JSON.stringify(newUserData));
+    console.log('🔍 AuthContext: Cached updated user data to localStorage');
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -106,6 +147,7 @@ export const AuthProvider = ({ children }) => {
       login, 
       logout, 
       testLogin,
+      updateUser,
       loading,
       isAuthenticated: !!token && !!user 
     }}>

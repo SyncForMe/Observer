@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2025-01-17
+
+### 🎯 **Major UI/UX Enhancements**
+
+#### Added
+- **Streamlined Header Navigation**: Reorganized navigation with "About" (renamed from Home) and consolidated Library dropdown
+- **Library Dropdown**: Grouped Agent Library, Conversations, and Documents under unified "Library" section
+- **Instant Avatar Loading**: User profile pictures now load instantly on page refresh using localStorage caching
+- **Real-Time Profile Updates**: Profile changes reflect immediately in the header without page refresh
+- **Persistent Scenario Display**: Scenario name appears in notification bar when active
+- **Expandable Scenario Details**: Click to expand scenario for full context with professional formatting
+- **Smart Text Formatting**: Intelligent color coding (red for critical terms, white bold for important entities)
+- **Custom Scrollbar**: Professional scrolling for long scenario descriptions
+
+#### Changed
+- **Header Organization**: Cleaner navigation with only essential top-level items
+- **Profile Persistence**: Profile updates now persist correctly across page refreshes
+- **Agent Library Access**: Enhanced + button in Agent List for seamless navigation to Agent Library
+- **Scenario Display**: Removed redundant scenario display from control desk for cleaner UI
+
+#### Fixed
+- **Profile Avatar Loading**: Fixed 1-2 second delay when loading user avatars on page refresh
+- **Navigation Functionality**: Fixed + button in Agent List that wasn't properly opening Agent Library
+- **Data Persistence**: Fixed profile update persistence issue where changes were lost on page refresh
+- **Scenario Text Formatting**: Fixed HTML tag display issues in scenario descriptions
+
+### 🔧 **Backend Improvements**
+
+#### Added
+- **Enhanced Data Merging**: Improved /auth/me endpoint to merge user data from multiple collections
+- **localStorage Caching**: Implemented client-side caching for instant user data display
+- **Profile Data Consistency**: Enhanced profile update system to ensure data consistency
+
+#### Fixed
+- **Profile Update Persistence**: Fixed backend profile update to properly merge user data
+- **Authentication Flow**: Improved authentication flow to handle cached data properly
+- **Data Synchronization**: Fixed issues with profile data not syncing between collections
+
+---
+
 ## [1.5.0] - 2024-01-15
 
 ### 🎯 **Enhanced User Experience**

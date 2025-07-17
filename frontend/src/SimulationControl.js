@@ -19,7 +19,140 @@ const debounce = (func, wait) => {
   };
 };
 
-// Welcome messages for notification bar
+// Helper function to format scenario text for better readability
+const formatScenarioText = (text) => {
+  if (!text) return <p className="text-white/70 italic">No scenario details available</p>;
+  
+  // Split text into sentences and paragraphs
+  const sentences = text.split(/\.\s+/);
+  const paragraphs = [];
+  let currentParagraph = [];
+  
+  sentences.forEach((sentence, index) => {
+    if (sentence.trim()) {
+      // Add the period back except for the last sentence
+      const formattedSentence = index === sentences.length - 1 ? sentence : sentence + '.';
+      currentParagraph.push(formattedSentence);
+      
+      // Create paragraph breaks for longer texts (every 3-4 sentences)
+      if (currentParagraph.length >= 3 || sentence.length > 200) {
+        paragraphs.push(currentParagraph.join(' '));
+        currentParagraph = [];
+      }
+    }
+  });
+  
+  // Add any remaining sentences
+  if (currentParagraph.length > 0) {
+    paragraphs.push(currentParagraph.join(' '));
+  }
+  
+  // If no paragraphs were created, treat as single paragraph
+  if (paragraphs.length === 0) {
+    paragraphs.push(text);
+  }
+  
+  // Function to format individual text segments
+  const formatTextSegments = (text) => {
+    // Simple approach: split by words and apply very selective formatting
+    const words = text.split(/(\s+)/);
+    
+    return words.map((word, index) => {
+      if (!word.trim()) return word; // Return whitespace as-is
+      
+      // Clean word for pattern matching (remove punctuation for matching)
+      const cleanWord = word.replace(/[^\w\s-]/g, '');
+      const originalWord = word;
+      
+      // RED - Only for extremely critical/dangerous words
+      const criticalWords = /^(crisis|emergency|catastrophic|critical|urgent|breach|attack|failure|disaster|pandemic|outbreak|bioterrorism|terrorism|threat|danger|alert|warning|evacuation|lockdown|quarantine)$/i;
+      if (criticalWords.test(cleanWord)) {
+        return (
+          <span key={index} className="text-red-300 font-semibold">
+            {word}
+          </span>
+        );
+      }
+      
+      // BLUE - Removed number formatting (keeping numbers as regular white text)
+      // Numbers will now appear as regular white text
+      
+      // WHITE BOLD - For important names and organizations
+      
+      // Virus names and variants (H7N9-X, COVID-19, etc.)
+      if (/^[A-Z]\d+[A-Z]\d*(-[A-Z])?$|^COVID-\d+$|^H\d+N\d+(-[A-Z])?$/i.test(cleanWord)) {
+        return (
+          <span key={index} className="text-white font-bold">
+            {word}
+          </span>
+        );
+      }
+      
+      // Key organizations (acronyms)
+      const importantOrgs = /^(WHO|UN|EU|FDA|CDC|NASA|FBI|CIA|NATO|G20|NYSE|NASDAQ|ACE2)$/i;
+      if (importantOrgs.test(cleanWord)) {
+        return (
+          <span key={index} className="text-white font-bold">
+            {word}
+          </span>
+        );
+      }
+      
+      // Scientific/Technical terms
+      const techTerms = /^(bioengineering|zero-day|authentication|infrastructure|cybersecurity|antiviral|vaccine|genome|sequencing|mutations|receptor|transmissibility|asymptomatic|mortality|bioterrorism)$/i;
+      if (techTerms.test(cleanWord)) {
+        return (
+          <span key={index} className="text-white font-bold">
+            {word}
+          </span>
+        );
+      }
+      
+      // Company names with suffixes (simplified)
+      if (/^[A-Z][a-zA-Z]+(?:Tech|Corp|Inc|Ltd|LLC|Industries|Group|Company|Corporation|Technologies|Systems|Solutions)$/i.test(cleanWord)) {
+        return (
+          <span key={index} className="text-white font-bold">
+            {word}
+          </span>
+        );
+      }
+      
+      // Proper nouns (capitalized words) that are likely important names
+      // Only if they're substantial words (4+ characters) and not common words
+      const commonWords = /^(The|This|That|With|From|Into|Over|Under|Above|Below|After|Before|During|While|Since|Until|When|Where|What|Which|Who|Why|How|And|But|Or|So|Yet|For|Nor|As|If|Because|Although|Though|Unless|Whether|Initial|Unlike|Within|Among|Between|Through|Upon|Across|Against|Around|Behind|Beside|Beyond|Inside|Outside|Toward|Without|According|Another|Several|Various|Different|Similar|Current|Recent|Future|Next|Previous|Following|Final|Total|Overall|General|Specific|Particular|Certain|Possible|Potential|Actual|Real|True|False|Right|Wrong|Good|Bad|New|Old|Young|Large|Small|Big|Little|Long|Short|High|Low|Fast|Slow|Early|Late|First|Last|Best|Worst|Most|Least|More|Less|Many|Few|All|Some|Each|Every|Any|No|None|Both|Either|Neither|Other|Same|Different)$/i;
+      
+      if (cleanWord.length >= 4 && /^[A-Z][a-zA-Z]+$/.test(cleanWord) && !commonWords.test(cleanWord)) {
+        return (
+          <span key={index} className="text-white font-bold">
+            {word}
+          </span>
+        );
+      }
+      
+      // Quoted text (keep italic styling)
+      if (word.includes('"') && word.length > 3) {
+        return (
+          <span key={index} className="text-white/90 italic">
+            {word}
+          </span>
+        );
+      }
+      
+      // Return regular text for everything else
+      return word;
+    });
+  };
+  
+  return (
+    <div className="space-y-4">
+      {paragraphs.map((paragraph, index) => (
+        <p key={index} className="text-white/85 text-sm leading-relaxed">
+          {formatTextSegments(paragraph)}
+        </p>
+      ))}
+    </div>
+  );
+};
 const WELCOME_MESSAGES = [
   "Welcome, Observer",
   "Hey, Observer is back! Agents, rejoice!",
@@ -273,6 +406,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const [isObserverLoading, setIsObserverLoading] = useState(false);
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationText, setNotificationText] = useState('');
+  const [scenarioExpanded, setScenarioExpanded] = useState(false);
   const searchRefs = useRef([]);
   const messagesEndRef = useRef(null);
   const fetchingRef = useRef(false); // Performance optimization: Prevent duplicate fetches
@@ -462,11 +596,14 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   }, [isRunning, isPaused, agents.length]); // Dependencies: when these change, restart/stop interval
 
   const showNotification = (text) => {
-    setNotificationText(text);
-    setNotificationVisible(true);
-    setTimeout(() => {
-      setNotificationVisible(false);
-    }, 8000);
+    // Only show notification if no scenario is currently set
+    if (!scenarioName) {
+      setNotificationText(text);
+      setNotificationVisible(true);
+      setTimeout(() => {
+        setNotificationVisible(false);
+      }, 8000);
+    }
   };
 
   // Optimized simulation control with optimistic updates
@@ -908,10 +1045,41 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   return (
     <>
       <div className="relative">
-        {/* Notification Bar - Always reserve space, invisible background */}
+        {/* Notification Bar - Enhanced with Scenario Display */}
         <div className="mb-1 h-[2rem] flex items-center justify-center -mt-1">
           <AnimatePresence>
-            {notificationVisible && (
+            {/* Show scenario info when scenario is set */}
+            {scenarioName && (
+              <motion.div
+                initial={{ opacity: 0, x: 400 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -400 }}
+                transition={{
+                  duration: 1.2,
+                  ease: "easeOut"
+                }}
+                className="flex items-center space-x-2 text-white text-lg font-semibold"
+              >
+                <span>📋 {scenarioName}</span>
+                <button
+                  onClick={() => setScenarioExpanded(!scenarioExpanded)}
+                  className="text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+                  title={scenarioExpanded ? "Collapse scenario details" : "Expand scenario details"}
+                >
+                  <svg 
+                    className={`w-4 h-4 transition-transform duration-200 ${scenarioExpanded ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </motion.div>
+            )}
+            
+            {/* Show welcome message when no scenario is set */}
+            {!scenarioName && notificationVisible && (
               <motion.div
                 initial={{ opacity: 0, x: 400 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -927,6 +1095,40 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
             )}
           </AnimatePresence>
         </div>
+        
+        {/* Expanded Scenario Details */}
+        <AnimatePresence>
+          {scenarioExpanded && scenarioName && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mb-4 bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 shadow-lg"
+            >
+              <div className="flex items-start space-x-4">
+                <div className="text-3xl flex-shrink-0">📋</div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xl font-bold text-white mb-4 border-b border-white/20 pb-2">
+                    {scenarioName}
+                  </h4>
+                  <div className="max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+                    {formatScenarioText(scenario || customScenario)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setScenarioExpanded(false)}
+                  className="text-white/60 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10 flex-shrink-0"
+                  title="Close scenario details"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Main Grid Layout - 3 Cards */}
@@ -959,13 +1161,9 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 
                 <button
                   onClick={() => {
-                    // Click the Agent Library tab in the navigation
-                    const tabs = document.querySelectorAll('a, button');
-                    for (const tab of tabs) {
-                      if (tab.textContent && tab.textContent.toLowerCase().includes('agent library')) {
-                        tab.click();
-                        break;
-                      }
+                    // Navigate to Agent Library tab using the setActiveTab prop
+                    if (setActiveTab) {
+                      setActiveTab('agents');
                     }
                   }}
                   className="w-6 h-6 bg-green-600 hover:bg-green-700 text-white rounded-full flex items-center justify-center transition-colors text-sm"
@@ -1364,13 +1562,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   </div>
                 )}
                 
-                {/* Current Scenario Display */}
-                {!showSetScenario && (simulationState?.scenario || scenario) && (
-                  <div className="bg-white/5 rounded-lg p-3 animate-fadeIn">
-                    <h4 className="text-white font-medium text-sm mb-2">Current Scenario:</h4>
-                    <p className="text-white/80 text-sm">{simulationState?.scenario_name || scenarioName || 'Custom Scenario'}</p>
-                  </div>
-                )}
+                {/* Current Scenario Display - REMOVED since scenario name is shown in notification bar */}
               </div>
             </div>
 
