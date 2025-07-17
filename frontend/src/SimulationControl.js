@@ -1269,7 +1269,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   <div className="flex space-x-1">
                     <button
                       onClick={() => navigateSearch('prev')}
-                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs"
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs"
                     >
                       ↑
                     </button>
