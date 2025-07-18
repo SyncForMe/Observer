@@ -984,6 +984,25 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
+  const handleGenerateReport = async () => {
+    try {
+      setReportLoading(true);
+      setShowReport(true);
+      setReportData(''); // Clear previous report
+      
+      const response = await axios.post(`${API}/simulation/generate-summary`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setReportData(response.data.summary || 'No report data available');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      setReportData('Error generating report: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   const performSearch = (term) => {
     if (!term.trim()) {
       setSearchResults([]);
