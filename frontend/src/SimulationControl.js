@@ -1117,6 +1117,28 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     });
   };
 
+  // Helper function to calculate day and time period from rounds
+  const calculateDayAndTime = (roundNumber) => {
+    if (roundNumber === 0) return { day: 1, period: "Morning", roundInPeriod: 1 };
+    
+    const day = Math.floor((roundNumber - 1) / 9) + 1;
+    const roundInDay = ((roundNumber - 1) % 9) + 1;
+    
+    let period, roundInPeriod;
+    if (roundInDay <= 3) {
+      period = "Morning";
+      roundInPeriod = roundInDay;
+    } else if (roundInDay <= 6) {
+      period = "Afternoon";
+      roundInPeriod = roundInDay - 3;
+    } else {
+      period = "Evening";
+      roundInPeriod = roundInDay - 6;
+    }
+    
+    return { day, period, roundInPeriod };
+  };
+
   // Helper function to render markdown bold text with search highlighting
   const renderMarkdownBoldWithSearch = (text, searchTerm) => {
     if (!text) return '';
