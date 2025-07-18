@@ -5149,11 +5149,34 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     
     # Get conversation count for round numbering (user-specific)
     conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
+    round_number = conversation_count + 1
+    
+    # Calculate day and time period based on round number
+    def calculate_day_and_time_period(round_num):
+        if round_num <= 0:
+            return "Day 1 - Morning"
+        
+        day = ((round_num - 1) // 9) + 1
+        round_in_day = ((round_num - 1) % 9) + 1
+        
+        if round_in_day <= 3:
+            period = "Morning"
+            round_in_period = round_in_day
+        elif round_in_day <= 6:
+            period = "Afternoon"
+            round_in_period = round_in_day - 3
+        else:
+            period = "Evening"
+            round_in_period = round_in_day - 6
+        
+        return f"Day {day} - {period}"
+    
+    time_period = calculate_day_and_time_period(round_number)
     
     # Create conversation round  
     conversation_round = ConversationRound(
-        round_number=conversation_count + 1,
-        time_period="Day 1 - morning",
+        round_number=round_number,
+        time_period=time_period,
         scenario=scenario,
         scenario_name=scenario_name,
         messages=messages,
