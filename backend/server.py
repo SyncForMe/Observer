@@ -5048,104 +5048,106 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Generate messages with REAL Gemini API calls first, fallback to smart responses if needed
     messages = []
     
-    for i, agent in enumerate(agent_objects):
-        try:
-            # First, try to generate response with real Gemini API
-            print(f"🔥 DEBUG: Attempting Gemini API call for {agent.name}")
+    # Generate 3 messages per agent (3 turns per round)
+    for turn in range(3):  # Each agent gets 3 turns per round
+        for i, agent in enumerate(agent_objects):
+            try:
+                # First, try to generate response with real Gemini API
+                print(f"🔥 DEBUG: Attempting Gemini API call for {agent.name} (Turn {turn + 1})")
+                
+                # Build rich conversation context with previous work and documents
+                if turn == 0 and i == 0:
+                    # First speaker of first turn - include previous conversation context and existing documents
+                    previous_context = ""
+                    
+                    # Get recent conversations for context
+                    recent_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(3).to_list(3)
+                    if recent_conversations:
+                        previous_context += "PREVIOUS TEAM DISCUSSIONS:\n"
+                        for conv in recent_conversations:
+                            prev_messages = conv.get('messages', [])
+                            if prev_messages:
+                                key_points = " | ".join([msg.get('message', '')[:80] + "..." for msg in prev_messages[:2]])
+                                previous_context += f"- {conv.get('scenario_name', 'Discussion')}: {key_points}\n"
+                        previous_context += "\n"
+                    
+                    # Get existing documents for context
+                    existing_documents = await db.documents.find({"user_id": current_user.id}).sort("updated_at", -1).limit(5).to_list(5)
+                    if existing_documents:
+                        previous_context += "EXISTING TEAM DOCUMENTS:\n"
+                        for doc in existing_documents:
+                            previous_context += f"- {doc.get('title', 'Untitled')} ({doc.get('category', 'Document')}): {doc.get('description', 'No description')}\n"
+                        previous_context += "\n"
+                    
+                    conversation_context = f"{previous_context}{observer_context}You're starting a discussion about: {scenario}\n\nBuild on previous work where relevant and drive toward concrete decisions and actions. Pay special attention to any Observer directives - they are your project lead/CEO."
+                else:
+                    # Build context from what others have said so far
+                    conversation_context = "CURRENT DISCUSSION:\n\n"
+                    for j, msg in enumerate(messages):
+                        conversation_context += f"{msg.agent_name}: \"{msg.message}\"\n\n"
+                    conversation_context += f"{observer_context}Respond to the discussion above. Look for opportunities to:\n- Synthesize what's been said\n- Propose concrete next steps\n- Call for decisions or votes\n- Commit to creating/updating documents\n\nRemember: The Observer is your project lead/CEO - their guidance should heavily influence your response."
+                
+                # Build conversation history in the format expected by generate_agent_response
+                conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
+                
+                response = await llm_manager.generate_agent_response(
+                    agent=agent,
+                    scenario=scenario,
+                    other_agents=[a for a in agent_objects if a.id != agent.id],
+                    context=conversation_context,  # Use our rich context instead of generic context
+                    conversation_history=conversation_history_msgs,
+                    language_instruction=language_instruction,
+                    existing_documents=existing_documents,
+                    simulation_state=state
+                )
+                
+                # Clean up response - remove agent name prefix if present
+                message_text = response.replace(f"{agent.name}: ", "").strip()
+                print(f"✅ GEMINI API SUCCESS for {agent.name}: {message_text[:100]}...")
+                
+            except Exception as e:
+                print(f"❌ GEMINI API FAILED for {agent.name}: {str(e)[:100]}...")
+                
+                # Fall back to smart conversation generator
+                agent_dict = {
+                    "name": agent.name,
+                    "archetype": agent.archetype,
+                    "expertise": agent.expertise,
+                    "background": agent.background,
+                    "personality": agent.personality.dict() if agent.personality else {}
+                }
+                
+                message_text = conversation_gen.generate_contextual_response(
+                    agent=agent_dict,
+                    scenario=scenario,
+                    scenario_name=scenario_name,
+                    conversation_history=[{"agent_name": msg.agent_name, "message": msg.message} for msg in messages],
+                    turn_number=len(messages)  # Use total message count instead of i
+                )
+                print(f"🔄 Using smart fallback for {agent.name}: {message_text[:100]}...")
             
-            # Build rich conversation context with previous work and documents
-            if i == 0:
-                # First speaker - include previous conversation context and existing documents
-                previous_context = ""
-                
-                # Get recent conversations for context
-                recent_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(3).to_list(3)
-                if recent_conversations:
-                    previous_context += "PREVIOUS TEAM DISCUSSIONS:\n"
-                    for conv in recent_conversations:
-                        prev_messages = conv.get('messages', [])
-                        if prev_messages:
-                            key_points = " | ".join([msg.get('message', '')[:80] + "..." for msg in prev_messages[:2]])
-                            previous_context += f"- {conv.get('scenario_name', 'Discussion')}: {key_points}\n"
-                    previous_context += "\n"
-                
-                # Get existing documents for context
-                existing_documents = await db.documents.find({"user_id": current_user.id}).sort("updated_at", -1).limit(5).to_list(5)
-                if existing_documents:
-                    previous_context += "EXISTING TEAM DOCUMENTS:\n"
-                    for doc in existing_documents:
-                        previous_context += f"- {doc.get('title', 'Untitled')} ({doc.get('category', 'Document')}): {doc.get('description', 'No description')}\n"
-                    previous_context += "\n"
-                
-                conversation_context = f"{previous_context}{observer_context}You're starting a discussion about: {scenario}\n\nBuild on previous work where relevant and drive toward concrete decisions and actions. Pay special attention to any Observer directives - they are your project lead/CEO."
+            # Determine mood based on agent archetype and message content
+            if agent.archetype == "optimist":
+                mood = "enthusiastic"
+            elif agent.archetype == "skeptic":
+                mood = "cautious"
+            elif agent.archetype == "scientist":
+                mood = "analytical"
+            elif agent.archetype == "leader":
+                mood = "strategic"
+            elif agent.archetype == "artist":
+                mood = "creative"
             else:
-                # Build context from what others have said so far
-                conversation_context = "CURRENT DISCUSSION:\n\n"
-                for j, msg in enumerate(messages):
-                    conversation_context += f"{msg.agent_name}: \"{msg.message}\"\n\n"
-                conversation_context += f"{observer_context}Respond to the discussion above. Look for opportunities to:\n- Synthesize what's been said\n- Propose concrete next steps\n- Call for decisions or votes\n- Commit to creating/updating documents\n\nRemember: The Observer is your project lead/CEO - their guidance should heavily influence your response."
+                mood = "engaged"
             
-            # Build conversation history in the format expected by generate_agent_response
-            conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
-            
-            response = await llm_manager.generate_agent_response(
-                agent=agent,
-                scenario=scenario,
-                other_agents=[a for a in agent_objects if a.id != agent.id],
-                context=conversation_context,  # Use our rich context instead of generic context
-                conversation_history=conversation_history_msgs,
-                language_instruction=language_instruction,
-                existing_documents=existing_documents,
-                simulation_state=state
+            message = ConversationMessage(
+                agent_name=agent.name,
+                agent_id=agent.id,
+                message=message_text,
+                mood=mood,
+                timestamp=datetime.utcnow()
             )
-            
-            # Clean up response - remove agent name prefix if present
-            message_text = response.replace(f"{agent.name}: ", "").strip()
-            print(f"✅ GEMINI API SUCCESS for {agent.name}: {message_text[:100]}...")
-            
-        except Exception as e:
-            print(f"❌ GEMINI API FAILED for {agent.name}: {str(e)[:100]}...")
-            
-            # Fall back to smart conversation generator
-            agent_dict = {
-                "name": agent.name,
-                "archetype": agent.archetype,
-                "expertise": agent.expertise,
-                "background": agent.background,
-                "personality": agent.personality.dict() if agent.personality else {}
-            }
-            
-            message_text = conversation_gen.generate_contextual_response(
-                agent=agent_dict,
-                scenario=scenario,
-                scenario_name=scenario_name,
-                conversation_history=[{"agent_name": msg.agent_name, "message": msg.message} for msg in messages],
-                turn_number=i
-            )
-            print(f"🔄 Using smart fallback for {agent.name}: {message_text[:100]}...")
-        
-        # Determine mood based on agent archetype and message content
-        if agent.archetype == "optimist":
-            mood = "enthusiastic"
-        elif agent.archetype == "skeptic":
-            mood = "cautious"
-        elif agent.archetype == "scientist":
-            mood = "analytical"
-        elif agent.archetype == "leader":
-            mood = "strategic"
-        elif agent.archetype == "artist":
-            mood = "creative"
-        else:
-            mood = "engaged"
-        
-        message = ConversationMessage(
-            agent_name=agent.name,
-            agent_id=agent.id,
-            message=message_text,
-            mood=mood,
-            timestamp=datetime.utcnow()
-        )
-        messages.append(message)
+            messages.append(message)
     
     # Get conversation count for round numbering (user-specific)
     conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
