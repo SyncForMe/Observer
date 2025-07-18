@@ -1377,7 +1377,11 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></div>
                 )}
                 <span className="text-white/60 text-sm">
-                  {conversations.length} rounds, {observerMessages.length} messages
+                  {(() => {
+                    const currentRound = conversations.length + 1;
+                    const { day, period } = calculateDayAndTime(currentRound);
+                    return `Day ${day}, ${period}`;
+                  })()}
                 </span>
               </div>
             </div>
