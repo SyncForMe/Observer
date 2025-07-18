@@ -1437,7 +1437,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                             </span>
                           </div>
                           <p className="text-sm leading-relaxed text-blue-100 font-medium">
-                            {message.message}
+                            {renderMarkdownBold(message.message)}
                           </p>
                         </div>
                       </div>
