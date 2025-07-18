@@ -1145,7 +1145,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         
         {/* Agent List Section - 25% width on large screens (Left Position) */}
         <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px]">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-white">🤖 Agent List</h3>
@@ -1183,60 +1183,63 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               </div>
             </div>
             
-            {agents.length > 0 ? (
-              <div className="space-y-3 mb-4">
-                {agents.map((agent) => (
-                  <div
-                    key={agent.id}
-                    className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors group"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          {agent.avatar_url ? (
-                            <img src={agent.avatar_url} alt={agent.name} className="w-full h-full rounded-full object-cover" />
-                          ) : (
-                            <span className="text-white text-sm font-semibold">
-                              {agent.name?.charAt(0) || '🤖'}
-                            </span>
-                          )}
+            {/* Agent List Display with Scroll */}
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {agents.length > 0 ? (
+                <>
+                  {agents.map((agent) => (
+                    <div
+                      key={agent.id}
+                      className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                            {agent.avatar_url ? (
+                              <img src={agent.avatar_url} alt={agent.name} className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              <span className="text-white text-sm font-semibold">
+                                {agent.name?.charAt(0) || '🤖'}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-white font-medium text-sm">{agent.name}</h4>
+                            <p className="text-white/60 text-xs capitalize">{agent.archetype}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-white font-medium text-sm">{agent.name}</h4>
-                          <p className="text-white/60 text-xs capitalize">{agent.archetype}</p>
+                        
+                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditAgent(agent)}
+                            className="w-6 h-6 text-white/60 hover:text-white rounded transition-colors flex items-center justify-center text-xs"
+                            title="Edit Agent"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleRemoveAgent(agent.id)}
+                            className="w-6 h-6 text-white/60 hover:text-red-400 rounded transition-colors flex items-center justify-center text-xs"
+                            title="Remove Agent"
+                          >
+                            🗑️
+                          </button>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditAgent(agent)}
-                          className="w-6 h-6 text-white/60 hover:text-white rounded transition-colors flex items-center justify-center text-xs"
-                          title="Edit Agent"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleRemoveAgent(agent.id)}
-                          className="w-6 h-6 text-white/60 hover:text-red-400 rounded transition-colors flex items-center justify-center text-xs"
-                          title="Remove Agent"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+                      <p className="text-white/70 text-xs line-clamp-2 mb-2">
+                        {agent.background || agent.expertise}
+                      </p>
                     </div>
-                    
-                    <p className="text-white/70 text-xs line-clamp-2 mb-2">
-                      {agent.background || agent.expertise}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-white/60 text-sm mb-4">No Agents in List</p>
-                <p className="text-white/40 text-xs mb-4">Click + to add agents from library</p>
-              </div>
-            )}
+                  ))}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-white/60 text-sm mb-4">No Agents in List</p>
+                  <p className="text-white/40 text-xs mb-4">Click + to add agents from library</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
