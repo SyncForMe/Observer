@@ -153,6 +153,24 @@ const formatScenarioText = (text) => {
     </div>
   );
 };
+
+// Helper function to render markdown bold text
+const renderMarkdownBold = (text) => {
+  if (!text) return '';
+  
+  // Split text by **bold** patterns and render accordingly
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      // Remove the ** and render as bold
+      const boldText = part.slice(2, -2);
+      return <strong key={index} className="font-bold">{boldText}</strong>;
+    }
+    return part;
+  });
+};
+
 const WELCOME_MESSAGES = [
   "Welcome, Observer",
   "Hey, Observer is back! Agents, rejoice!",
