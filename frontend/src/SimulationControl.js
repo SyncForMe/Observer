@@ -1738,6 +1738,45 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         </div>
       </div>
 
+      {/* Separate Report Card - Only visible when report is generated */}
+      {reportCardVisible && (
+        <div className="mt-6 flex justify-center">
+          <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2 w-full max-w-4xl">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-white">📊 Weekly Report</h3>
+                <button
+                  onClick={() => setReportCardExpanded(!reportCardExpanded)}
+                  className="text-white/60 hover:text-white transition-all duration-200"
+                  style={{ transform: reportCardExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Report Content */}
+              {reportCardExpanded && (
+                <div className="flex-1 overflow-y-auto">
+                  {reportLoading ? (
+                    <div className="flex items-center justify-center p-8">
+                      <div className="text-white/60">Generating comprehensive report...</div>
+                    </div>
+                  ) : (
+                    <div className="bg-white/5 rounded-lg p-4 max-h-96 overflow-y-auto">
+                      <div className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">
+                        {reportData || 'No report data available'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Custom Start Fresh Confirmation Modal */}
       {showStartFreshModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
