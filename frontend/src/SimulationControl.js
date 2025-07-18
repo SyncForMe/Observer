@@ -1121,6 +1121,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const calculateDayAndTime = (roundNumber) => {
     if (roundNumber === 0) return { day: 1, period: "Morning", roundInPeriod: 1 };
     
+    // Each round now has 3 messages per agent, so we need to calculate based on total messages
     const day = Math.floor((roundNumber - 1) / 9) + 1;
     const roundInDay = ((roundNumber - 1) % 9) + 1;
     
