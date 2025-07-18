@@ -2510,7 +2510,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                               loading="eager"
                               decoding="async"
                               style={{
-                                imageRendering: 'crisp-edges',
                                 imageRendering: '-webkit-optimize-contrast',
                               }}
                               onError={(e) => {
