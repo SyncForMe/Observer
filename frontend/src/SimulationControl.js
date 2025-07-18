@@ -400,7 +400,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const [showObserverChat, setShowObserverChat] = useState(false);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   const [showStartFreshModal, setShowStartFreshModal] = useState(false);
-  const [showSetScenario, setShowSetScenario] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [reportData, setReportData] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
