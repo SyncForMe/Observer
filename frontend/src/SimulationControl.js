@@ -1544,7 +1544,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           </div>
           
           {/* Control Buttons - Outside of Live Conversations card but in same column */}
-          <div className="mt-2.5">
+          <div className="mt-1.5">
             <div className="grid grid-cols-4 gap-1 py-3 max-w-xs mx-auto">
               {/* Play/Pause Button */}
               <div className="flex flex-col items-center group">
