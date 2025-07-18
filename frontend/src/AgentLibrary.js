@@ -3218,24 +3218,28 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               </button>
               
               <div className="flex items-center space-x-4">
-                <img
-                  src={selectedAgentDetails.avatar}
-                  alt={selectedAgentDetails.name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-white"
-                  loading="eager"
-                  style={{
-                    imageRendering: 'crisp-edges',
-                  }}
-                  onError={(e) => {
-                    e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="32" cy="32" r="32" fill="#E5E7EB"/>
-                        <circle cx="32" cy="26" r="10" fill="#9CA3AF"/>
-                        <path d="M10 56c0-12.15 9.85-22 22-22s22 9.85 22 22" fill="#9CA3AF"/>
-                      </svg>
-                    `)}`;
-                  }}
-                />
+                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-white">
+                  <img
+                    src={selectedAgentDetails.avatar}
+                    alt={selectedAgentDetails.name}
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                    style={{
+                      imageRendering: 'crisp-edges',
+                      minWidth: '100%',
+                      minHeight: '100%'
+                    }}
+                    onError={(e) => {
+                      e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="32" cy="32" r="32" fill="#E5E7EB"/>
+                          <circle cx="32" cy="26" r="10" fill="#9CA3AF"/>
+                          <path d="M10 56c0-12.15 9.85-22 22-22s22 9.85 22 22" fill="#9CA3AF"/>
+                        </svg>
+                      `)}`;
+                    }}
+                  />
+                </div>
                 <div>
                   <h3 className="text-xl font-bold">{selectedAgentDetails.name}</h3>
                   <p className="text-blue-100">{selectedAgentDetails.title || "Medical Professional"}</p>
