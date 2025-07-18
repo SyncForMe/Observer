@@ -1,9 +1,112 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import axios from 'axios';
 import AgentCreateModal from './AgentCreateModal';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
+
+// Image preloading and caching system - now using global preloader
+const ImageCache = window.GlobalAvatarPreloader || {
+  cache: new Map(),
+  
+  preload(src) {
+    return new Promise((resolve, reject) => {
+      if (this.cache.has(src)) {
+        resolve(this.cache.get(src));
+        return;
+      }
+      
+      const img = new Image();
+      img.onload = () => {
+        this.cache.set(src, img);
+        resolve(img);
+      };
+      img.onerror = reject;
+      img.src = src;
+    });
+  },
+  
+  preloadBatch(urls) {
+    return Promise.allSettled(urls.map(url => this.preload(url)));
+  },
+  
+  isLoaded(src) {
+    return this.cache.has(src);
+  }
+};
+
+// Optimized Avatar component with instant loading
+const OptimizedAvatar = ({ src, alt, className, size = 64, onError }) => {
+  const [isLoaded, setIsLoaded] = useState(ImageCache.isLoaded(src));
+  const [hasError, setHasError] = useState(false);
+  const imgRef = useRef(null);
+  
+  useEffect(() => {
+    if (!src) return;
+    
+    // If already cached, show immediately
+    if (ImageCache.isLoaded(src)) {
+      setIsLoaded(true);
+      return;
+    }
+    
+    // Otherwise preload the image
+    ImageCache.preload(src)
+      .then(() => {
+        setIsLoaded(true);
+      })
+      .catch(() => {
+        setHasError(true);
+        if (onError) onError();
+      });
+  }, [src, onError]);
+  
+  const fallbackSvg = `data:image/svg+xml,${encodeURIComponent(`
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${size/2}" cy="${size/2}" r="${size/2}" fill="#E5E7EB"/>
+      <circle cx="${size/2}" cy="${size/2 * 0.75}" r="${size/4}" fill="#9CA3AF"/>
+      <path d="M${size/6} ${size * 0.875}c0-${size/4} ${size/4}-${size/2} ${size/2}-${size/2}s${size/2} ${size/4} ${size/2} ${size/2}" fill="#9CA3AF"/>
+    </svg>
+  `)}`;
+  
+  if (hasError || !src) {
+    return (
+      <div className={`${className} bg-gray-200 flex items-center justify-center`}>
+        <img src={fallbackSvg} alt={alt} className="w-full h-full" />
+      </div>
+    );
+  }
+  
+  return (
+    <div className={`${className} relative overflow-hidden`}>
+      {/* Skeleton loader */}
+      {!isLoaded && (
+        <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-full" />
+      )}
+      
+      {/* Actual image */}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${
+          isLoaded ? 'opacity-100' : 'opacity-0'
+        }`}
+        onLoad={() => setIsLoaded(true)}
+        onError={() => {
+          setHasError(true);
+          if (onError) onError();
+        }}
+        loading="eager"
+        style={{
+          imageRendering: 'crisp-edges',
+          minWidth: '100%',
+          minHeight: '100%'
+        }}
+      />
+    </div>
+  );
+};
 
 const healthcareCategories = {
   medical: {
@@ -1477,6 +1580,22 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     }
   }, [token]);
 
+  // Monitor global preloading status
+  useEffect(() => {
+    const checkPreloadStatus = () => {
+      if (window.GlobalAvatarPreloader) {
+        const { preloadCompleted, isPreloading } = window.GlobalAvatarPreloader;
+        console.log(`🖼️ Agent Library: Global preloading status - completed: ${preloadCompleted}, in progress: ${isPreloading}`);
+      }
+    };
+    
+    checkPreloadStatus();
+    
+    // Check status periodically
+    const interval = setInterval(checkPreloadStatus, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchSavedAgents = async () => {
     if (!token) return;
     setLoadingSavedAgents(true);
@@ -2063,19 +2182,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                       <div key={agent.id} className="group bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-300 transition-all duration-300 hover:-translate-y-1">
                         <div className="flex items-start space-x-4">
                           <div className="relative">
-                            <img
+                            <OptimizedAvatar
                               src={agent.avatar}
                               alt={agent.name}
-                              className="w-16 h-16 rounded-full object-cover ring-2 ring-purple-100 group-hover:ring-purple-300 transition-all"
-                              onError={(e) => {
-                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                  <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="32" cy="32" r="32" fill="#E5E7EB"/>
-                                    <circle cx="32" cy="24" r="10" fill="#9CA3AF"/>
-                                    <path d="M10 56c0-12.15 9.85-22 22-22s22 9.85 22 22" fill="#9CA3AF"/>
-                                  </svg>
-                                `)}`;
-                              }}
+                              className="w-16 h-16 rounded-full ring-2 ring-purple-100 group-hover:ring-purple-300 transition-all"
+                              size={64}
                             />
                             <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white flex items-center justify-center">
                               <span className="text-xs">✓</span>
@@ -2187,19 +2298,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                       <div className="space-y-2 mb-4">
                         {team.agents.slice(0, 3).map((agent, index) => (
                           <div key={agent.id} className="flex items-center space-x-3 text-sm">
-                            <img
+                            <OptimizedAvatar
                               src={agent.avatar}
                               alt={agent.name}
-                              className="w-8 h-8 rounded-full object-cover"
-                              onError={(e) => {
-                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="16" cy="16" r="16" fill="#E5E7EB"/>
-                                    <circle cx="16" cy="12" r="5" fill="#9CA3AF"/>
-                                    <path d="M5 28c0-6.08 4.92-11 11-11s11 4.92 11 11" fill="#9CA3AF"/>
-                                  </svg>
-                                `)}`;
-                              }}
+                              className="w-8 h-8 rounded-full"
+                              size={32}
                             />
                             <span className="text-gray-700 truncate">{agent.name}</span>
                           </div>
@@ -2314,25 +2417,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                         <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                           <div className="p-4">
                             <div className="flex items-start space-x-3">
-                              <img
-                                src={agent.avatar_url || `data:image/svg+xml,${encodeURIComponent(`
-                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                    <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                    <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                  </svg>
-                                `)}`}
+                              <OptimizedAvatar
+                                src={agent.avatar_url}
                                 alt={agent.name}
-                                className="w-12 h-12 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                      <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                      <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                    </svg>
-                                  `)}`;
-                                }}
+                                className="w-12 h-12 rounded-full"
+                                size={48}
                               />
                               <div className="flex-1">
                                 <div className="flex items-start justify-between">
@@ -2396,19 +2485,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                     <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                       <div className="p-4">
                         <div className="flex items-start space-x-3">
-                          <img
+                          <OptimizedAvatar
                             src={agent.avatar}
                             alt={agent.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                            onError={(e) => {
-                              e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                  <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                  <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                </svg>
-                              `)}`;
-                            }}
+                            className="w-12 h-12 rounded-full"
+                            size={48}
                           />
                           <div className="flex-1">
                             <h4 className="font-semibold text-gray-800">{agent.name}</h4>
@@ -2553,19 +2634,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                         
                         <div className="p-4">
                           <div className="flex items-start space-x-3">
-                            <img
+                            <OptimizedAvatar
                               src={agent.avatar}
                               alt={agent.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                              onError={(e) => {
-                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                    <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                    <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                  </svg>
-                                `)}`;
-                              }}
+                              className="w-12 h-12 rounded-full"
+                              size={48}
                             />
                             <div className="flex-1">
                               <h4 className="font-semibold text-gray-800">{agent.name}</h4>
@@ -2677,10 +2750,11 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                 ×
               </button>
               <div className="flex items-start space-x-4">
-                <img
+                <OptimizedAvatar
                   src={selectedAgentDetails.avatar}
                   alt={selectedAgentDetails.name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                  className="w-16 h-16 rounded-full border-2 border-white"
+                  size={64}
                 />
                 <div>
                   <h3 className="text-xl font-bold">{selectedAgentDetails.name}</h3>

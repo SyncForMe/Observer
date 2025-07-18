@@ -11,6 +11,278 @@ import { ProfileSettingsModal, PreferencesModal, HelpSupportModal, FeedbackModal
 import SimulationControl from './SimulationControl';
 import { AuthProvider, useAuth } from './AuthContext';
 
+// Global Simulation Context for persistent state across tab switches
+const SimulationContext = createContext();
+
+export const useSimulation = () => {
+  const context = useContext(SimulationContext);
+  if (!context) {
+    throw new Error('useSimulation must be used within a SimulationProvider');
+  }
+  return context;
+};
+
+export const SimulationProvider = ({ children }) => {
+  const [simulationData, setSimulationData] = useState({
+    simulationState: null,
+    agents: [],
+    conversations: [],
+    scenario: '',
+    customScenario: '',
+    scenarioName: '',
+    isRunning: false,
+    isPaused: false,
+    observerMessages: [],
+    lastUpdated: null,
+    isDataLoaded: false
+  });
+
+  const updateSimulationData = useCallback((updates) => {
+    setSimulationData(prev => ({
+      ...prev,
+      ...updates,
+      lastUpdated: new Date().toISOString()
+    }));
+  }, []);
+
+  const clearSimulationData = useCallback(() => {
+    setSimulationData({
+      simulationState: null,
+      agents: [],
+      conversations: [],
+      scenario: '',
+      customScenario: '',
+      scenarioName: '',
+      isRunning: false,
+      isPaused: false,
+      observerMessages: [],
+      lastUpdated: null,
+      isDataLoaded: false
+    });
+  }, []);
+
+  return (
+    <SimulationContext.Provider value={{
+      simulationData,
+      updateSimulationData,
+      clearSimulationData
+    }}>
+      {children}
+    </SimulationContext.Provider>
+  );
+};
+
+// Global Avatar Preloading Service
+const GlobalAvatarPreloader = {
+  cache: new Map(),
+  isPreloading: false,
+  preloadCompleted: false,
+  
+  preload(src) {
+    return new Promise((resolve, reject) => {
+      if (this.cache.has(src)) {
+        resolve(this.cache.get(src));
+        return;
+      }
+      
+      const img = new Image();
+      
+      // Set highest priority for preloading
+      img.loading = 'eager';
+      img.fetchPriority = 'high';
+      
+      img.onload = () => {
+        this.cache.set(src, img);
+        resolve(img);
+      };
+      
+      img.onerror = () => {
+        // Still cache failed images to avoid retrying
+        this.cache.set(src, null);
+        resolve(null);
+      };
+      
+      // Start loading with highest priority
+      img.src = src;
+    });
+  },
+  
+  preloadBatch(urls) {
+    return Promise.allSettled(urls.map(url => this.preload(url)));
+  },
+  
+  isLoaded(src) {
+    return this.cache.has(src);
+  },
+  
+  async preloadAllAvatars() {
+    if (this.isPreloading || this.preloadCompleted) return;
+    
+    this.isPreloading = true;
+    console.log('🖼️ Starting AGGRESSIVE global avatar preloading...');
+    
+    try {
+      // Use hardcoded data for immediate preloading
+      const agentData = this.getHardcodedAgentData();
+      
+      const allAvatars = [];
+      
+      // Collect all avatar URLs from sectors
+      if (agentData.sectors) {
+        Object.values(agentData.sectors).forEach(sector => {
+          if (sector.categories) {
+            Object.values(sector.categories).forEach(category => {
+              if (category.agents) {
+                category.agents.forEach(agent => {
+                  if (agent.avatar) {
+                    allAvatars.push(agent.avatar);
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+      
+      // Collect all avatar URLs from quickTeams
+      if (agentData.quickTeams) {
+        Object.values(agentData.quickTeams).forEach(team => {
+          if (team.agents) {
+            team.agents.forEach(agent => {
+              if (agent.avatar) {
+                allAvatars.push(agent.avatar);
+              }
+            });
+          }
+        });
+      }
+      
+      // Remove duplicates
+      const uniqueAvatars = [...new Set(allAvatars)];
+      
+      console.log(`🖼️ AGGRESSIVE preloading ${uniqueAvatars.length} avatar images globally...`);
+      
+      // AGGRESSIVE preloading - large batches, no delays, highest priority
+      const batchSize = 25; // Much larger batches for speed
+      const promises = [];
+      
+      // Create all preload promises at once for maximum parallelism
+      for (let i = 0; i < uniqueAvatars.length; i += batchSize) {
+        const batch = uniqueAvatars.slice(i, i + batchSize);
+        promises.push(this.preloadBatch(batch));
+      }
+      
+      // Execute all batches simultaneously
+      await Promise.allSettled(promises);
+      
+      this.preloadCompleted = true;
+      console.log(`✅ AGGRESSIVE global avatar preloading completed! ${uniqueAvatars.length} images cached.`);
+      
+    } catch (error) {
+      console.error('❌ Global avatar preloading failed:', error);
+    } finally {
+      this.isPreloading = false;
+    }
+  },
+  
+  getHardcodedAgentData() {
+    // Hardcoded fallback data structure with comprehensive avatar URLs
+    return {
+      sectors: {
+        healthcare: {
+          categories: {
+            medical: {
+              agents: [
+                { avatar: "https://v3.fal.media/files/zebra/4WDHNe8Ifcyy64zQkIXiE.png" },
+                { avatar: "https://v3.fal.media/files/kangaroo/Fs0Hk6n-gu_fG33Lhj7JC.png" },
+                { avatar: "https://v3.fal.media/files/panda/A4RzV6yZUDiO4IVKkqKlz.png" },
+                { avatar: "https://v3.fal.media/files/rabbit/jI8qWZJFRpWQNDPW0lFOK.png" }
+              ]
+            },
+            pharma: {
+              agents: [
+                { avatar: "https://v3.fal.media/files/tiger/U8P9kNZ7iyKOzjJMqLPwF.png" },
+                { avatar: "https://v3.fal.media/files/lion/8oHeNvJfmvtLJ0rFjjgOi.png" }
+              ]
+            },
+            biomedicalEngineering: {
+              agents: [
+                { avatar: "https://v3.fal.media/files/elephant/QagyOfr93kvuMRgo6SijA.png" },
+                { avatar: "https://v3.fal.media/files/giraffe/kLTcvJfKjqKuLv8QRiPmW.png" }
+              ]
+            }
+          }
+        },
+        finance: {
+          categories: {
+            investment: {
+              agents: [
+                { avatar: "https://v3.fal.media/files/dolphin/CJzBJzJt8hONXj0iDmWQh.png" },
+                { avatar: "https://v3.fal.media/files/whale/jvwIjfHRjFHjHzQSGfHrW.png" }
+              ]
+            },
+            banking: {
+              agents: [
+                { avatar: "https://v3.fal.media/files/shark/vFCBJvJZfNZKQhZBQgVqR.png" },
+                { avatar: "https://v3.fal.media/files/octopus/DwDtKjfJQqKwrwfBZQqtW.png" }
+              ]
+            }
+          }
+        },
+        technology: {
+          categories: {
+            software: {
+              agents: [
+                { avatar: "https://v3.fal.media/files/eagle/FBQBJvJZqKwrwfBZQqtDw.png" },
+                { avatar: "https://v3.fal.media/files/hawk/QqKwrwfBZQqtDwDtKjfJQ.png" }
+              ]
+            },
+            aerospace: {
+              agents: [
+                { avatar: "https://v3.fal.media/files/penguin/ENkzbSYzN-e8UJnqOnlyd.png" },
+                { avatar: "https://v3.fal.media/files/falcon/KwrwfBZQqtDwDtKjfJQqK.png" }
+              ]
+            }
+          }
+        }
+      },
+      quickTeams: {
+        research: {
+          agents: [
+            { avatar: "https://v3.fal.media/files/zebra/4WDHNe8Ifcyy64zQkIXiE.png" },
+            { avatar: "https://v3.fal.media/files/kangaroo/Fs0Hk6n-gu_fG33Lhj7JC.png" },
+            { avatar: "https://v3.fal.media/files/panda/A4RzV6yZUDiO4IVKkqKlz.png" }
+          ]
+        },
+        medical: {
+          agents: [
+            { avatar: "https://v3.fal.media/files/rabbit/jI8qWZJFRpWQNDPW0lFOK.png" },
+            { avatar: "https://v3.fal.media/files/tiger/U8P9kNZ7iyKOzjJMqLPwF.png" },
+            { avatar: "https://v3.fal.media/files/lion/8oHeNvJfmvtLJ0rFjjgOi.png" }
+          ]
+        },
+        crisis: {
+          agents: [
+            { avatar: "https://v3.fal.media/files/elephant/QagyOfr93kvuMRgo6SijA.png" },
+            { avatar: "https://v3.fal.media/files/dolphin/CJzBJzJt8hONXj0iDmWQh.png" },
+            { avatar: "https://v3.fal.media/files/whale/jvwIjfHRjFHjHzQSGfHrW.png" }
+          ]
+        },
+        innovation: {
+          agents: [
+            { avatar: "https://v3.fal.media/files/shark/vFCBJvJZfNZKQhZBQgVqR.png" },
+            { avatar: "https://v3.fal.media/files/eagle/FBQBJvJZqKwrwfBZQqtDw.png" },
+            { avatar: "https://v3.fal.media/files/penguin/ENkzbSYzN-e8UJnqOnlyd.png" }
+          ]
+        }
+      }
+    };
+  }
+};
+
+// Make the preloader available globally
+window.GlobalAvatarPreloader = GlobalAvatarPreloader;
+
 // Simple FileCenter Component
 const FileCenter = () => {
   return (
@@ -1220,6 +1492,12 @@ const App = () => {
     const { user, loading } = authContext;
     console.log('🔍 App: Rendering with user:', !!user, 'loading:', loading);
 
+    // IMMEDIATE avatar preloading - start as soon as app loads (don't wait for auth)
+    useEffect(() => {
+      console.log('🖼️ App loaded, starting IMMEDIATE avatar preloading...');
+      GlobalAvatarPreloader.preloadAllAvatars();
+    }, []); // Empty dependency array - runs once on mount
+
     // Handler for HomePage authentication
     const handleAuthentication = useCallback((token, userData) => {
       console.log('🔍 App: handleAuthentication called with token:', !!token, 'user:', !!userData);
@@ -1246,7 +1524,9 @@ const App = () => {
     console.log('🔍 App: User found, showing AppContent');
     return (
       <ErrorBoundary>
-        <AppContent />
+        <SimulationProvider>
+          <AppContent />
+        </SimulationProvider>
       </ErrorBoundary>
     );
   } catch (error) {

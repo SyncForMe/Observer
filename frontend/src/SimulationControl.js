@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
+import { useSimulation } from './App';
 import AgentCreateModal from './AgentCreateModal';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
@@ -379,14 +380,33 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
 
 const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const { user, token } = useAuth();
-  const [simulationState, setSimulationState] = useState(null);
-  const [agents, setAgents] = useState([]);
-  const [conversations, setConversations] = useState([]);
-  const [scenario, setScenario] = useState('');
-  const [customScenario, setCustomScenario] = useState('');
-  const [scenarioName, setScenarioName] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const { simulationData, updateSimulationData, clearSimulationData } = useSimulation();
+  
+  // Extract data from global context
+  const {
+    simulationState,
+    agents,
+    conversations,
+    scenario,
+    customScenario,
+    scenarioName,
+    isRunning,
+    isPaused,
+    observerMessages,
+    isDataLoaded
+  } = simulationData;
+  
+  // Helper functions for updating specific parts of simulation data
+  const setScenario = (value) => updateSimulationData({ scenario: value });
+  const setCustomScenario = (value) => updateSimulationData({ customScenario: value });
+  const setScenarioName = (value) => updateSimulationData({ scenarioName: value });
+  const setIsRunning = (value) => updateSimulationData({ isRunning: value });
+  const setIsPaused = (value) => updateSimulationData({ isPaused: value });
+  const setAgents = (value) => updateSimulationData({ agents: value });
+  const setConversations = (value) => updateSimulationData({ conversations: value });
+  const setObserverMessages = (value) => updateSimulationData({ observerMessages: value });
+  
+  // Local state for UI-only concerns
   const [autoGenerating, setAutoGenerating] = useState(false);
   const [loading, setLoading] = useState(false);
   const [conversationLoading, setConversationLoading] = useState(false);
@@ -409,7 +429,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const [autoReportEnabled, setAutoReportEnabled] = useState(false);
   const [autoGenerateInterval, setAutoGenerateInterval] = useState(null);
   const [observerMessage, setObserverMessage] = useState('');
-  const [observerMessages, setObserverMessages] = useState([]);
   const [isObserverLoading, setIsObserverLoading] = useState(false);
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationText, setNotificationText] = useState('');
@@ -454,12 +473,15 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           })
         ]);
 
-        // Update state
-        setSimulationState(stateResponse.data);
-        setConversations(conversationsResponse.data || []);
-        setIsRunning(stateResponse.data.is_active || false);
-        setIsPaused(stateResponse.data.is_paused || false);
-        setAgents(agentsResponse.data || []);
+        // Update global simulation data
+        updateSimulationData({
+          simulationState: stateResponse.data,
+          conversations: conversationsResponse.data || [],
+          isRunning: stateResponse.data.is_active || false,
+          isPaused: stateResponse.data.is_paused || false,
+          agents: agentsResponse.data || [],
+          isDataLoaded: true
+        });
         
         console.log('✅ Optimized fetch completed - Agents:', agentsResponse.data.length, 'Conversations:', conversationsResponse.data?.length || 0);
         
@@ -517,6 +539,16 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     };
   }, [token, isRunning]); // Removed fetchSimulationState from dependencies
 
+  // Load simulation data immediately if not already loaded
+  useEffect(() => {
+    if (!isDataLoaded && token) {
+      console.log('🔄 Loading simulation data immediately - not loaded yet');
+      fetchSimulationState();
+    } else if (isDataLoaded) {
+      console.log('✅ Simulation data already loaded, showing immediately');
+    }
+  }, [token, isDataLoaded]);
+
   // Simple fetch function for use by other functions (non-debounced to avoid hoisting issues)
   const fetchSimulationState = async () => {
     try {
@@ -535,13 +567,22 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         })
       ]);
 
-      setSimulationState(stateResponse.data);
-      setConversations(conversationsResponse.data || []);
-      setIsRunning(stateResponse.data.is_active || false);
-      setIsPaused(stateResponse.data.is_paused || false);
-      setAgents(agentsResponse.data || []);
+      // Update global simulation data
+      updateSimulationData({
+        simulationState: stateResponse.data,
+        conversations: conversationsResponse.data || [],
+        isRunning: stateResponse.data.is_active || false,
+        isPaused: stateResponse.data.is_paused || false,
+        agents: agentsResponse.data || [],
+        // IMPORTANT: Restore scenario state from backend
+        scenario: stateResponse.data.scenario || '',
+        customScenario: stateResponse.data.scenario || '',
+        scenarioName: stateResponse.data.scenario_name || '',
+        isDataLoaded: true
+      });
       
       console.log('✅ Fetch completed - Conversations:', conversationsResponse.data?.length || 0);
+      console.log('✅ Scenario restored:', stateResponse.data.scenario ? 'Yes' : 'No');
       
     } catch (error) {
       console.error('Error fetching simulation state:', error);
@@ -552,6 +593,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
 
 
+  // Auto-scroll to bottom ONLY when observer messages are sent
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
+  
   // Auto-scroll to bottom of conversations - DISABLED to prevent interrupting reading
   // useEffect(() => {
   //   if (messagesEndRef.current) {
@@ -730,41 +778,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       console.log('🧹 Starting fresh - clearing all data...');
       
-      // Call the backend reset endpoint to clear everything
-      const response = await axios.post(`${API}/simulation/reset`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success) {
-        // Clear all frontend state immediately
-        setAgents([]);
-        setConversations([]);
-        setObserverMessages([]);
-        setIsRunning(false);
-        setIsPaused(false);
-        setSimulationState(response.data.state);
-        
-        // Clear scenario states
-        setScenario('');
-        setCustomScenario('');
-        setScenarioName('');
-        setShowSetScenario(false);
-        
-        console.log('✅ Fresh state created - all data cleared successfully');
-        
-        // Trigger Observatory refresh if needed
-        if (refreshTrigger) {
-          // This will update the Observatory component
-          console.log('🔄 Triggering Observatory refresh');
-        }
-      } else {
-        throw new Error(response.data.message || 'Failed to reset simulation');
-      }
-      
-    } catch (error) {
-      console.error('❌ Error clearing data:', error);
-      
-      // Fallback: manual clearing if backend fails
+      // OPTIMISTIC UPDATE: Clear frontend state immediately for better UX
       setAgents([]);
       setConversations([]);
       setObserverMessages([]);
@@ -777,8 +791,58 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       setScenarioName('');
       setShowSetScenario(false);
       
-      // Show error message
-      alert('Some data may not have been cleared. Please refresh the page if issues persist.');
+      // Show immediate feedback
+      showNotification('🧹 Clearing all data...');
+      
+      // Call the backend reset endpoint to clear everything
+      const response = await axios.post(`${API}/simulation/reset`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 15000 // 15 second timeout to prevent hanging
+      });
+      
+      if (response.data.success) {
+        // Update simulation state from backend
+        updateSimulationData({
+          simulationState: response.data.state,
+          agents: [],
+          conversations: [],
+          observerMessages: [],
+          isRunning: false,
+          isPaused: false,
+          scenario: '',
+          customScenario: '',
+          scenarioName: '',
+          isDataLoaded: true
+        });
+        
+        console.log('✅ Fresh state created - all data cleared successfully');
+        console.log(`📊 Cleared ${response.data.cleared_collections || 5} collections`);
+        
+        // Show success notification
+        showNotification('✅ Fresh state created - all data cleared!');
+        
+        // Trigger Observatory refresh if needed
+        if (refreshTrigger) {
+          console.log('🔄 Triggering Observatory refresh');
+        }
+      } else {
+        throw new Error(response.data.message || 'Failed to reset simulation');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error clearing data:', error);
+      
+      // Since we already cleared frontend state optimistically, 
+      // we don't need to clear it again in the error case
+      
+      // Show error notification instead of alert
+      showNotification('⚠️ Some data may not have been cleared. Please refresh if issues persist.');
+      
+      // If it's a timeout, the optimistic update is still valuable
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        console.log('🕐 Request timed out but optimistic update completed');
+        showNotification('⚠️ Request timed out but UI has been cleared. Backend cleanup may still be in progress.');
+      }
       
     } finally {
       setLoading(false);
@@ -795,9 +859,12 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Optimistic update: Add agent to UI immediately
+      // Optimistic update: Add agent to UI immediately using global state
       if (response.data) {
-        setAgents(prevAgents => [...prevAgents, response.data]);
+        updateSimulationData({
+          agents: [...agents, response.data]
+        });
+        console.log('✅ Agent created and added to UI:', response.data.name);
       }
       
       setShowCreateAgentModal(false);
@@ -811,12 +878,16 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
   const handleRemoveAgent = async (agentId) => {
     try {
-      // Optimistic update: Remove agent from UI immediately
-      setAgents(prevAgents => prevAgents.filter(agent => agent.id !== agentId));
+      // Optimistic update: Remove agent from UI immediately using global state
+      updateSimulationData({
+        agents: agents.filter(agent => agent.id !== agentId)
+      });
       
       await axios.delete(`${API}/agents/${agentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      console.log('✅ Agent removed from UI and backend');
       
       // Debounced refresh for consistency
       setTimeout(() => fetchSimulationState(), 100);
@@ -916,9 +987,17 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     try {
       setLoading(true);
       
-      // Optimistic update
-      setScenario(customScenario);
+      console.log('🎯 Setting scenario:', { customScenario, scenarioName });
+      
+      // Optimistic update to global context
+      updateSimulationData({
+        scenario: customScenario,
+        customScenario: customScenario,
+        scenarioName: scenarioName
+      });
       setShowSetScenario(false);
+      
+      console.log('✅ Optimistic update completed, calling backend...');
       
       await axios.post(`${API}/simulation/set-scenario`, { // Fixed endpoint name
         scenario: customScenario,
@@ -927,12 +1006,18 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('✅ Backend call completed, scenario set successfully');
+      
       // Debounced refresh
       setTimeout(() => fetchSimulationState(), 200);
     } catch (error) {
       console.error('Error setting scenario:', error);
       // Revert optimistic update on error
-      setScenario('');
+      updateSimulationData({
+        scenario: '',
+        customScenario: '',
+        scenarioName: ''
+      });
     } finally {
       setLoading(false);
     }
@@ -954,33 +1039,39 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const handleSendObserverMessage = async () => {
     if (!observerMessage.trim()) return;
 
-    const newMessage = {
-      id: Date.now(),
-      agent_name: "Observer (You)",
-      message: observerMessage,
-      timestamp: new Date().toISOString()
-    };
     const messageToSend = observerMessage;
 
     try {
       setIsObserverLoading(true);
       
-      // Optimistic update: Add message to UI immediately
-      setObserverMessages(prev => [...prev, newMessage]);
-      setObserverMessage(''); // Clear input immediately for better UX
+      // Clear input immediately for better UX
+      setObserverMessage('');
 
-      await axios.post(`${API}/observer/send-message`, { // Fixed endpoint name
+      // Send observer message to backend
+      const response = await axios.post(`${API}/observer/send-message`, {
         observer_message: messageToSend
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Debounced refresh for new agent responses
+      // The backend response contains the full conversation with observer message + agent responses
+      if (response.data && response.data.agent_responses) {
+        // Add the new conversation to the conversations array using global state
+        updateSimulationData({
+          conversations: [...conversations, response.data.agent_responses]
+        });
+        
+        // Auto-scroll to show the new observer message
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100); // Small delay to ensure DOM is updated
+      }
+
+      // Refresh state to get any updates
       setTimeout(() => fetchSimulationState(), 300);
     } catch (error) {
       console.error('Error sending observer message:', error);
-      // Revert optimistic updates on error
-      setObserverMessages(prev => prev.filter(msg => msg.id !== newMessage.id));
+      // Restore input on error
       setObserverMessage(messageToSend);
     } finally {
       setIsObserverLoading(false);
@@ -1037,18 +1128,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
 
     const results = [];
-    
-    // Search observer messages
-    observerMessages.forEach((message, messageIndex) => {
-      if (message.message.toLowerCase().includes(term.toLowerCase())) {
-        results.push({
-          type: 'observer',
-          conversationIndex: -1,
-          messageIndex,
-          message
-        });
-      }
-    });
     
     // Search regular conversations
     conversations.forEach((conversation, conversationIndex) => {
@@ -1429,7 +1508,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
             {/* Conversations Display */}
             <div className="flex-1 overflow-y-auto space-y-3">
-              {conversations.length === 0 && observerMessages.length === 0 ? (
+              {conversations.length === 0 ? (
                 <div className="text-center py-8 space-y-4">
                   <div>
                     <p className="text-white/60 text-sm mb-2">No conversations yet</p>
@@ -1442,35 +1521,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 </div>
               ) : (
                 <>
-                  {/* Display Observer Messages */}
-                  {observerMessages.map((message, messageIndex) => (
-                    <div
-                      key={`observer-${message.id || messageIndex}`}
-                      className="rounded-2xl p-3 border-l-4 bg-blue-500/20 border-blue-500 shadow-lg transition-all duration-200"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-blue-600">
-                            👁️
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-bold text-blue-300">
-                              Observer (You)
-                            </span>
-                            <span className="text-white/40 text-xs">
-                              {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Now'}
-                            </span>
-                          </div>
-                          <p className="text-sm leading-relaxed text-blue-100 font-medium">
-                            {renderMarkdownBold(message.message)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
                   {/* Display Regular Conversations */}
                   {conversations.map((conversation, conversationIndex) => {
                     const roundNumber = conversationIndex + 1;
@@ -1482,7 +1532,10 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                         <div className="flex justify-center mb-2">
                           <div className="bg-white/5 rounded-full px-3 py-1 border border-white/10">
                             <span className="text-white/70 text-xs font-medium">
-                              Day {day}, Round {roundInPeriod}, {period}
+                              {conversation.scenario_name === "Observer Guidance" ? 
+                                "Observer Message" : 
+                                `Day ${day}, Round ${roundInPeriod}, ${period}`
+                              }
                             </span>
                           </div>
                         </div>
@@ -1511,12 +1564,73 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                           >
                         <div className="flex items-start space-x-3">
                           <div className="flex-shrink-0">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden ${
                               message.agent_name === "Observer (You)"
                                 ? 'bg-blue-600'
                                 : `bg-gradient-to-br from-purple-500 to-pink-500`
                             }`}>
-                              {message.agent_name === "Observer (You)" ? '👁️' : message.agent_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                              {message.agent_name === "Observer (You)" ? (
+                                user && user.picture ? (
+                                  <img 
+                                    src={user.picture} 
+                                    alt="Observer" 
+                                    className="w-full h-full object-cover"
+                                    loading="eager"
+                                    style={{
+                                      imageRendering: 'crisp-edges',
+                                      minWidth: '100%',
+                                      minHeight: '100%'
+                                    }}
+                                    onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                  />
+                                ) : '👁️'
+                              ) : (
+                                (() => {
+                                  const agent = agents.find(a => a.name === message.agent_name);
+                                  return agent && agent.avatar_url ? (
+                                    <img 
+                                      src={agent.avatar_url} 
+                                      alt={agent.name} 
+                                      className="w-full h-full object-cover"
+                                      loading="eager"
+                                      style={{
+                                        imageRendering: 'crisp-edges',
+                                        minWidth: '100%',
+                                        minHeight: '100%'
+                                      }}
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : null;
+                                })()
+                              )}
+                              {message.agent_name === "Observer (You)" ? (
+                                <span 
+                                  className="text-white text-xs font-bold absolute"
+                                  style={{
+                                    display: user && user.picture ? 'none' : 'flex'
+                                  }}
+                                >
+                                  👁️
+                                </span>
+                              ) : (
+                                <span 
+                                  className="text-white text-xs font-bold absolute"
+                                  style={{
+                                    display: (() => {
+                                      const agent = agents.find(a => a.name === message.agent_name);
+                                      return agent && agent.avatar_url ? 'none' : 'flex';
+                                    })()
+                                  }}
+                                >
+                                  {message.agent_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex-1">
@@ -1646,13 +1760,22 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               <div className="flex flex-col items-center group">
                 <button
                   onClick={startFreshSimulation}
-                  className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-200 flex items-center justify-center text-sm"
-                  title="Start Fresh"
+                  disabled={loading}
+                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-sm ${
+                    loading 
+                      ? 'bg-gray-600 cursor-not-allowed text-gray-400' 
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  }`}
+                  title={loading ? "Clearing data..." : "Start Fresh"}
                 >
-                  ↻
+                  {loading ? (
+                    <div className="animate-spin w-4 h-4 border border-white/30 border-t-white rounded-full"></div>
+                  ) : (
+                    '↻'
+                  )}
                 </button>
                 <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Fresh Start
+                  {loading ? 'Clearing...' : 'Fresh Start'}
                 </span>
               </div>
             </div>

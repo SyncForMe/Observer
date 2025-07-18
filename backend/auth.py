@@ -8,12 +8,18 @@ from jwt.exceptions import InvalidTokenError as JWTError
 import os
 import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Load environment variables
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
 
 # Security
 security = HTTPBearer()
 
 # JWT settings
-JWT_SECRET = os.environ.get('JWT_SECRET', 'your_super_secure_jwt_secret_key_here')
+JWT_SECRET = os.environ.get('JWT_SECRET')
 JWT_ALGORITHM = "HS256"
 ADMIN_EMAIL = "dino@cytonic.com"  # Admin email for special privileges
 

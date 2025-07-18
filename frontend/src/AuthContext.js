@@ -15,41 +15,56 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
   const API = `${BACKEND_URL}/api`;
 
   useEffect(() => {
-    // Initialize token from localStorage
-    const savedToken = localStorage.getItem('auth_token');
-    const savedUser = localStorage.getItem('auth_user');
-    
-    if (savedToken) {
-      setToken(savedToken);
-      
-      // If we have cached user data, set it immediately for instant loading
-      if (savedUser) {
-        try {
-          const userData = JSON.parse(savedUser);
-          setUser(userData);
-          console.log('🔍 AuthContext: Loaded cached user data for instant display');
-        } catch (error) {
-          console.error('Error parsing cached user data:', error);
-          localStorage.removeItem('auth_user');
+    const initializeAuth = async () => {
+      try {
+        // Initialize token from localStorage
+        const savedToken = localStorage.getItem('auth_token');
+        const savedUser = localStorage.getItem('auth_user');
+        
+        if (savedToken) {
+          setToken(savedToken);
+          
+          // If we have cached user data, set it immediately for instant loading
+          if (savedUser) {
+            try {
+              const userData = JSON.parse(savedUser);
+              setUser(userData);
+              console.log('🔍 AuthContext: Loaded cached user data for instant display');
+            } catch (error) {
+              console.error('Error parsing cached user data:', error);
+              localStorage.removeItem('auth_user');
+            }
+          }
+          
+          // Always fetch fresh data from backend (but user sees cached data immediately)
+          await checkAuthStatus(savedToken);
+        } else {
+          setLoading(false);
         }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setLoading(false);
       }
-      
-      // Always fetch fresh data from backend (but user sees cached data immediately)
-      checkAuthStatus(savedToken);
-    } else {
-      setLoading(false);
+      setAuthChecked(true);
+    };
+    
+    if (!authChecked) {
+      initializeAuth();
     }
-  }, []);
+  }, [authChecked]); // Only run once when authChecked is false
 
   const checkAuthStatus = async (authToken) => {
     try {
+      // Add timeout to prevent hanging
       const response = await axios.get(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${authToken}` }
+        headers: { Authorization: `Bearer ${authToken}` },
+        timeout: 10000 // 10 second timeout
       });
       
       if (response.data && response.data.id) {
@@ -60,6 +75,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('auth_user', JSON.stringify(response.data));
         console.log('🔍 AuthContext: Cached fresh user data from backend');
       } else {
+        console.log('🔍 AuthContext: Invalid response from backend, clearing auth');
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
         setToken(null);
@@ -67,10 +83,28 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth check failed:', error);
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-      setToken(null);
-      setUser(null);
+      
+      // If we have cached user data, use it but show that we're offline
+      const savedUser = localStorage.getItem('auth_user');
+      if (savedUser && !user) {
+        try {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          setToken(authToken);
+          console.log('🔍 AuthContext: Using cached user data due to network error');
+        } catch (parseError) {
+          console.error('Error parsing cached user data:', parseError);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('auth_user');
+          setToken(null);
+          setUser(null);
+        }
+      } else {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        setToken(null);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

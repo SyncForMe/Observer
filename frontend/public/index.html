@@ -9,6 +9,17 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="preconnect" href="https://v3.fal.media" crossorigin>
         <link rel="dns-prefetch" href="https://v3.fal.media">
+        
+        <!-- Critical avatar preloading with highest priority -->
+        <link rel="preload" href="https://v3.fal.media/files/zebra/4WDHNe8Ifcyy64zQkIXiE.png" as="image" crossorigin="anonymous">
+        <link rel="preload" href="https://v3.fal.media/files/kangaroo/Fs0Hk6n-gu_fG33Lhj7JC.png" as="image" crossorigin="anonymous">
+        <link rel="preload" href="https://v3.fal.media/files/panda/A4RzV6yZUDiO4IVKkqKlz.png" as="image" crossorigin="anonymous">
+        <link rel="preload" href="https://v3.fal.media/files/rabbit/jI8qWZJFRpWQNDPW0lFOK.png" as="image" crossorigin="anonymous">
+        <link rel="preload" href="https://v3.fal.media/files/tiger/U8P9kNZ7iyKOzjJMqLPwF.png" as="image" crossorigin="anonymous">
+        <link rel="preload" href="https://v3.fal.media/files/lion/8oHeNvJfmvtLJ0rFjjgOi.png" as="image" crossorigin="anonymous">
+        <link rel="preload" href="https://v3.fal.media/files/elephant/QagyOfr93kvuMRgo6SijA.png" as="image" crossorigin="anonymous">
+        <link rel="preload" href="https://v3.fal.media/files/giraffe/kLTcvJfKjqKuLv8QRiPmW.png" as="image" crossorigin="anonymous">
+        
         <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700;900&display=swap" rel="stylesheet">
         <!--
       manifest.json provides metadata used when your web app is installed on a
@@ -28,6 +39,47 @@
     <body>
         <noscript>You need to enable JavaScript to run this app.</noscript>
         <div id="root"></div>
+        
+        <!-- IMMEDIATE Avatar Preloading Script - Before React loads -->
+        <script>
+            // Immediate avatar preloading for instant display
+            (function() {
+                console.log('🚀 Starting IMMEDIATE avatar preloading before React...');
+                
+                // Critical avatar URLs that need to be preloaded immediately
+                const criticalAvatars = [
+                    'https://v3.fal.media/files/zebra/4WDHNe8Ifcyy64zQkIXiE.png',
+                    'https://v3.fal.media/files/kangaroo/Fs0Hk6n-gu_fG33Lhj7JC.png',
+                    'https://v3.fal.media/files/panda/A4RzV6yZUDiO4IVKkqKlz.png',
+                    'https://v3.fal.media/files/rabbit/jI8qWZJFRpWQNDPW0lFOK.png',
+                    'https://v3.fal.media/files/tiger/U8P9kNZ7iyKOzjJMqLPwF.png',
+                    'https://v3.fal.media/files/lion/8oHeNvJfmvtLJ0rFjjgOi.png',
+                    'https://v3.fal.media/files/elephant/QagyOfr93kvuMRgo6SijA.png',
+                    'https://v3.fal.media/files/giraffe/kLTcvJfKjqKuLv8QRiPmW.png',
+                    'https://v3.fal.media/files/dolphin/CJzBJzJt8hONXj0iDmWQh.png',
+                    'https://v3.fal.media/files/whale/jvwIjfHRjFHjHzQSGfHrW.png',
+                    'https://v3.fal.media/files/shark/vFCBJvJZfNZKQhZBQgVqR.png',
+                    'https://v3.fal.media/files/octopus/DwDtKjfJQqKwrwfBZQqtW.png',
+                    'https://v3.fal.media/files/eagle/FBQBJvJZqKwrwfBZQqtDw.png',
+                    'https://v3.fal.media/files/hawk/QqKwrwfBZQqtDwDtKjfJQ.png',
+                    'https://v3.fal.media/files/penguin/ENkzbSYzN-e8UJnqOnlyd.png',
+                    'https://v3.fal.media/files/falcon/KwrwfBZQqtDwDtKjfJQqK.png'
+                ];
+                
+                // Preload all critical avatars immediately
+                criticalAvatars.forEach(function(url) {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.loading = 'eager';
+                    if (img.fetchPriority) {
+                        img.fetchPriority = 'high';
+                    }
+                    img.src = url;
+                });
+                
+                console.log('🚀 IMMEDIATE preloading started for', criticalAvatars.length, 'critical avatars');
+            })();
+        </script>
         <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
