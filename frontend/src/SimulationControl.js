@@ -1705,23 +1705,27 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     </div>
                     
                     {/* Auto Report Toggle */}
-                    <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-white/80 text-sm">Auto Weekly Reports</span>
+                    <div className="p-3 bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-white/80 text-sm font-medium">Auto Weekly Reports</span>
+                        </div>
+                        <button
+                          onClick={handleAutoReportToggle}
+                          className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
+                            autoReportEnabled ? 'bg-green-600' : 'bg-gray-600'
+                          }`}
+                        >
+                          <div
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+                              autoReportEnabled ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="mt-1">
                         <span className="text-white/50 text-xs">Automatic report generation</span>
                       </div>
-                      <button
-                        onClick={handleAutoReportToggle}
-                        className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
-                          autoReportEnabled ? 'bg-green-600' : 'bg-gray-600'
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 ${
-                            autoReportEnabled ? 'translate-x-6' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
                     </div>
                     
                     {conversations.length === 0 && (
