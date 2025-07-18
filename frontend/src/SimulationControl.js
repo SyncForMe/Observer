@@ -1788,7 +1788,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   ) : (
                     <div className="bg-white/5 rounded-lg p-4 max-h-96 overflow-y-auto">
                       <div className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">
-                        {reportData || 'No report data available'}
+                        {renderMarkdownBold(reportData || 'No report data available')}
                       </div>
                     </div>
                   )}
