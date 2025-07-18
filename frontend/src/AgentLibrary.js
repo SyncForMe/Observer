@@ -2503,25 +2503,29 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                         
                         <div className="p-4">
                           <div className="flex items-start space-x-3">
-                            <img
-                              src={agent.avatar}
-                              alt={agent.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                              loading="eager"
-                              decoding="async"
-                              style={{
-                                imageRendering: '-webkit-optimize-contrast',
-                              }}
-                              onError={(e) => {
-                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                    <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                    <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                  </svg>
-                                `)}`;
-                              }}
-                            />
+                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              <img
+                                src={agent.avatar}
+                                alt={agent.name}
+                                className="w-full h-full object-cover"
+                                loading="eager"
+                                decoding="async"
+                                style={{
+                                  imageRendering: '-webkit-optimize-contrast',
+                                  minWidth: '100%',
+                                  minHeight: '100%'
+                                }}
+                                onError={(e) => {
+                                  e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
+                                      <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
+                                      <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
+                                    </svg>
+                                  `)}`;
+                                }}
+                              />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-gray-900 text-sm">{agent.name}</h4>
                               <p className="text-xs text-gray-600 mt-1">{agent.archetypeDisplay || agent.archetype}</p>
