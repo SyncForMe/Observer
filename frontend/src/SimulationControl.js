@@ -1649,6 +1649,55 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               </div>
             </div>
 
+            {/* Generate Report Section with expandable functionality */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-white/80 text-sm font-medium">Generate Report</h4>
+                <button
+                  onClick={() => setShowReport(!showReport)}
+                  className="text-white/60 hover:text-white transition-all duration-200"
+                  style={{ transform: showReport ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Report Content Section */}
+              <div className="flex-1">
+                {/* Expandable Report Section */}
+                {showReport && (
+                  <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
+                    <div className="flex space-x-2 mb-3">
+                      <button
+                        onClick={handleGenerateReport}
+                        disabled={reportLoading || conversations.length === 0}
+                        className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                      >
+                        {reportLoading ? 'Generating...' : 'Generate Weekly Report'}
+                      </button>
+                    </div>
+                    
+                    {/* Report Display */}
+                    {reportData && (
+                      <div className="bg-white/5 rounded-lg p-4 max-h-80 overflow-y-auto">
+                        <div className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">
+                          {reportData}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {conversations.length === 0 && (
+                      <div className="text-white/50 text-xs text-center py-2">
+                        No conversations available for report generation
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
