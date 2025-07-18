@@ -154,48 +154,6 @@ const formatScenarioText = (text) => {
   );
 };
 
-// Helper function to render markdown bold text with search highlighting
-const renderMarkdownBoldWithSearch = (text, searchTerm) => {
-  if (!text) return '';
-  
-  // First, handle the search highlighting
-  const highlightedText = highlightSearchTerm(text, searchTerm);
-  
-  // If it's already JSX (from search highlighting), we need to handle it differently
-  if (typeof highlightedText !== 'string') {
-    return highlightedText;
-  }
-  
-  // Split text by **bold** patterns and render accordingly
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  
-  return parts.map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      // Remove the ** and render as bold
-      const boldText = part.slice(2, -2);
-      return <strong key={index} className="font-bold">{boldText}</strong>;
-    }
-    return part;
-  });
-};
-
-// Helper function to render markdown bold text
-const renderMarkdownBold = (text) => {
-  if (!text) return '';
-  
-  // Split text by **bold** patterns and render accordingly
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  
-  return parts.map((part, index) => {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      // Remove the ** and render as bold
-      const boldText = part.slice(2, -2);
-      return <strong key={index} className="font-bold">{boldText}</strong>;
-    }
-    return part;
-  });
-};
-
 const WELCOME_MESSAGES = [
   "Welcome, Observer",
   "Hey, Observer is back! Agents, rejoice!",
