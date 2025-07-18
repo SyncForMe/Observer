@@ -3750,49 +3750,36 @@ IMPORTANT FORMATTING RULES:
             print(f"❌ Both Claude and Gemini failed: Claude({claude_error}), Gemini({gemini_error})")
             
             # Create a fallback summary when both APIs fail
-            fallback_summary = f"""**Week Summary - Day {current_day}**
+            report_response = f"""**Week Summary - Day {current_day}**
 
 **1. 🔥 KEY EVENTS & DISCOVERIES**
 - {len(recent_conversations)} conversations analyzed from recent simulation periods
-- Team dynamics continue to evolve between {len(set([msg['agent_name'] for conv in recent_conversations for msg in conv.get('messages', [])]))} active agents
+- {'Multiple' if len(recent_conversations) > 1 else 'Single'} agent interactions documented
+- Key decisions and breakthroughs identified through conversation analysis
 
-**2. 📈 RELATIONSHIP DEVELOPMENTS**
-- Ongoing interactions between team members showing personality-driven responses
-- Relationship patterns emerging based on agent archetypes and conversation contexts
+**2. 📋 DOCUMENTS & DELIVERABLES**
+- {len(recent_documents)} documents created during this period
+- Strategic documentation covering research findings and operational protocols
+- Collaborative work products demonstrating team coordination
 
-**3. 🎭 EMERGING PERSONALITIES**
-- Each agent continues to demonstrate their unique archetype characteristics
-- Personality traits influencing conversation styles and decision-making approaches
+**3. 🤝 RELATIONSHIP DEVELOPMENTS**
+- Agent interactions show evolving communication patterns
+- Team dynamics reflect collaborative problem-solving approaches
+- Leadership emergence patterns observed in group discussions
 
-**4. 🤝 SOCIAL DYNAMICS**
-- Team coordination and communication patterns developing
-- Individual agent strengths contributing to group discussions
+**4. 🎯 STRATEGIC DECISIONS**
+- Research priorities established through collaborative discussion
+- Operational protocols refined based on simulation outcomes
+- Future planning initiatives identified and prioritized
 
 **5. 🔮 LOOKING AHEAD**
 - Continued monitoring of agent interactions and relationship evolution
 - Further development of personality-based conversation patterns
+- Enhanced document creation and strategic planning processes
 
 *Note: This summary was generated using conversation analysis due to AI service limitations. Both Claude 3.5 Sonnet and Gemini 2.0 Flash were unavailable. Please try again later.*"""
-
-            # Store fallback summary in database
-            fallback_doc = {
-                "id": str(uuid.uuid4()),
-                "summary": fallback_summary,
-                "day_generated": current_day,
-                "conversations_analyzed": len(recent_conversations),
-                "created_at": datetime.utcnow(),
-                "is_fallback": True,
-                "report_type": "weekly_structured"
-            }
-            await db.summaries.insert_one(fallback_doc)
             
-            return {
-                "summary": fallback_summary, 
-                "day": current_day, 
-                "conversations_count": len(recent_conversations),
-                "report_type": "weekly_structured",
-                "note": "Fallback summary generated due to API limitations"
-            }
+            model_used = "Fallback Analysis (Both AI models failed)"
     
     
     # Add model information to response
