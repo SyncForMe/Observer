@@ -1196,12 +1196,28 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                             {agent.avatar_url ? (
-                              <img src={agent.avatar_url} alt={agent.name} className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                              <span className="text-white text-sm font-semibold">
-                                {agent.name?.charAt(0) || '🤖'}
-                              </span>
-                            )}
+                              <img 
+                                src={agent.avatar_url} 
+                                alt={agent.name} 
+                                className="w-full h-full rounded-full object-cover"
+                                loading="eager"
+                                style={{
+                                  imageRendering: 'crisp-edges',
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <span 
+                              className="text-white text-sm font-semibold"
+                              style={{
+                                display: agent.avatar_url ? 'none' : 'flex'
+                              }}
+                            >
+                              {agent.name?.charAt(0) || '🤖'}
+                            </span>
                           </div>
                           <div>
                             <h4 className="text-white font-medium text-sm">{agent.name}</h4>
