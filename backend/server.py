@@ -3601,28 +3601,7 @@ async def generate_weekly_summary():
                 document_summary += f"  - Preview: {content_preview}{'...' if len(doc.get('content', '')) > 200 else ''}\n"
             document_summary += "\n"
     
-    # Generate structured summary using LLM
-    chat = LlmChat(
-        api_key=llm_manager.api_key,
-        session_id=f"weekly_summary_{datetime.now().timestamp()}",
-        system_message="""You are analyzing AI agent interactions to create a structured weekly report. 
-        Focus on concrete discoveries, decisions, breakthroughs, significant developments, and documents created.
-        
-        Create a comprehensive report with these sections:
-        1. EXECUTIVE SUMMARY (2-3 sentences highlighting the most important developments)
-        2. KEY EVENTS & DISCOVERIES (main focus - most important developments, decisions, breakthroughs)
-        3. DOCUMENTS & DELIVERABLES (focus on documents created, their purpose, and impact)
-        4. RELATIONSHIP DEVELOPMENTS (how agent relationships changed)
-        5. EMERGING PERSONALITIES (how each agent's personality manifested)
-        6. SOCIAL DYNAMICS (team cohesion, leadership patterns, conflicts)
-        7. STRATEGIC DECISIONS (important choices made by the team)
-        8. ACTION-ORIENTED OUTCOMES (tangible results and deliverables produced)
-        9. LOOKING AHEAD (predictions for future developments)
-        
-        Use **bold** for section headers and important points. Be specific and actionable.
-        Pay special attention to the documents created and their strategic value."""
-    ).with_model("gemini", "gemini-2.0-flash")
-    
+    # Generate structured summary using Claude 3.5 Sonnet (with Gemini fallback)
     prompt = f"""Analyze these AI agent conversations from the Research Station simulation:
 
 {conv_text}
@@ -3696,42 +3675,82 @@ IMPORTANT FORMATTING RULES:
 - Do NOT bold common words like "team", "discussion", "conversation", "development"
 - Make each numbered point a complete, detailed paragraph with specific examples from the conversations
 - Focus on concrete events and behaviors rather than generic observations"""
+
+    report_response = ""
+    model_used = "unknown"
     
     try:
+        # First attempt: Claude 3.5 Sonnet for superior report generation
+        print("🔥 Attempting Claude 3.5 Sonnet for report generation...")
+        
+        claude_chat = LlmChat(
+            api_key=llm_manager.claude_api_key,
+            session_id=f"weekly_summary_claude_{datetime.now().timestamp()}",
+            system_message="""You are an expert executive analyst creating comprehensive weekly reports for AI agent simulations. 
+            Your reports are read by executives, project managers, and stakeholders who need clear, actionable insights.
+            
+            Create a detailed, professional report with these sections:
+            1. EXECUTIVE SUMMARY (2-3 sentences highlighting the most critical developments)
+            2. KEY EVENTS & DISCOVERIES (major breakthroughs, decisions, and significant developments)
+            3. DOCUMENTS & DELIVERABLES (focus on documents created, their strategic value, and impact)
+            4. RELATIONSHIP DEVELOPMENTS (how agent relationships evolved and team dynamics)
+            5. EMERGING PERSONALITIES (how each agent's unique traits manifested in actions)
+            6. SOCIAL DYNAMICS (team cohesion, leadership patterns, conflicts, and collaboration)
+            7. STRATEGIC DECISIONS (important choices made and their implications)
+            8. ACTION-ORIENTED OUTCOMES (tangible results, deliverables, and measurable progress)
+            9. LOOKING AHEAD (strategic predictions and recommendations for future developments)
+            
+            CRITICAL REQUIREMENTS:
+            - Use **bold** for section headers and only the most significant key terms
+            - Write in executive-level language with strategic insights
+            - Focus on patterns, trends, and causal relationships
+            - Provide specific examples and evidence from conversations
+            - Make actionable recommendations
+            - Analyze the "why" behind agent behaviors and decisions"""
+        ).with_model("anthropic", "claude-3-5-sonnet-20241022")
+        
         user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
-        await llm_manager.increment_usage()
+        report_response = await claude_chat.send_message(user_message)
+        model_used = "Claude 3.5 Sonnet"
+        print("✅ SUCCESS: Claude 3.5 Sonnet generated report successfully!")
         
-        # Store structured summary in database
-        summary_doc = {
-            "id": str(uuid.uuid4()),
-            "summary": response,
-            "day_generated": current_day,
-            "conversations_analyzed": len(recent_conversations),
-            "report_type": "weekly_structured",
-            "created_at": datetime.utcnow()
-        }
-        await db.summaries.insert_one(summary_doc)
+    except Exception as claude_error:
+        print(f"❌ Claude 3.5 Sonnet failed: {str(claude_error)}")
+        print("🔄 Falling back to Gemini 2.0 Flash...")
         
-        # Update last auto report timestamp
-        await db.simulation_state.update_one(
-            {},
-            {"$set": {"last_auto_report": datetime.utcnow().isoformat()}},
-            upsert=True
-        )
-        
-        return {
-            "summary": response, 
-            "day": current_day, 
-            "conversations_count": len(recent_conversations),
-            "report_type": "weekly_structured"
-        }
-        
-    except Exception as e:
-        logging.error(f"Error generating summary: {e}")
-        
-        # Create a fallback summary when API fails
-        fallback_summary = f"""**Week Summary - Day {current_day}**
+        try:
+            # Fallback: Gemini 2.0 Flash
+            gemini_chat = LlmChat(
+                api_key=llm_manager.api_key,
+                session_id=f"weekly_summary_gemini_{datetime.now().timestamp()}",
+                system_message="""You are analyzing AI agent interactions to create a structured weekly report. 
+                Focus on concrete discoveries, decisions, breakthroughs, significant developments, and documents created.
+                
+                Create a comprehensive report with these sections:
+                1. EXECUTIVE SUMMARY (2-3 sentences highlighting the most important developments)
+                2. KEY EVENTS & DISCOVERIES (main focus - most important developments, decisions, breakthroughs)
+                3. DOCUMENTS & DELIVERABLES (focus on documents created, their purpose, and impact)
+                4. RELATIONSHIP DEVELOPMENTS (how agent relationships changed)
+                5. EMERGING PERSONALITIES (how each agent's personality manifested)
+                6. SOCIAL DYNAMICS (team cohesion, leadership patterns, conflicts)
+                7. STRATEGIC DECISIONS (important choices made by the team)
+                8. ACTION-ORIENTED OUTCOMES (tangible results and deliverables produced)
+                9. LOOKING AHEAD (predictions for future developments)
+                
+                Use **bold** for section headers and important points. Be specific and actionable.
+                Pay special attention to the documents created and their strategic value."""
+            ).with_model("gemini", "gemini-2.0-flash")
+            
+            user_message = UserMessage(text=prompt)
+            report_response = await gemini_chat.send_message(user_message)
+            model_used = "Gemini 2.0 Flash (fallback)"
+            print("✅ SUCCESS: Gemini 2.0 Flash generated report as fallback!")
+            
+        except Exception as gemini_error:
+            print(f"❌ Both Claude and Gemini failed: Claude({claude_error}), Gemini({gemini_error})")
+            
+            # Create a fallback summary when both APIs fail
+            fallback_summary = f"""**Week Summary - Day {current_day}**
 
 **1. 🔥 KEY EVENTS & DISCOVERIES**
 - {len(recent_conversations)} conversations analyzed from recent simulation periods
@@ -3753,27 +3772,60 @@ IMPORTANT FORMATTING RULES:
 - Continued monitoring of agent interactions and relationship evolution
 - Further development of personality-based conversation patterns
 
-*Note: This summary was generated using conversation analysis due to AI service limitations. For detailed AI-generated insights, please try again later when API quota is available.*"""
+*Note: This summary was generated using conversation analysis due to AI service limitations. Both Claude 3.5 Sonnet and Gemini 2.0 Flash were unavailable. Please try again later.*"""
 
-        # Store fallback summary in database
-        fallback_doc = {
-            "id": str(uuid.uuid4()),
-            "summary": fallback_summary,
-            "day_generated": current_day,
-            "conversations_analyzed": len(recent_conversations),
-            "created_at": datetime.utcnow(),
-            "is_fallback": True,
-            "report_type": "weekly_structured"
-        }
-        await db.summaries.insert_one(fallback_doc)
-        
-        return {
-            "summary": fallback_summary, 
-            "day": current_day, 
-            "conversations_count": len(recent_conversations),
-            "report_type": "weekly_structured",
-            "note": "Fallback summary generated due to API limitations"
-        }
+            # Store fallback summary in database
+            fallback_doc = {
+                "id": str(uuid.uuid4()),
+                "summary": fallback_summary,
+                "day_generated": current_day,
+                "conversations_analyzed": len(recent_conversations),
+                "created_at": datetime.utcnow(),
+                "is_fallback": True,
+                "report_type": "weekly_structured"
+            }
+            await db.summaries.insert_one(fallback_doc)
+            
+            return {
+                "summary": fallback_summary, 
+                "day": current_day, 
+                "conversations_count": len(recent_conversations),
+                "report_type": "weekly_structured",
+                "note": "Fallback summary generated due to API limitations"
+            }
+    
+    # Add model information to response
+    final_response = f"**Report Generated by {model_used}**\n\n{report_response}"
+    
+    # Increment usage for whichever model was used
+    await llm_manager.increment_usage()
+    
+    # Store structured summary in database
+    summary_doc = {
+        "id": str(uuid.uuid4()),
+        "summary": final_response,
+        "day_generated": current_day,
+        "conversations_analyzed": len(recent_conversations),
+        "report_type": "weekly_structured",
+        "model_used": model_used,
+        "created_at": datetime.utcnow()
+    }
+    await db.summaries.insert_one(summary_doc)
+    
+    # Update last auto report timestamp
+    await db.simulation_state.update_one(
+        {},
+        {"$set": {"last_auto_report": datetime.utcnow().isoformat()}},
+        upsert=True
+    )
+    
+    return {
+        "summary": final_response, 
+        "day": current_day, 
+        "conversations_count": len(recent_conversations),
+        "report_type": "weekly_structured",
+        "model_used": model_used
+    }
 
 @api_router.get("/archetypes")
 async def get_archetypes():
