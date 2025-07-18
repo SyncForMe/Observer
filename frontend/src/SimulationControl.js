@@ -1194,15 +1194,17 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {agent.avatar_url ? (
                               <img 
                                 src={agent.avatar_url} 
                                 alt={agent.name} 
-                                className="w-full h-full rounded-full object-cover"
+                                className="w-full h-full object-cover"
                                 loading="eager"
                                 style={{
                                   imageRendering: 'crisp-edges',
+                                  minWidth: '100%',
+                                  minHeight: '100%'
                                 }}
                                 onError={(e) => {
                                   e.target.style.display = 'none';
@@ -1211,7 +1213,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                               />
                             ) : null}
                             <span 
-                              className="text-white text-sm font-semibold"
+                              className="text-white text-sm font-semibold absolute"
                               style={{
                                 display: agent.avatar_url ? 'none' : 'flex'
                               }}
