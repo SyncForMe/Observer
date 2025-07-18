@@ -403,6 +403,9 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const [showReport, setShowReport] = useState(false);
   const [reportData, setReportData] = useState('');
   const [reportLoading, setReportLoading] = useState(false);
+  const [reportCardVisible, setReportCardVisible] = useState(false);
+  const [reportCardExpanded, setReportCardExpanded] = useState(true);
+  const [autoReportEnabled, setAutoReportEnabled] = useState(false);
   const [autoGenerateInterval, setAutoGenerateInterval] = useState(null);
   const [observerMessage, setObserverMessage] = useState('');
   const [observerMessages, setObserverMessages] = useState([]);
