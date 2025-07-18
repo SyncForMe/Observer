@@ -1505,7 +1505,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                                 ? 'text-blue-100 font-medium'
                                 : 'text-white/90'
                             }`}>
-                              {renderMarkdownBold(highlightSearchTerm(message.message, searchTerm))}
+                              {renderMarkdownBoldWithSearch(message.message, searchTerm)}
                             </p>
                           </div>
                         </div>
