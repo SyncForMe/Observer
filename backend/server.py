@@ -448,6 +448,12 @@ async def get_usage():
 async def get_observer_messages(current_user: User = Depends(get_current_user)):
     """Get all observer messages for the current user"""
     messages = await db.observer_messages.find({"user_id": current_user.id}).sort("timestamp", -1).to_list(100)
+    
+    # Convert ObjectId to string for JSON serialization
+    for message in messages:
+        if '_id' in message:
+            message['_id'] = str(message['_id'])
+    
     return messages
 
 
@@ -568,6 +574,7 @@ class AgentUpdate(BaseModel):
 class LLMManager:
     def __init__(self):
         self.api_key = os.environ.get('GEMINI_API_KEY')
+        self.claude_api_key = os.environ.get('ANTHROPIC_API_KEY')
         self.max_daily_requests = 50000  # Paid tier - much higher limit
         self.document_quality_gate = DocumentQualityGate()
         self.document_formatter = ProfessionalDocumentFormatter()
@@ -3594,28 +3601,7 @@ async def generate_weekly_summary():
                 document_summary += f"  - Preview: {content_preview}{'...' if len(doc.get('content', '')) > 200 else ''}\n"
             document_summary += "\n"
     
-    # Generate structured summary using LLM
-    chat = LlmChat(
-        api_key=llm_manager.api_key,
-        session_id=f"weekly_summary_{datetime.now().timestamp()}",
-        system_message="""You are analyzing AI agent interactions to create a structured weekly report. 
-        Focus on concrete discoveries, decisions, breakthroughs, significant developments, and documents created.
-        
-        Create a comprehensive report with these sections:
-        1. EXECUTIVE SUMMARY (2-3 sentences highlighting the most important developments)
-        2. KEY EVENTS & DISCOVERIES (main focus - most important developments, decisions, breakthroughs)
-        3. DOCUMENTS & DELIVERABLES (focus on documents created, their purpose, and impact)
-        4. RELATIONSHIP DEVELOPMENTS (how agent relationships changed)
-        5. EMERGING PERSONALITIES (how each agent's personality manifested)
-        6. SOCIAL DYNAMICS (team cohesion, leadership patterns, conflicts)
-        7. STRATEGIC DECISIONS (important choices made by the team)
-        8. ACTION-ORIENTED OUTCOMES (tangible results and deliverables produced)
-        9. LOOKING AHEAD (predictions for future developments)
-        
-        Use **bold** for section headers and important points. Be specific and actionable.
-        Pay special attention to the documents created and their strategic value."""
-    ).with_model("gemini", "gemini-2.0-flash")
-    
+    # Generate structured summary using Claude 3.5 Sonnet (with Gemini fallback)
     prompt = f"""Analyze these AI agent conversations from the Research Station simulation:
 
 {conv_text}
@@ -3689,19 +3675,127 @@ IMPORTANT FORMATTING RULES:
 - Do NOT bold common words like "team", "discussion", "conversation", "development"
 - Make each numbered point a complete, detailed paragraph with specific examples from the conversations
 - Focus on concrete events and behaviors rather than generic observations"""
+
+    report_response = ""
+    model_used = "unknown"
     
     try:
+        # First attempt: Claude 3.5 Sonnet for superior report generation
+        print("🔥 Attempting Claude 3.5 Sonnet for report generation...")
+        
+        claude_chat = LlmChat(
+            api_key=llm_manager.claude_api_key,
+            session_id=f"weekly_summary_claude_{datetime.now().timestamp()}",
+            system_message="""You are an expert executive analyst creating comprehensive weekly reports for AI agent simulations. 
+            Your reports are read by executives, project managers, and stakeholders who need clear, actionable insights.
+            
+            Create a detailed, professional report with these sections:
+            1. EXECUTIVE SUMMARY (2-3 sentences highlighting the most critical developments)
+            2. KEY EVENTS & DISCOVERIES (major breakthroughs, decisions, and significant developments)
+            3. DOCUMENTS & DELIVERABLES (focus on documents created, their strategic value, and impact)
+            4. RELATIONSHIP DEVELOPMENTS (how agent relationships evolved and team dynamics)
+            5. EMERGING PERSONALITIES (how each agent's unique traits manifested in actions)
+            6. SOCIAL DYNAMICS (team cohesion, leadership patterns, conflicts, and collaboration)
+            7. STRATEGIC DECISIONS (important choices made and their implications)
+            8. ACTION-ORIENTED OUTCOMES (tangible results, deliverables, and measurable progress)
+            9. LOOKING AHEAD (strategic predictions and recommendations for future developments)
+            
+            CRITICAL REQUIREMENTS:
+            - Use **bold** for section headers and only the most significant key terms
+            - Write in executive-level language with strategic insights
+            - Focus on patterns, trends, and causal relationships
+            - Provide specific examples and evidence from conversations
+            - Make actionable recommendations
+            - Analyze the "why" behind agent behaviors and decisions"""
+        ).with_model("anthropic", "claude-3-5-sonnet-20241022")
+        
         user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
+        report_response = await claude_chat.send_message(user_message)
+        model_used = "Claude 3.5 Sonnet"
+        print("✅ SUCCESS: Claude 3.5 Sonnet generated report successfully!")
+        
+    except Exception as claude_error:
+        print(f"❌ Claude 3.5 Sonnet failed: {str(claude_error)}")
+        print("🔄 Falling back to Gemini 2.0 Flash...")
+        
+        try:
+            # Fallback: Gemini 2.0 Flash
+            gemini_chat = LlmChat(
+                api_key=llm_manager.api_key,
+                session_id=f"weekly_summary_gemini_{datetime.now().timestamp()}",
+                system_message="""You are analyzing AI agent interactions to create a structured weekly report. 
+                Focus on concrete discoveries, decisions, breakthroughs, significant developments, and documents created.
+                
+                Create a comprehensive report with these sections:
+                1. EXECUTIVE SUMMARY (2-3 sentences highlighting the most important developments)
+                2. KEY EVENTS & DISCOVERIES (main focus - most important developments, decisions, breakthroughs)
+                3. DOCUMENTS & DELIVERABLES (focus on documents created, their purpose, and impact)
+                4. RELATIONSHIP DEVELOPMENTS (how agent relationships changed)
+                5. EMERGING PERSONALITIES (how each agent's personality manifested)
+                6. SOCIAL DYNAMICS (team cohesion, leadership patterns, conflicts)
+                7. STRATEGIC DECISIONS (important choices made by the team)
+                8. ACTION-ORIENTED OUTCOMES (tangible results and deliverables produced)
+                9. LOOKING AHEAD (predictions for future developments)
+                
+                Use **bold** for section headers and important points. Be specific and actionable.
+                Pay special attention to the documents created and their strategic value."""
+            ).with_model("gemini", "gemini-2.0-flash")
+            
+            user_message = UserMessage(text=prompt)
+            report_response = await gemini_chat.send_message(user_message)
+            model_used = "Gemini 2.0 Flash (fallback)"
+            print("✅ SUCCESS: Gemini 2.0 Flash generated report as fallback!")
+            
+        except Exception as gemini_error:
+            print(f"❌ Both Claude and Gemini failed: Claude({claude_error}), Gemini({gemini_error})")
+            
+            # Create a fallback summary when both APIs fail
+            report_response = f"""**Week Summary - Day {current_day}**
+
+**1. 🔥 KEY EVENTS & DISCOVERIES**
+- {len(recent_conversations)} conversations analyzed from recent simulation periods
+- {'Multiple' if len(recent_conversations) > 1 else 'Single'} agent interactions documented
+- Key decisions and breakthroughs identified through conversation analysis
+
+**2. 📋 DOCUMENTS & DELIVERABLES**
+- {len(recent_documents)} documents created during this period
+- Strategic documentation covering research findings and operational protocols
+- Collaborative work products demonstrating team coordination
+
+**3. 🤝 RELATIONSHIP DEVELOPMENTS**
+- Agent interactions show evolving communication patterns
+- Team dynamics reflect collaborative problem-solving approaches
+- Leadership emergence patterns observed in group discussions
+
+**4. 🎯 STRATEGIC DECISIONS**
+- Research priorities established through collaborative discussion
+- Operational protocols refined based on simulation outcomes
+- Future planning initiatives identified and prioritized
+
+**5. 🔮 LOOKING AHEAD**
+- Continued monitoring of agent interactions and relationship evolution
+- Further development of personality-based conversation patterns
+- Enhanced document creation and strategic planning processes
+
+*Note: This summary was generated using conversation analysis due to AI service limitations. Both Claude 3.5 Sonnet and Gemini 2.0 Flash were unavailable. Please try again later.*"""
+            
+            model_used = "Fallback Analysis (Both AI models failed)"
+    
+    
+    # Add model information to response
+    final_response = f"**Report Generated by {model_used}**\n\n{report_response}"
+    
+    try:
         await llm_manager.increment_usage()
         
         # Store structured summary in database
         summary_doc = {
             "id": str(uuid.uuid4()),
-            "summary": response,
+            "summary": final_response,
             "day_generated": current_day,
             "conversations_analyzed": len(recent_conversations),
             "report_type": "weekly_structured",
+            "model_used": model_used,
             "created_at": datetime.utcnow()
         }
         await db.summaries.insert_one(summary_doc)
@@ -3714,59 +3808,53 @@ IMPORTANT FORMATTING RULES:
         )
         
         return {
-            "summary": response, 
-            "day": current_day, 
-            "conversations_count": len(recent_conversations),
-            "report_type": "weekly_structured"
-        }
-        
-    except Exception as e:
-        logging.error(f"Error generating summary: {e}")
-        
-        # Create a fallback summary when API fails
-        fallback_summary = f"""**Week Summary - Day {current_day}**
-
-**1. 🔥 KEY EVENTS & DISCOVERIES**
-- {len(recent_conversations)} conversations analyzed from recent simulation periods
-- Team dynamics continue to evolve between {len(set([msg['agent_name'] for conv in recent_conversations for msg in conv.get('messages', [])]))} active agents
-
-**2. 📈 RELATIONSHIP DEVELOPMENTS**
-- Ongoing interactions between team members showing personality-driven responses
-- Relationship patterns emerging based on agent archetypes and conversation contexts
-
-**3. 🎭 EMERGING PERSONALITIES**
-- Each agent continues to demonstrate their unique archetype characteristics
-- Personality traits influencing conversation styles and decision-making approaches
-
-**4. 🤝 SOCIAL DYNAMICS**
-- Team coordination and communication patterns developing
-- Individual agent strengths contributing to group discussions
-
-**5. 🔮 LOOKING AHEAD**
-- Continued monitoring of agent interactions and relationship evolution
-- Further development of personality-based conversation patterns
-
-*Note: This summary was generated using conversation analysis due to AI service limitations. For detailed AI-generated insights, please try again later when API quota is available.*"""
-
-        # Store fallback summary in database
-        fallback_doc = {
-            "id": str(uuid.uuid4()),
-            "summary": fallback_summary,
-            "day_generated": current_day,
-            "conversations_analyzed": len(recent_conversations),
-            "created_at": datetime.utcnow(),
-            "is_fallback": True,
-            "report_type": "weekly_structured"
-        }
-        await db.summaries.insert_one(fallback_doc)
-        
-        return {
-            "summary": fallback_summary, 
+            "summary": final_response, 
             "day": current_day, 
             "conversations_count": len(recent_conversations),
             "report_type": "weekly_structured",
-            "note": "Fallback summary generated due to API limitations"
+            "model_used": model_used
         }
+        
+    except Exception as e:
+        logging.error(f"Error storing summary: {e}")
+        return {
+            "summary": final_response, 
+            "day": current_day, 
+            "conversations_count": len(recent_conversations),
+            "report_type": "weekly_structured",
+            "model_used": model_used,
+            "note": "Report generated successfully but storage failed"
+        }
+    
+    # Increment usage for whichever model was used
+    await llm_manager.increment_usage()
+    
+    # Store structured summary in database
+    summary_doc = {
+        "id": str(uuid.uuid4()),
+        "summary": final_response,
+        "day_generated": current_day,
+        "conversations_analyzed": len(recent_conversations),
+        "report_type": "weekly_structured",
+        "model_used": model_used,
+        "created_at": datetime.utcnow()
+    }
+    await db.summaries.insert_one(summary_doc)
+    
+    # Update last auto report timestamp
+    await db.simulation_state.update_one(
+        {},
+        {"$set": {"last_auto_report": datetime.utcnow().isoformat()}},
+        upsert=True
+    )
+    
+    return {
+        "summary": final_response, 
+        "day": current_day, 
+        "conversations_count": len(recent_conversations),
+        "report_type": "weekly_structured",
+        "model_used": model_used
+    }
 
 @api_router.get("/archetypes")
 async def get_archetypes():
@@ -4960,112 +5048,137 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Generate messages with REAL Gemini API calls first, fallback to smart responses if needed
     messages = []
     
-    for i, agent in enumerate(agent_objects):
-        try:
-            # First, try to generate response with real Gemini API
-            print(f"🔥 DEBUG: Attempting Gemini API call for {agent.name}")
+    # Generate 3 messages per agent (3 turns per round)
+    for turn in range(3):  # Each agent gets 3 turns per round
+        for i, agent in enumerate(agent_objects):
+            try:
+                # First, try to generate response with real Gemini API
+                print(f"🔥 DEBUG: Attempting Gemini API call for {agent.name} (Turn {turn + 1})")
+                
+                # Build rich conversation context with previous work and documents
+                if turn == 0 and i == 0:
+                    # First speaker of first turn - include previous conversation context and existing documents
+                    previous_context = ""
+                    
+                    # Get recent conversations for context
+                    recent_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(3).to_list(3)
+                    if recent_conversations:
+                        previous_context += "PREVIOUS TEAM DISCUSSIONS:\n"
+                        for conv in recent_conversations:
+                            prev_messages = conv.get('messages', [])
+                            if prev_messages:
+                                key_points = " | ".join([msg.get('message', '')[:80] + "..." for msg in prev_messages[:2]])
+                                previous_context += f"- {conv.get('scenario_name', 'Discussion')}: {key_points}\n"
+                        previous_context += "\n"
+                    
+                    # Get existing documents for context
+                    existing_documents = await db.documents.find({"user_id": current_user.id}).sort("updated_at", -1).limit(5).to_list(5)
+                    if existing_documents:
+                        previous_context += "EXISTING TEAM DOCUMENTS:\n"
+                        for doc in existing_documents:
+                            previous_context += f"- {doc.get('title', 'Untitled')} ({doc.get('category', 'Document')}): {doc.get('description', 'No description')}\n"
+                        previous_context += "\n"
+                    
+                    conversation_context = f"{previous_context}{observer_context}You're starting a discussion about: {scenario}\n\nBuild on previous work where relevant and drive toward concrete decisions and actions. Pay special attention to any Observer directives - they are your project lead/CEO."
+                else:
+                    # Build context from what others have said so far
+                    conversation_context = "CURRENT DISCUSSION:\n\n"
+                    for j, msg in enumerate(messages):
+                        conversation_context += f"{msg.agent_name}: \"{msg.message}\"\n\n"
+                    conversation_context += f"{observer_context}Respond to the discussion above. Look for opportunities to:\n- Synthesize what's been said\n- Propose concrete next steps\n- Call for decisions or votes\n- Commit to creating/updating documents\n\nRemember: The Observer is your project lead/CEO - their guidance should heavily influence your response."
+                
+                # Build conversation history in the format expected by generate_agent_response
+                conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
+                
+                response = await llm_manager.generate_agent_response(
+                    agent=agent,
+                    scenario=scenario,
+                    other_agents=[a for a in agent_objects if a.id != agent.id],
+                    context=conversation_context,  # Use our rich context instead of generic context
+                    conversation_history=conversation_history_msgs,
+                    language_instruction=language_instruction,
+                    existing_documents=existing_documents,
+                    simulation_state=state
+                )
+                
+                # Clean up response - remove agent name prefix if present
+                message_text = response.replace(f"{agent.name}: ", "").strip()
+                print(f"✅ GEMINI API SUCCESS for {agent.name}: {message_text[:100]}...")
+                
+            except Exception as e:
+                print(f"❌ GEMINI API FAILED for {agent.name}: {str(e)[:100]}...")
+                
+                # Fall back to smart conversation generator
+                agent_dict = {
+                    "name": agent.name,
+                    "archetype": agent.archetype,
+                    "expertise": agent.expertise,
+                    "background": agent.background,
+                    "personality": agent.personality.dict() if agent.personality else {}
+                }
+                
+                message_text = conversation_gen.generate_contextual_response(
+                    agent=agent_dict,
+                    scenario=scenario,
+                    scenario_name=scenario_name,
+                    conversation_history=[{"agent_name": msg.agent_name, "message": msg.message} for msg in messages],
+                    turn_number=len(messages)  # Use total message count instead of i
+                )
+                print(f"🔄 Using smart fallback for {agent.name}: {message_text[:100]}...")
             
-            # Build rich conversation context with previous work and documents
-            if i == 0:
-                # First speaker - include previous conversation context and existing documents
-                previous_context = ""
-                
-                # Get recent conversations for context
-                recent_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(3).to_list(3)
-                if recent_conversations:
-                    previous_context += "PREVIOUS TEAM DISCUSSIONS:\n"
-                    for conv in recent_conversations:
-                        prev_messages = conv.get('messages', [])
-                        if prev_messages:
-                            key_points = " | ".join([msg.get('message', '')[:80] + "..." for msg in prev_messages[:2]])
-                            previous_context += f"- {conv.get('scenario_name', 'Discussion')}: {key_points}\n"
-                    previous_context += "\n"
-                
-                # Get existing documents for context
-                existing_documents = await db.documents.find({"user_id": current_user.id}).sort("updated_at", -1).limit(5).to_list(5)
-                if existing_documents:
-                    previous_context += "EXISTING TEAM DOCUMENTS:\n"
-                    for doc in existing_documents:
-                        previous_context += f"- {doc.get('title', 'Untitled')} ({doc.get('category', 'Document')}): {doc.get('description', 'No description')}\n"
-                    previous_context += "\n"
-                
-                conversation_context = f"{previous_context}{observer_context}You're starting a discussion about: {scenario}\n\nBuild on previous work where relevant and drive toward concrete decisions and actions. Pay special attention to any Observer directives - they are your project lead/CEO."
+            # Determine mood based on agent archetype and message content
+            if agent.archetype == "optimist":
+                mood = "enthusiastic"
+            elif agent.archetype == "skeptic":
+                mood = "cautious"
+            elif agent.archetype == "scientist":
+                mood = "analytical"
+            elif agent.archetype == "leader":
+                mood = "strategic"
+            elif agent.archetype == "artist":
+                mood = "creative"
             else:
-                # Build context from what others have said so far
-                conversation_context = "CURRENT DISCUSSION:\n\n"
-                for j, msg in enumerate(messages):
-                    conversation_context += f"{msg.agent_name}: \"{msg.message}\"\n\n"
-                conversation_context += f"{observer_context}Respond to the discussion above. Look for opportunities to:\n- Synthesize what's been said\n- Propose concrete next steps\n- Call for decisions or votes\n- Commit to creating/updating documents\n\nRemember: The Observer is your project lead/CEO - their guidance should heavily influence your response."
+                mood = "engaged"
             
-            # Build conversation history in the format expected by generate_agent_response
-            conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
-            
-            response = await llm_manager.generate_agent_response(
-                agent=agent,
-                scenario=scenario,
-                other_agents=[a for a in agent_objects if a.id != agent.id],
-                context=conversation_context,  # Use our rich context instead of generic context
-                conversation_history=conversation_history_msgs,
-                language_instruction=language_instruction,
-                existing_documents=existing_documents,
-                simulation_state=state
+            message = ConversationMessage(
+                agent_name=agent.name,
+                agent_id=agent.id,
+                message=message_text,
+                mood=mood,
+                timestamp=datetime.utcnow()
             )
-            
-            # Clean up response - remove agent name prefix if present
-            message_text = response.replace(f"{agent.name}: ", "").strip()
-            print(f"✅ GEMINI API SUCCESS for {agent.name}: {message_text[:100]}...")
-            
-        except Exception as e:
-            print(f"❌ GEMINI API FAILED for {agent.name}: {str(e)[:100]}...")
-            
-            # Fall back to smart conversation generator
-            agent_dict = {
-                "name": agent.name,
-                "archetype": agent.archetype,
-                "expertise": agent.expertise,
-                "background": agent.background,
-                "personality": agent.personality.dict() if agent.personality else {}
-            }
-            
-            message_text = conversation_gen.generate_contextual_response(
-                agent=agent_dict,
-                scenario=scenario,
-                scenario_name=scenario_name,
-                conversation_history=[{"agent_name": msg.agent_name, "message": msg.message} for msg in messages],
-                turn_number=i
-            )
-            print(f"🔄 Using smart fallback for {agent.name}: {message_text[:100]}...")
-        
-        # Determine mood based on agent archetype and message content
-        if agent.archetype == "optimist":
-            mood = "enthusiastic"
-        elif agent.archetype == "skeptic":
-            mood = "cautious"
-        elif agent.archetype == "scientist":
-            mood = "analytical"
-        elif agent.archetype == "leader":
-            mood = "strategic"
-        elif agent.archetype == "artist":
-            mood = "creative"
-        else:
-            mood = "engaged"
-        
-        message = ConversationMessage(
-            agent_name=agent.name,
-            agent_id=agent.id,
-            message=message_text,
-            mood=mood,
-            timestamp=datetime.utcnow()
-        )
-        messages.append(message)
+            messages.append(message)
     
     # Get conversation count for round numbering (user-specific)
     conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
+    round_number = conversation_count + 1
+    
+    # Calculate day and time period based on round number
+    def calculate_day_and_time_period(round_num):
+        if round_num <= 0:
+            return "Day 1 - Morning"
+        
+        day = ((round_num - 1) // 9) + 1
+        round_in_day = ((round_num - 1) % 9) + 1
+        
+        if round_in_day <= 3:
+            period = "Morning"
+            round_in_period = round_in_day
+        elif round_in_day <= 6:
+            period = "Afternoon"
+            round_in_period = round_in_day - 3
+        else:
+            period = "Evening"
+            round_in_period = round_in_day - 6
+        
+        return f"Day {day} - {period}"
+    
+    time_period = calculate_day_and_time_period(round_number)
     
     # Create conversation round  
     conversation_round = ConversationRound(
-        round_number=conversation_count + 1,
-        time_period="Day 1 - morning",
+        round_number=round_number,
+        time_period=time_period,
         scenario=scenario,
         scenario_name=scenario_name,
         messages=messages,

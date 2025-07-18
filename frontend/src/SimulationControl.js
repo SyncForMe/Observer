@@ -153,6 +153,7 @@ const formatScenarioText = (text) => {
     </div>
   );
 };
+
 const WELCOME_MESSAGES = [
   "Welcome, Observer",
   "Hey, Observer is back! Agents, rejoice!",
@@ -400,6 +401,12 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const [showObserverChat, setShowObserverChat] = useState(false);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   const [showStartFreshModal, setShowStartFreshModal] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+  const [reportData, setReportData] = useState('');
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportCardVisible, setReportCardVisible] = useState(false);
+  const [reportCardExpanded, setReportCardExpanded] = useState(true);
+  const [autoReportEnabled, setAutoReportEnabled] = useState(false);
   const [autoGenerateInterval, setAutoGenerateInterval] = useState(null);
   const [observerMessage, setObserverMessage] = useState('');
   const [observerMessages, setObserverMessages] = useState([]);
@@ -980,6 +987,48 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
+  const handleGenerateReport = async () => {
+    try {
+      setReportLoading(true);
+      setReportData(''); // Clear previous report
+      
+      const response = await axios.post(`${API}/simulation/generate-summary`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setReportData(response.data.summary || 'No report data available');
+      setReportCardVisible(true); // Show the report card
+      setReportCardExpanded(true); // Expand it by default
+    } catch (error) {
+      console.error('Error generating report:', error);
+      setReportData('Error generating report: ' + (error.response?.data?.detail || error.message));
+      setReportCardVisible(true); // Show the report card even on error
+      setReportCardExpanded(true);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleAutoReportToggle = async () => {
+    try {
+      const newStatus = !autoReportEnabled;
+      setAutoReportEnabled(newStatus);
+      
+      // Call backend to enable/disable auto reports
+      await axios.post(`${API}/simulation/auto-weekly-report`, {
+        enabled: newStatus
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log(`Auto weekly reports ${newStatus ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Error toggling auto report:', error);
+      // Revert on error
+      setAutoReportEnabled(!autoReportEnabled);
+    }
+  };
+
   const performSearch = (term) => {
     if (!term.trim()) {
       setSearchResults([]);
@@ -988,22 +1037,31 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
 
     const results = [];
-    [...conversations, ...observerMessages].forEach((conversation, conversationIndex) => {
+    
+    // Search observer messages
+    observerMessages.forEach((message, messageIndex) => {
+      if (message.message.toLowerCase().includes(term.toLowerCase())) {
+        results.push({
+          type: 'observer',
+          conversationIndex: -1,
+          messageIndex,
+          message
+        });
+      }
+    });
+    
+    // Search regular conversations
+    conversations.forEach((conversation, conversationIndex) => {
       if (conversation.messages) {
         conversation.messages.forEach((message, messageIndex) => {
           if (message.message.toLowerCase().includes(term.toLowerCase())) {
             results.push({
+              type: 'conversation',
               conversationIndex,
               messageIndex,
               message
             });
           }
-        });
-      } else if (conversation.message && conversation.message.toLowerCase().includes(term.toLowerCase())) {
-        results.push({
-          conversationIndex: -1,
-          messageIndex: conversationIndex,
-          message: conversation
         });
       }
     });
@@ -1040,6 +1098,63 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         <span key={index} className="bg-yellow-400 text-black px-1 rounded">{part}</span> : 
         part
     );
+  };
+
+  // Helper function to render markdown bold text
+  const renderMarkdownBold = (text) => {
+    if (!text) return '';
+    
+    // Split text by **bold** patterns and render accordingly
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        // Remove the ** and render as bold
+        const boldText = part.slice(2, -2);
+        return <strong key={index} className="font-bold">{boldText}</strong>;
+      }
+      return part;
+    });
+  };
+
+  // Helper function to calculate day and time period from rounds
+  const calculateDayAndTime = (roundNumber) => {
+    if (roundNumber === 0) return { day: 1, period: "Morning", roundInPeriod: 1 };
+    
+    // Each round now has 3 messages per agent, so we need to calculate based on total messages
+    const day = Math.floor((roundNumber - 1) / 9) + 1;
+    const roundInDay = ((roundNumber - 1) % 9) + 1;
+    
+    let period, roundInPeriod;
+    if (roundInDay <= 3) {
+      period = "Morning";
+      roundInPeriod = roundInDay;
+    } else if (roundInDay <= 6) {
+      period = "Afternoon";
+      roundInPeriod = roundInDay - 3;
+    } else {
+      period = "Evening";
+      roundInPeriod = roundInDay - 6;
+    }
+    
+    return { day, period, roundInPeriod };
+  };
+
+  // Helper function to render markdown bold text with search highlighting
+  const renderMarkdownBoldWithSearch = (text, searchTerm) => {
+    if (!text) return '';
+    
+    // First handle bold markdown, then search highlighting
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        // Remove the ** and render as bold
+        const boldText = part.slice(2, -2);
+        return <strong key={index} className="font-bold">{highlightSearchTerm(boldText, searchTerm)}</strong>;
+      }
+      return highlightSearchTerm(part, searchTerm);
+    });
   };
 
   return (
@@ -1136,7 +1251,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         
         {/* Agent List Section - 25% width on large screens (Left Position) */}
         <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[350px] md:min-h-[380px] lg:min-h-[420px] xl:min-h-[450px] 2xl:min-h-[480px]">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2">
                 <h3 className="text-lg font-bold text-white">🤖 Agent List</h3>
@@ -1174,66 +1289,87 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               </div>
             </div>
             
-            {agents.length > 0 ? (
-              <div className="space-y-3 mb-4">
-                {agents.map((agent) => (
-                  <div
-                    key={agent.id}
-                    className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors group"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                          {agent.avatar_url ? (
-                            <img src={agent.avatar_url} alt={agent.name} className="w-full h-full rounded-full object-cover" />
-                          ) : (
-                            <span className="text-white text-sm font-semibold">
+            {/* Agent List Display with Scroll */}
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {agents.length > 0 ? (
+                <>
+                  {agents.map((agent) => (
+                    <div
+                      key={agent.id}
+                      className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors group"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {agent.avatar_url ? (
+                              <img 
+                                src={agent.avatar_url} 
+                                alt={agent.name} 
+                                className="w-full h-full object-cover"
+                                loading="eager"
+                                style={{
+                                  imageRendering: 'crisp-edges',
+                                  minWidth: '100%',
+                                  minHeight: '100%'
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <span 
+                              className="text-white text-sm font-semibold absolute"
+                              style={{
+                                display: agent.avatar_url ? 'none' : 'flex'
+                              }}
+                            >
                               {agent.name?.charAt(0) || '🤖'}
                             </span>
-                          )}
+                          </div>
+                          <div>
+                            <h4 className="text-white font-medium text-sm">{agent.name}</h4>
+                            <p className="text-white/60 text-xs capitalize">{agent.archetype}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-white font-medium text-sm">{agent.name}</h4>
-                          <p className="text-white/60 text-xs capitalize">{agent.archetype}</p>
+                        
+                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleEditAgent(agent)}
+                            className="w-6 h-6 text-white/60 hover:text-white rounded transition-colors flex items-center justify-center text-xs"
+                            title="Edit Agent"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleRemoveAgent(agent.id)}
+                            className="w-6 h-6 text-white/60 hover:text-red-400 rounded transition-colors flex items-center justify-center text-xs"
+                            title="Remove Agent"
+                          >
+                            🗑️
+                          </button>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditAgent(agent)}
-                          className="w-6 h-6 text-white/60 hover:text-white rounded transition-colors flex items-center justify-center text-xs"
-                          title="Edit Agent"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleRemoveAgent(agent.id)}
-                          className="w-6 h-6 text-white/60 hover:text-red-400 rounded transition-colors flex items-center justify-center text-xs"
-                          title="Remove Agent"
-                        >
-                          🗑️
-                        </button>
-                      </div>
+                      <p className="text-white/70 text-xs line-clamp-2 mb-2">
+                        {agent.background || agent.expertise}
+                      </p>
                     </div>
-                    
-                    <p className="text-white/70 text-xs line-clamp-2 mb-2">
-                      {agent.background || agent.expertise}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-white/60 text-sm mb-4">No Agents in List</p>
-                <p className="text-white/40 text-xs mb-4">Click + to add agents from library</p>
-              </div>
-            )}
+                  ))}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-white/60 text-sm mb-4">No Agents in List</p>
+                  <p className="text-white/40 text-xs mb-4">Click + to add agents from library</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Live Conversations Section - 50% width on large screens (Middle Position) */}
         <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full min-h-[350px] md:min-h-[380px] lg:min-h-[420px] xl:min-h-[450px] 2xl:min-h-[480px] flex flex-col">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">💬 Live Conversations</h3>
               <div className="flex items-center space-x-1">
@@ -1242,7 +1378,11 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></div>
                 )}
                 <span className="text-white/60 text-sm">
-                  {conversations.length} rounds, {observerMessages.length} messages
+                  {(() => {
+                    const currentRound = conversations.length + 1;
+                    const { day, period } = calculateDayAndTime(currentRound);
+                    return `Day ${day}, ${period}`;
+                  })()}
                 </span>
               </div>
             </div>
@@ -1259,7 +1399,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       performSearch(e.target.value);
                     }}
                     placeholder="Search conversations..."
-                    className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 pl-8 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full bg-white/10 border border-white/20 rounded-2xl px-3 py-2 pl-8 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                   <svg className="absolute left-2 top-2.5 w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1269,7 +1409,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   <div className="flex space-x-1">
                     <button
                       onClick={() => navigateSearch('prev')}
-                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs"
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs"
                     >
                       ↑
                     </button>
@@ -1278,7 +1418,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     </span>
                     <button
                       onClick={() => navigateSearch('next')}
-                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded text-xs"
+                      className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs"
                     >
                       ↓
                     </button>
@@ -1288,8 +1428,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
             </div>
 
             {/* Conversations Display */}
-            <div className="flex-1 overflow-y-auto max-h-[250px] md:max-h-[280px] lg:max-h-[320px] xl:max-h-[350px] 2xl:max-h-[380px] space-y-3 mb-4">
-              {conversations.length === 0 ? (
+            <div className="flex-1 overflow-y-auto space-y-3">
+              {conversations.length === 0 && observerMessages.length === 0 ? (
                 <div className="text-center py-8 space-y-4">
                   <div>
                     <p className="text-white/60 text-sm mb-2">No conversations yet</p>
@@ -1302,9 +1442,52 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 </div>
               ) : (
                 <>
-                  {conversations.map((conversation, conversationIndex) => (
-                    <div key={conversation.id || conversationIndex} className="space-y-2">
-                      {conversation.messages?.map((message, messageIndex) => {
+                  {/* Display Observer Messages */}
+                  {observerMessages.map((message, messageIndex) => (
+                    <div
+                      key={`observer-${message.id || messageIndex}`}
+                      className="rounded-2xl p-3 border-l-4 bg-blue-500/20 border-blue-500 shadow-lg transition-all duration-200"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold bg-blue-600">
+                            👁️
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="font-bold text-blue-300">
+                              Observer (You)
+                            </span>
+                            <span className="text-white/40 text-xs">
+                              {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Now'}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed text-blue-100 font-medium">
+                            {renderMarkdownBold(message.message)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Display Regular Conversations */}
+                  {conversations.map((conversation, conversationIndex) => {
+                    const roundNumber = conversationIndex + 1;
+                    const { day, period, roundInPeriod } = calculateDayAndTime(roundNumber);
+                    
+                    return (
+                      <div key={conversation.id || conversationIndex} className="space-y-2">
+                        {/* Round Header */}
+                        <div className="flex justify-center mb-2">
+                          <div className="bg-white/5 rounded-full px-3 py-1 border border-white/10">
+                            <span className="text-white/70 text-xs font-medium">
+                              Day {day}, Round {roundInPeriod}, {period}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {conversation.messages?.map((message, messageIndex) => {
                         const isCurrentSearch = searchResults.length > 0 && 
                           searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
                           searchResults[currentSearchIndex]?.messageIndex === messageIndex;
@@ -1316,7 +1499,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                           <div
                             key={message.id || messageIndex}
                             ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
-                            className={`rounded-lg p-3 border-l-4 ${
+                            className={`rounded-2xl p-3 border-l-4 ${
                               message.agent_name === "Observer (You)"
                                 ? 'bg-blue-500/20 border-blue-500 shadow-lg'
                                 : isCurrentSearch 
@@ -1354,7 +1537,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                                 ? 'text-blue-100 font-medium'
                                 : 'text-white/90'
                             }`}>
-                              {highlightSearchTerm(message.message, searchTerm)}
+                              {renderMarkdownBoldWithSearch(message.message, searchTerm)}
                             </p>
                           </div>
                         </div>
@@ -1362,7 +1545,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     );
                       })}
                     </div>
-                  ))}
+                  )
+                  })}
                   <div ref={messagesEndRef} />
                 </>
               )}
@@ -1370,7 +1554,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
             {/* Observer Input Section */}
             {showObserverChat && (
-              <div className="mt-4 p-4 bg-white/5 rounded-lg border border-purple-500/30">
+              <div className="mt-2 p-4 bg-white/5 rounded-2xl border border-purple-500/30">
                 <h4 className="text-white font-medium mb-3 flex items-center space-x-2">
                   <span className="text-blue-400">👁️</span>
                   <span>Observer Control</span>
@@ -1381,7 +1565,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     value={observerMessage}
                     onChange={(e) => setObserverMessage(e.target.value)}
                     placeholder="Enter observer message..."
-                    className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 bg-white/10 border border-white/20 rounded-2xl px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleSendObserverMessage();
@@ -1391,7 +1575,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   <button
                     onClick={handleSendObserverMessage}
                     disabled={!observerMessage.trim() || isObserverLoading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-2xl transition-colors duration-200 disabled:cursor-not-allowed"
                   >
                     {isObserverLoading ? 'Sending...' : 'Send'}
                   </button>
@@ -1401,7 +1585,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           </div>
           
           {/* Control Buttons - Outside of Live Conversations card but in same column */}
-          <div className="mt-4">
+          <div className="mt-1.5">
             <div className="grid grid-cols-4 gap-1 py-3 max-w-xs mx-auto">
               {/* Play/Pause Button */}
               <div className="flex flex-col items-center group">
@@ -1477,7 +1661,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
         {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
         <div className="lg:col-span-1">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-full flex flex-col">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">🎛️ Control Desk</h3>
             </div>
@@ -1566,9 +1750,112 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               </div>
             </div>
 
+            {/* Generate Report Section with expandable functionality */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-white/80 text-sm font-medium">Generate Report</h4>
+                <button
+                  onClick={() => setShowReport(!showReport)}
+                  className="text-white/60 hover:text-white transition-all duration-200"
+                  style={{ transform: showReport ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Report Content Section */}
+              <div className="flex-1">
+                {/* Expandable Report Section */}
+                {showReport && (
+                  <div className="bg-white/5 rounded-lg p-4 space-y-3 animate-fadeIn">
+                    <div className="flex space-x-2 mb-3">
+                      <button
+                        onClick={handleGenerateReport}
+                        disabled={reportLoading || conversations.length === 0}
+                        className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
+                      >
+                        {reportLoading ? 'Generating...' : 'Generate Report'}
+                      </button>
+                    </div>
+                    
+                    {/* Auto Report Toggle */}
+                    <div className="p-3 bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-white/80 text-sm font-medium">Auto Weekly Reports</span>
+                        </div>
+                        <button
+                          onClick={handleAutoReportToggle}
+                          className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
+                            autoReportEnabled ? 'bg-green-600' : 'bg-gray-600'
+                          }`}
+                        >
+                          <div
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+                              autoReportEnabled ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      <div className="mt-1">
+                        <span className="text-white/50 text-xs">Automatic report generation</span>
+                      </div>
+                    </div>
+                    
+                    {conversations.length === 0 && (
+                      <div className="text-white/50 text-xs text-center py-2">
+                        No conversations available for report generation
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
+
+      {/* Separate Report Card - Only visible when report is generated */}
+      {reportCardVisible && (
+        <div className="mt-6 flex justify-center">
+          <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2 w-full max-w-4xl">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-white">📊 Weekly Report</h3>
+                <button
+                  onClick={() => setReportCardExpanded(!reportCardExpanded)}
+                  className="text-white/60 hover:text-white transition-all duration-200"
+                  style={{ transform: reportCardExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Report Content */}
+              {reportCardExpanded && (
+                <div className="flex-1 overflow-y-auto">
+                  {reportLoading ? (
+                    <div className="flex items-center justify-center p-8">
+                      <div className="text-white/60">Generating comprehensive report...</div>
+                    </div>
+                  ) : (
+                    <div className="bg-white/5 rounded-lg p-4 max-h-96 overflow-y-auto">
+                      <div className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">
+                        {renderMarkdownBold(reportData || 'No report data available')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Custom Start Fresh Confirmation Modal */}
       {showStartFreshModal && (

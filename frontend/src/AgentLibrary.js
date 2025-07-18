@@ -2435,8 +2435,21 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   
                   <div className="mb-6 flex space-x-3">
                     <button
-                      onClick={() => {
-                        quickTeams[selectedQuickTeam].agents.forEach(agent => handleAddAgent(agent));
+                      onClick={async () => {
+                        // Add agents in batches to avoid overwhelming the backend
+                        const agents = quickTeams[selectedQuickTeam].agents;
+                        const batchSize = 3; // Add 3 agents at a time
+                        
+                        for (let i = 0; i < agents.length; i += batchSize) {
+                          const batch = agents.slice(i, i + batchSize);
+                          const promises = batch.map(agent => handleAddAgent(agent));
+                          await Promise.all(promises);
+                          
+                          // Small delay between batches to prevent overwhelming the backend
+                          if (i + batchSize < agents.length) {
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                          }
+                        }
                       }}
                       className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
                     >
@@ -2490,24 +2503,29 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                         
                         <div className="p-4">
                           <div className="flex items-start space-x-3">
-                            <img
-                              src={agent.avatar}
-                              alt={agent.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                              loading="eager"
-                              style={{
-                                imageRendering: 'crisp-edges',
-                              }}
-                              onError={(e) => {
-                                e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                    <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                    <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                  </svg>
-                                `)}`;
-                              }}
-                            />
+                            <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              <img
+                                src={agent.avatar}
+                                alt={agent.name}
+                                className="w-full h-full object-cover"
+                                loading="eager"
+                                decoding="async"
+                                style={{
+                                  imageRendering: '-webkit-optimize-contrast',
+                                  minWidth: '100%',
+                                  minHeight: '100%'
+                                }}
+                                onError={(e) => {
+                                  e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                      <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
+                                      <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
+                                      <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
+                                    </svg>
+                                  `)}`;
+                                }}
+                              />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-gray-900 text-sm">{agent.name}</h4>
                               <p className="text-xs text-gray-600 mt-1">{agent.archetypeDisplay || agent.archetype}</p>
@@ -3081,24 +3099,29 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                           
                           <div className="p-4">
                             <div className="flex items-start space-x-3">
-                              <img
-                                src={agent.avatar}
-                                alt={agent.name}
-                                className="w-12 h-12 rounded-full object-cover"
-                                loading="eager"
-                                style={{
-                                  imageRendering: 'crisp-edges',
-                                }}
-                                onError={(e) => {
-                                  e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                      <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
-                                      <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
-                                      <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
-                                    </svg>
-                                  `)}`;
-                                }}
-                              />
+                              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                <img
+                                  src={agent.avatar}
+                                  alt={agent.name}
+                                  className="w-full h-full object-cover"
+                                  loading="eager"
+                                  decoding="async"
+                                  style={{
+                                    imageRendering: '-webkit-optimize-contrast',
+                                    minWidth: '100%',
+                                    minHeight: '100%'
+                                  }}
+                                  onError={(e) => {
+                                    e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                                      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="24" cy="24" r="24" fill="#E5E7EB"/>
+                                        <circle cx="24" cy="20" r="8" fill="#9CA3AF"/>
+                                        <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" fill="#9CA3AF"/>
+                                      </svg>
+                                    `)}`;
+                                  }}
+                                />
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-semibold text-gray-900 text-sm">{agent.name}</h4>
                                 <p className="text-xs text-gray-600 mt-1">{agent.archetypeDisplay || agent.archetype}</p>
@@ -3195,24 +3218,28 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
               </button>
               
               <div className="flex items-center space-x-4">
-                <img
-                  src={selectedAgentDetails.avatar}
-                  alt={selectedAgentDetails.name}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-white"
-                  loading="eager"
-                  style={{
-                    imageRendering: 'crisp-edges',
-                  }}
-                  onError={(e) => {
-                    e.target.src = `data:image/svg+xml,${encodeURIComponent(`
-                      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="32" cy="32" r="32" fill="#E5E7EB"/>
-                        <circle cx="32" cy="26" r="10" fill="#9CA3AF"/>
-                        <path d="M10 56c0-12.15 9.85-22 22-22s22 9.85 22 22" fill="#9CA3AF"/>
-                      </svg>
-                    `)}`;
-                  }}
-                />
+                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-white">
+                  <img
+                    src={selectedAgentDetails.avatar}
+                    alt={selectedAgentDetails.name}
+                    className="w-full h-full object-cover"
+                    loading="eager"
+                    style={{
+                      imageRendering: 'crisp-edges',
+                      minWidth: '100%',
+                      minHeight: '100%'
+                    }}
+                    onError={(e) => {
+                      e.target.src = `data:image/svg+xml,${encodeURIComponent(`
+                        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="32" cy="32" r="32" fill="#E5E7EB"/>
+                          <circle cx="32" cy="26" r="10" fill="#9CA3AF"/>
+                          <path d="M10 56c0-12.15 9.85-22 22-22s22 9.85 22 22" fill="#9CA3AF"/>
+                        </svg>
+                      `)}`;
+                    }}
+                  />
+                </div>
                 <div>
                   <h3 className="text-xl font-bold">{selectedAgentDetails.name}</h3>
                   <p className="text-blue-100">{selectedAgentDetails.title || "Medical Professional"}</p>
