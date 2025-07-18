@@ -2435,8 +2435,21 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   
                   <div className="mb-6 flex space-x-3">
                     <button
-                      onClick={() => {
-                        quickTeams[selectedQuickTeam].agents.forEach(agent => handleAddAgent(agent));
+                      onClick={async () => {
+                        // Add agents in batches to avoid overwhelming the backend
+                        const agents = quickTeams[selectedQuickTeam].agents;
+                        const batchSize = 3; // Add 3 agents at a time
+                        
+                        for (let i = 0; i < agents.length; i += batchSize) {
+                          const batch = agents.slice(i, i + batchSize);
+                          const promises = batch.map(agent => handleAddAgent(agent));
+                          await Promise.all(promises);
+                          
+                          // Small delay between batches to prevent overwhelming the backend
+                          if (i + batchSize < agents.length) {
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                          }
+                        }
                       }}
                       className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
                     >
