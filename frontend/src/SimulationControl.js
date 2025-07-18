@@ -1100,6 +1100,40 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     );
   };
 
+  // Helper function to render markdown bold text
+  const renderMarkdownBold = (text) => {
+    if (!text) return '';
+    
+    // Split text by **bold** patterns and render accordingly
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        // Remove the ** and render as bold
+        const boldText = part.slice(2, -2);
+        return <strong key={index} className="font-bold">{boldText}</strong>;
+      }
+      return part;
+    });
+  };
+
+  // Helper function to render markdown bold text with search highlighting
+  const renderMarkdownBoldWithSearch = (text, searchTerm) => {
+    if (!text) return '';
+    
+    // First handle bold markdown, then search highlighting
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    
+    return parts.map((part, index) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        // Remove the ** and render as bold
+        const boldText = part.slice(2, -2);
+        return <strong key={index} className="font-bold">{highlightSearchTerm(boldText, searchTerm)}</strong>;
+      }
+      return highlightSearchTerm(part, searchTerm);
+    });
+  };
+
   return (
     <>
       <div className="relative">
