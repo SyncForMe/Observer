@@ -1471,9 +1471,22 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   ))}
                   
                   {/* Display Regular Conversations */}
-                  {conversations.map((conversation, conversationIndex) => (
-                    <div key={conversation.id || conversationIndex} className="space-y-2">
-                      {conversation.messages?.map((message, messageIndex) => {
+                  {conversations.map((conversation, conversationIndex) => {
+                    const roundNumber = conversationIndex + 1;
+                    const { day, period, roundInPeriod } = calculateDayAndTime(roundNumber);
+                    
+                    return (
+                      <div key={conversation.id || conversationIndex} className="space-y-2">
+                        {/* Round Header */}
+                        <div className="flex justify-center mb-2">
+                          <div className="bg-white/5 rounded-full px-3 py-1 border border-white/10">
+                            <span className="text-white/70 text-xs font-medium">
+                              Day {day}, Round {roundInPeriod}, {period}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {conversation.messages?.map((message, messageIndex) => {
                         const isCurrentSearch = searchResults.length > 0 && 
                           searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
                           searchResults[currentSearchIndex]?.messageIndex === messageIndex;
