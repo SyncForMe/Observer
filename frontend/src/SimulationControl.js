@@ -1544,7 +1544,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     );
                       })}
                     </div>
-                  ))}
+                  )
+                  })}
                   <div ref={messagesEndRef} />
                 </>
               )}
