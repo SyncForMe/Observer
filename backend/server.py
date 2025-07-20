@@ -1304,7 +1304,7 @@ PROVIDE EXPERT ANALYSIS:
                             "This requires a methodical approach to avoid costly mistakes."
                         ]
             
-            return random.choice(responses)
+            return self._remove_narrations(random.choice(responses))
 
     async def update_agent_memory(self, agent: Agent, conversations: List):
         """Update agent's memory summary based on recent conversations"""
