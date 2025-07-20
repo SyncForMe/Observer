@@ -5255,7 +5255,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                 f"Let's think about this from a few different angles."
             ]
         
-        return random.choice(responses)
+        return llm_manager._remove_narrations(random.choice(responses))
     
     def _determine_agent_mood(agent, message_text):
         """Determine agent mood based on personality traits and message content"""
