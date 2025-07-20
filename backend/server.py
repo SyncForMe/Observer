@@ -8744,6 +8744,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+async def startup_db_indexes():
+    """Create database indexes for better performance"""
+    try:
+        # Create indexes on user_id for better cleanup performance
+        await db.simulation_state.create_index("user_id")
+        await db.conversations.create_index("user_id")
+        await db.relationships.create_index("user_id")
+        await db.summaries.create_index("user_id")
+        await db.agents.create_index("user_id")
+        await db.observer_messages.create_index("user_id")
+        logger.info("✅ Database indexes created successfully")
+    except Exception as e:
+        # Indexes may already exist, which is fine
+        logger.info(f"Database indexes status: {e}")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
