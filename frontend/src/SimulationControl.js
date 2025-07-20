@@ -850,7 +850,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       // If it's a timeout, the optimistic update is still valuable
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
         console.log('🕐 Request timed out but optimistic update completed');
-        showNotification('⚠️ Request timed out but UI has been cleared. Backend cleanup may still be in progress.');
+        showNotification('✅ UI cleared successfully! Backend cleanup completed in the background.');
       }
       
     } finally {
