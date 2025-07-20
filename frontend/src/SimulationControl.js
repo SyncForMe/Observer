@@ -798,7 +798,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       // Call the backend reset endpoint to clear everything
       const response = await axios.post(`${API}/simulation/reset`, {}, {
         headers: { Authorization: `Bearer ${token}` },
-        timeout: 15000 // 15 second timeout to prevent hanging
+        timeout: 60000 // 60 second timeout to allow for large dataset cleanup
       });
       
       if (response.data.success) {
