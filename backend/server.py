@@ -5213,6 +5213,24 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Generate responses in parallel with enhanced natural conversation flow
     import asyncio
     
+    def remove_narrations(response_text: str) -> str:
+        """Remove character narrations and stage directions from response text"""
+        import re
+        
+        # Remove text within asterisks (narrations like *leans forward*, *mechanical breathing*, etc.)
+        cleaned_text = re.sub(r'\*[^*]*\*', '', response_text)
+        
+        # Remove extra whitespace that might be left after removing asterisks
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        
+        # Remove empty parentheses that might be left
+        cleaned_text = re.sub(r'\(\s*\)', '', cleaned_text)
+        
+        # Clean up any double spaces
+        cleaned_text = re.sub(r'  +', ' ', cleaned_text)
+        
+        return cleaned_text
+    
     def _create_personality_fallback(agent, scenario, messages):
         """Create personality-driven fallback response based on agent personality"""
         import random
