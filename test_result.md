@@ -340,6 +340,21 @@ frontend:
         -agent: "testing"
         -comment: "USER-REQUESTED COMPREHENSIVE TESTING COMPLETED: Conducted specific testing of both scenario setting and agent adding functionality as explicitly requested by the user. SCENARIO SETTING TEST RESULTS: 1) ✅ NO ERROR MESSAGE: Confirmed that the 'Failed to set scenario. Please try again.' error is NOT appearing - this issue has been resolved, 2) ✅ SCENARIO PERSISTENCE: 'Quantum Signal Discovery' scenario is clearly visible in the notification bar with 📋 icon at the top of Observatory interface, 3) ✅ SCENARIO DROPDOWN: Found dropdown arrow next to scenario name indicating expandable functionality is working, 4) ✅ VISUAL CONFIRMATION: Scenario appears exactly as expected with proper formatting and positioning. AGENT ADDING TEST RESULTS: 1) ✅ AGENT LIBRARY ACCESS: Successfully navigated to Agent Library through Library dropdown menu, 2) ✅ CATEGORY NAVIGATION: Successfully expanded Industry Sectors and navigated to Healthcare > Medical category, 3) ✅ ADD BUTTONS FUNCTIONAL: Found 4 'Add to Simulation' buttons in Medical category and successfully clicked one, 4) ✅ AGENT LIST DISPLAY: Confirmed that existing agents (Dr. Test Agent, Prof. Research Agent) are properly displayed in Observatory Agent List with '• 2' count indicator, 5) ✅ NO CRITICAL ERRORS: No JavaScript errors or system failures detected during agent addition process. CONSOLE ERROR CHECK: No critical console errors found during testing. Both functionalities are working correctly - the scenario setting error has been resolved and agents can be successfully added from the library to the simulation."
 
+  - task: "Narration Removal Functionality"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing needed for narration removal functionality that was just implemented"
+        -working: true
+        -agent: "testing"
+        -comment: "COMPREHENSIVE NARRATION REMOVAL FUNCTIONALITY TESTING COMPLETED: Conducted thorough testing of the newly implemented narration removal functionality as specifically requested in the review. TESTED KEY IMPLEMENTATIONS: 1) ✅ AI PROMPT INSTRUCTIONS: Verified that AI prompts include explicit instruction 'NO CHARACTER NARRATIONS: Do not use asterisks or describe your physical actions', 2) ✅ _REMOVE_NARRATIONS METHOD: Confirmed that LLMManager class has _remove_narrations method that filters out text within asterisks using regex patterns, 3) ✅ APPLIED TO ALL AI RESPONSE PATHS: Verified narration filtering is applied to Claude, Gemini, and fallback responses, 4) ✅ UTILITY FUNCTION: Confirmed remove_narrations utility function exists for fallback responses. COMPREHENSIVE TEST RESULTS: Generated 8 conversations with 24 total messages from diverse agents (scientist, leader, skeptic, optimist archetypes) - ALL CONVERSATIONS ARE 100% FREE OF NARRATIONS! No asterisks (*) found in any generated content. SPECIFIC TESTING AREAS: 1) ✅ CONVERSATION GENERATION: POST /api/conversation/generate tested with 3 conversations, average 3 messages each, 1115.6 character average length - zero narrations detected, 2) ✅ OBSERVER MESSAGES: POST /api/observer/send-message tested with agent responses - zero narrations in responses, 3) ✅ FALLBACK SCENARIOS: Tested 5 additional conversations to trigger potential fallback responses - zero narrations in potential fallbacks, 4) ✅ PERSONALITY PRESERVATION: Agents maintain distinct personalities and natural language without narrations (4.0 average personality indicators, 100% natural language conversations), 5) ✅ CONTENT QUALITY: Normal content preserved, conversations remain natural and readable, agent expertise comes through clearly. FINAL RESULTS: 16/16 tests passed (100% pass rate). The narration removal functionality is working perfectly - no character descriptions, stage directions, or asterisk-based narrations found in any AI-generated content while maintaining high-quality, natural conversations with distinct agent personalities."
+
 backend:
   - task: "Login Authentication"
     implemented: true
