@@ -1029,7 +1029,9 @@ PROVIDE EXPERT ANALYSIS:
                 
                 if response_text and response_text.strip():
                     print(f"✅ Gemini 2.0 Flash SUCCESS (fast fallback) for {agent.name}: {response_text[:60]}...")
-                    return response_text.strip()
+                    # Remove character narrations (text in asterisks)
+                    cleaned_response = self._remove_narrations(response_text.strip())
+                    return cleaned_response
                 else:
                     print(f"⚠️ Gemini also returned empty response for {agent.name}")
                     raise Exception("Empty Gemini response")
