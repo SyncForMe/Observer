@@ -1573,6 +1573,25 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   const [selectedMyAgentsSection, setSelectedMyAgentsSection] = useState(null); // 'created' or 'favorites'
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
 
+  // Shuffled quick teams state
+  const [shuffledQuickTeams, setShuffledQuickTeams] = useState({});
+
+  // Helper function to generate personality for archetype
+  const generatePersonalityForArchetype = (archetype) => {
+    const personalityProfiles = {
+      scientist: { extroversion: 4, optimism: 6, curiosity: 9, cooperativeness: 7, energy: 6 },
+      optimist: { extroversion: 8, optimism: 9, curiosity: 7, cooperativeness: 8, energy: 8 },
+      leader: { extroversion: 9, optimism: 7, curiosity: 6, cooperativeness: 6, energy: 8 },
+      adventurer: { extroversion: 7, optimism: 8, curiosity: 8, cooperativeness: 5, energy: 9 },
+      mediator: { extroversion: 6, optimism: 7, curiosity: 6, cooperativeness: 9, energy: 5 },
+      analyst: { extroversion: 3, optimism: 5, curiosity: 8, cooperativeness: 6, energy: 5 },
+      innovator: { extroversion: 6, optimism: 8, curiosity: 9, cooperativeness: 6, energy: 7 },
+      strategist: { extroversion: 5, optimism: 6, curiosity: 7, cooperativeness: 5, energy: 6 }
+    };
+    
+    return personalityProfiles[archetype] || { extroversion: 5, optimism: 5, curiosity: 5, cooperativeness: 5, energy: 5 };
+  };
+
   // Fetch saved agents on mount
   useEffect(() => {
     if (token) {
@@ -1678,22 +1697,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
     setAddedAgents(prev => new Set(prev).add(agent.id));
     
     try {
-      // Generate personality based on archetype if not provided
-      const generatePersonalityForArchetype = (archetype) => {
-        const personalityProfiles = {
-          scientist: { extroversion: 4, optimism: 6, curiosity: 9, cooperativeness: 7, energy: 6 },
-          optimist: { extroversion: 8, optimism: 9, curiosity: 7, cooperativeness: 8, energy: 8 },
-          leader: { extroversion: 9, optimism: 7, curiosity: 6, cooperativeness: 6, energy: 8 },
-          adventurer: { extroversion: 7, optimism: 8, curiosity: 8, cooperativeness: 5, energy: 9 },
-          mediator: { extroversion: 6, optimism: 7, curiosity: 6, cooperativeness: 9, energy: 5 },
-          analyst: { extroversion: 3, optimism: 5, curiosity: 8, cooperativeness: 6, energy: 5 },
-          innovator: { extroversion: 6, optimism: 8, curiosity: 9, cooperativeness: 6, energy: 7 },
-          strategist: { extroversion: 5, optimism: 6, curiosity: 7, cooperativeness: 5, energy: 6 }
-        };
-        
-        return personalityProfiles[archetype] || { extroversion: 5, optimism: 5, curiosity: 5, cooperativeness: 5, energy: 5 };
-      };
-
       const agentData = {
         name: agent.name,
         archetype: agent.archetype,
@@ -1763,12 +1766,61 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
   };
 
   const handleQuickTeamAdd = async (teamKey) => {
-    const team = quickTeams[teamKey];
+    const team = shuffledQuickTeams[teamKey] || quickTeams[teamKey];
     if (!team || !team.agents) return;
 
     for (const agent of team.agents) {
       await handleAddAgent(agent);
     }
+  };
+
+  const handleShuffleQuickTeam = (teamKey) => {
+    const originalTeam = quickTeams[teamKey];
+    if (!originalTeam) return;
+
+    // Get all agents from all categories based on team type
+    let allAgents = [];
+    
+    if (teamKey === 'research') {
+      // For research team, get agents from healthcare categories
+      Object.values(healthcareCategories).forEach(category => {
+        allAgents = allAgents.concat(category.agents);
+      });
+    } else if (teamKey === 'business') {
+      // For business team, get agents from finance and technology categories
+      Object.values(financeCategories).forEach(category => {
+        allAgents = allAgents.concat(category.agents);
+      });
+      Object.values(technologyCategories).forEach(category => {
+        allAgents = allAgents.concat(category.agents);
+      });
+    } else if (teamKey === 'crypto') {
+      // For crypto team, get agents from finance and technology categories
+      Object.values(financeCategories).forEach(category => {
+        allAgents = allAgents.concat(category.agents);
+      });
+      Object.values(technologyCategories).forEach(category => {
+        allAgents = allAgents.concat(category.agents);
+      });
+    }
+
+    // Remove duplicates based on agent ID
+    const uniqueAgents = allAgents.filter((agent, index, self) => 
+      index === self.findIndex(a => a.id === agent.id)
+    );
+
+    // Shuffle and select random agents (same count as original team)
+    const shuffledAgents = uniqueAgents.sort(() => Math.random() - 0.5);
+    const selectedAgents = shuffledAgents.slice(0, originalTeam.agents.length);
+
+    // Update shuffled quick teams state
+    setShuffledQuickTeams(prev => ({
+      ...prev,
+      [teamKey]: {
+        ...originalTeam,
+        agents: selectedAgents
+      }
+    }));
   };
 
   const handleDeleteSavedAgent = async (agentId) => {
@@ -1827,11 +1879,13 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
         const agentData = {
           name: agent.name,
           archetype: agent.archetype,
-          goal: agent.goal,
-          background: agent.background,
-          expertise: agent.expertise,
+          personality: agent.personality || generatePersonalityForArchetype(agent.archetype),
+          goal: agent.goal || `Professional ${agent.archetype} focused on excellence`,
+          background: agent.background || `Experienced ${agent.archetype} professional`,
+          expertise: agent.expertise || agent.title || `${agent.archetype} expertise`,
+          memory_summary: agent.memories || `Professional ${agent.archetype} with extensive experience`,
           avatar_prompt: `Professional ${agent.name}`,
-          avatar_url: agent.avatar,
+          avatar_url: agent.avatar || agent.avatar_url || '',
           is_favorite: true
         };
         
@@ -2364,22 +2418,88 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                     ? savedAgents.filter(agent => !agent.is_favorite) // Only non-favorite agents
                     : savedAgents;
                   
+                  // For 'created' section, always show the grid (with Create Agent card)
+                  if (selectedMyAgentsSection === 'created') {
+                    return (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {/* Create button card for Created Agents section */}
+                        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-green-400 transition-colors">
+                          <button
+                            onClick={() => setShowCreateAgentModal(true)}
+                            className="w-full p-8 flex flex-col items-center justify-center text-gray-500 hover:text-green-600 transition-colors group"
+                          >
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+                              <span className="text-2xl font-bold text-green-600">+</span>
+                            </div>
+                            <h4 className="font-semibold text-gray-800 mb-2">Create Agent</h4>
+                            <p className="text-sm text-gray-600 text-center">Design a new custom agent</p>
+                          </button>
+                        </div>
+                        
+                        {filteredAgents.map((agent) => (
+                          <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                            <div className="p-4">
+                              <div className="flex items-start space-x-3">
+                                <OptimizedAvatar
+                                  src={agent.avatar_url}
+                                  alt={agent.name}
+                                  className="w-12 h-12 rounded-full"
+                                  size={48}
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-start justify-between">
+                                    <div>
+                                      <h4 className="font-semibold text-gray-800">{agent.name}</h4>
+                                      <p className="text-xs text-purple-600 mt-1 capitalize">{agent.archetype}</p>
+                                    </div>
+                                    {agent.is_favorite && (
+                                      <span className="text-yellow-500 text-lg" title="Favourite">⭐</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="mt-3 space-y-2">
+                                <button
+                                  onClick={() => setSelectedAgentDetails(agent)}
+                                  className="w-full bg-gray-100 text-gray-700 py-2 px-3 rounded text-sm hover:bg-gray-200 transition-colors"
+                                >
+                                  View Details
+                                </button>
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleAddAgent(agent)}
+                                    className="flex-1 py-2 px-3 rounded text-sm font-medium bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                                  >
+                                    Add to Simulation
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteSavedAgent(agent.id)}
+                                    className="w-8 h-8 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200 transition-colors"
+                                    title="Delete agent"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  
+                  // For other sections, show empty state if no agents
                   return filteredAgents.length === 0 ? (
                     <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
                       <div className="text-6xl mb-4">
-                        {selectedMyAgentsSection === 'favorites' ? '⭐' : 
-                         selectedMyAgentsSection === 'created' ? '🛠️' : '👤'}
+                        {selectedMyAgentsSection === 'favorites' ? '⭐' : '👤'}
                       </div>
                       <h4 className="text-xl font-bold text-white mb-2">
-                        {selectedMyAgentsSection === 'favorites' ? 'No Favourite Agents Yet' : 
-                         selectedMyAgentsSection === 'created' ? 'No Created Agents Yet' : 
-                         'No Saved Agents Yet'}
+                        {selectedMyAgentsSection === 'favorites' ? 'No Favourite Agents Yet' : 'No Saved Agents Yet'}
                       </h4>
                       <p className="text-white/60 mb-6">
                         {selectedMyAgentsSection === 'favorites' ? 
                           'Click the star icons on agent cards to add them to your favorites.' : 
-                          selectedMyAgentsSection === 'created' ? 
-                          'Create and save agents from the library to see them here.' : 
                           'Create and save agents from the library to see them here.'}<br/>
                         <span className="text-white/40">Browse the industry sectors or use Quick Teams to get started.</span>
                       </p>
@@ -2397,22 +2517,6 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {/* Create button card for Created Agents section */}
-                      {selectedMyAgentsSection === 'created' && (
-                        <div className="bg-white border-2 border-dashed border-gray-300 rounded-lg hover:border-green-400 transition-colors">
-                          <button
-                            onClick={() => setShowCreateAgentModal(true)}
-                            className="w-full p-8 flex flex-col items-center justify-center text-gray-500 hover:text-green-600 transition-colors group"
-                          >
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
-                              <span className="text-2xl font-bold text-green-600">+</span>
-                            </div>
-                            <h4 className="font-semibold text-gray-800 mb-2">Create Agent</h4>
-                            <p className="text-sm text-gray-600 text-center">Design a new custom agent</p>
-                          </button>
-                        </div>
-                      )}
-                      
                       {filteredAgents.map((agent) => (
                         <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                           <div className="p-4">
@@ -2472,16 +2576,25 @@ const AgentLibrary = ({ onAddAgent, onRemoveAgent }) => {
                   <h3 className="text-xl font-bold text-white mb-4">
                     {quickTeams[selectedQuickTeam].icon} {quickTeams[selectedQuickTeam].name}
                   </h3>
-                  <button
-                    onClick={() => handleQuickTeamAdd(selectedQuickTeam)}
-                    className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium"
-                  >
-                    Add Entire Team
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleQuickTeamAdd(selectedQuickTeam)}
+                      className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium"
+                    >
+                      Add Entire Team
+                    </button>
+                    <button
+                      onClick={() => handleShuffleQuickTeam(selectedQuickTeam)}
+                      className="w-10 h-10 text-white text-xl hover:scale-110 transition-transform"
+                      title="Shuffle team agents"
+                    >
+                      🎲
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {quickTeams[selectedQuickTeam].agents.map((agent) => (
+                  {(shuffledQuickTeams[selectedQuickTeam] || quickTeams[selectedQuickTeam]).agents.map((agent) => (
                     <div key={agent.id} className="bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                       <div className="p-4">
                         <div className="flex items-start space-x-3">

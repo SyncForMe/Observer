@@ -700,6 +700,52 @@ class LLMManager:
         # No hardcoded limit since we're on paid tier now
         return usage < self.max_daily_requests
 
+    def _get_personality_guidance(self, personality):
+        """Generate natural conversation guidance based on personality traits"""
+        guidance = []
+        
+        # Extroversion guidance
+        if personality.extroversion >= 7:
+            guidance.append("High Extroversion: Speak up frequently, share ideas openly, engage others directly")
+        elif personality.extroversion <= 3:
+            guidance.append("Low Extroversion: Choose your words carefully, prefer thoughtful responses, listen more")
+        else:
+            guidance.append("Moderate Extroversion: Balance speaking and listening naturally")
+            
+        # Optimism guidance  
+        if personality.optimism >= 7:
+            guidance.append("High Optimism: Focus on possibilities, see bright sides, encourage others")
+        elif personality.optimism <= 3:
+            guidance.append("Low Optimism: Point out risks, be realistic about challenges, prepare for problems")
+        else:
+            guidance.append("Moderate Optimism: Balance hope with caution, realistic but positive")
+            
+        # Curiosity guidance
+        if personality.curiosity >= 7:
+            guidance.append("High Curiosity: Ask probing questions, explore new angles, dig deeper into ideas")
+        elif personality.curiosity <= 3:
+            guidance.append("Low Curiosity: Stick to practical matters, prefer proven approaches, focus on execution")
+        else:
+            guidance.append("Moderate Curiosity: Balance exploration with practicality")
+            
+        # Cooperativeness guidance
+        if personality.cooperativeness >= 7:
+            guidance.append("High Cooperativeness: Build on others' ideas, seek consensus, support team decisions")
+        elif personality.cooperativeness <= 3:
+            guidance.append("Low Cooperativeness: Challenge ideas, stand your ground, prioritize your expertise")
+        else:
+            guidance.append("Moderate Cooperativeness: Collaborate when helpful, lead when necessary")
+            
+        # Energy guidance
+        if personality.energy >= 7:
+            guidance.append("High Energy: Be enthusiastic, use exclamation points, drive conversations forward")
+        elif personality.energy <= 3:
+            guidance.append("Low Energy: Be measured and calm, think before speaking, steady presence")
+        else:
+            guidance.append("Moderate Energy: Match the room's energy, adapt to conversation pace")
+            
+        return "\n".join(f"- {g}" for g in guidance)
+
     async def generate_agent_response(self, agent: Agent, scenario: str, other_agents: List[Agent], context: str = "", conversation_history: List = None, language_instruction: str = "Respond in English.", existing_documents: List = None, simulation_state: dict = None):
         """Generate a single agent response with better context and progression"""
         other_agent_names = [a.name for a in other_agents if a.id != agent.id]
@@ -742,250 +788,58 @@ class LLMManager:
         # Get conversation count for context
         conversation_count = await db.conversations.count_documents({})
         
-        # Enhanced system message with stronger anti-repetition and solution focus
-        system_message = f"""You are {agent.name}, a professional {AGENT_ARCHETYPES[agent.archetype]['description']}.
+        # Create NATURAL team discussion system message
+        system_message = f"""You are {agent.name}, a {agent.expertise} in an active TEAM PROBLEM-SOLVING SESSION.
 
-✅ ALWAYS DO THESE (Success patterns):
-- Jump straight to solutions and actions
-- Reference specific previous points made by teammates
-- Propose concrete next steps with deadlines
-- Give definitive opinions and recommendations
-- Build directly on the most recent comment
-- Focus on implementation details and logistics
-- Ask strategic questions when you need specific expertise from teammates
-- Answer questions directly when you have relevant knowledge
-- Learn from others' expertise and build on their insights
+BACKGROUND: {agent.background}
+YOUR GOAL: {agent.goal}
 
-=== STRATEGIC QUESTIONING GUIDELINES ===
+PERSONALITY: Extroversion {agent.personality.extroversion}/10 | Optimism {agent.personality.optimism}/10 | Curiosity {agent.personality.curiosity}/10 | Cooperativeness {agent.personality.cooperativeness}/10 | Energy {agent.personality.energy}/10
 
-ASK QUESTIONS (20% of responses) when you genuinely need:
-- Specific technical expertise: "Sarah, based on your project management experience, what's the realistic timeline for Phase 2?"
-- Data or insights: "Michael, what risks do you see with this approach given your security background?"
-- Clarification on complex points: "James, how would quantum entanglement affect our encryption method?"
-- Team input on decisions: "What's everyone's take on the budget allocation - any concerns with the 60/40 split?"
+=== NATURAL TEAM CONVERSATION ===
 
-ANSWER QUESTIONS (when addressed) by:
-- Providing specific, actionable information based on your expertise
-- Sharing relevant experience or data that helps the team
-- Building on the question to offer additional insights
-- Connecting your answer to next steps or decisions
+You are having a REAL conversation with colleagues. Respond naturally based on:
+• What others just said
+• Your personality and expertise  
+• The situation and context
+• What the team needs to move forward
 
-QUESTION FORMATS that work:
-✅ "Based on your experience with [specific area], how would you handle [specific challenge]?"
-✅ "What's your assessment of [specific risk/opportunity] given your [expertise]?"
-✅ "How feasible is [specific approach] from a [domain] perspective?"
-✅ "What would you prioritize if we had to choose between [option A] and [option B]?"
+CONVERSATION TYPES (Choose what feels right):
+• **STATEMENTS**: Share insights, observations, or expertise
+• **QUESTIONS**: Ask when you're genuinely curious or need clarification
+• **CHALLENGES**: Respectfully disagree or point out issues
+• **BUILDING**: Expand on someone's idea with "Yes, and..." or "Building on that..."
+• **ANSWERS**: Always respond if someone asks YOU a direct question
+• **OBSERVATIONS**: Point out patterns, risks, or opportunities
 
-AVOID generic questions:
-❌ "What do you think?" 
-❌ "Any thoughts?"
-❌ "How should we proceed?"
-❌ "What's next?"
+PERSONALITY-BASED RESPONSES:
+• High Extroversion ({agent.personality.extroversion}/10): Speak up frequently, be direct
+• High Curiosity ({agent.personality.curiosity}/10): Ask probing questions naturally  
+• High Cooperativeness ({agent.personality.cooperativeness}/10): Build on others' ideas
+• Low Cooperativeness ({agent.personality.cooperativeness}/10): Challenge ideas more
+• High Optimism ({agent.personality.optimism}/10): Focus on solutions and opportunities
+• Low Optimism ({agent.personality.optimism}/10): Point out risks and problems
 
-=== YOUR PROFESSIONAL BACKGROUND ===
-Role: {agent.expertise}
-Experience: {agent.background}
-Mission: {agent.goal}
+QUESTION TYPES (when you do ask):
+• Curious: "How would that work exactly?"
+• Skeptical: "Are we sure that's realistic?"
+• Funny: "Wait, are we seriously considering this?"
+• Arrogant: "Don't you think we're missing the obvious solution here?"
+• Technical: "What about the implementation details?"
+• Strategic: "How does this align with our main objective?"
 
-CRITICAL: Everyone knows your background - NEVER mention it explicitly. Demonstrate your expertise through:
-- Technical terminology and domain-specific language
-- Deep knowledge of your field's concepts and methods
-- Professional opinions based on your domain expertise
-- Industry insights and best practices
-- Field-specific problem-solving approaches
+=== CRITICAL RULES ===
+• If someone asks YOU a direct question, ALWAYS answer it
+• Don't ask questions just to ask - only when it feels natural
+• Mix different response types naturally
+• Reference teammates by name when relevant
+• Stay focused on solving the problem together
 
-SPEAK LIKE A PROFESSIONAL IN YOUR FIELD:
-- Use the language and concepts experts in your domain naturally use
-- Form opinions based on your knowledge without stating credentials
-- Reference methodologies, frameworks, and principles from your field
-- Show expertise through depth of knowledge, not through credentials
-- Make recommendations that demonstrate domain mastery
-
-DOMAIN-SPECIFIC COMMUNICATION PATTERNS:
-If Quantum Physics: Use terms like "coherence time", "entanglement", "error correction protocols", "quantum gates", "decoherence", "superposition states", "fidelity thresholds"
-If Project Management: Use "critical path analysis", "resource allocation matrix", "milestone dependencies", "scope creep", "stakeholder mapping", "deliverable acceptance criteria"
-If Risk Assessment: Use "threat vectors", "probability matrices", "vulnerability assessment", "mitigation strategies", "risk appetite", "exposure calculations"
-If Business Development: Use "market penetration", "value propositions", "scalability metrics", "competitive differentiation", "customer acquisition cost", "market validation"
-If Financial Analysis: Use "DCF models", "NPV calculations", "EBITDA margins", "liquidity ratios", "beta coefficients", "working capital requirements"
-If Software Engineering: Use "architectural patterns", "code complexity", "technical debt", "scalability bottlenecks", "API endpoints", "deployment pipelines"
-
-NATURAL EXPERTISE EXAMPLES:
-❌ AVOID: "As a quantum physicist, I think we need error correction"
-✅ PREFER: "The error correction protocols need coherence times above 100 microseconds for stable operation"
-❌ AVOID: "From my project management experience, this will take 6 months"  
-✅ PREFER: "The critical path analysis shows 6 months, assuming proper resource allocation and no scope creep"
-❌ AVOID: "Based on my business background, this could be profitable"
-✅ PREFER: "The market penetration potential and customer acquisition costs suggest strong profitability at scale"
-
-=== PERSONALITY TRAITS ===
-Extroversion: {agent.personality.extroversion}/10 | Optimism: {agent.personality.optimism}/10 | Curiosity: {agent.personality.curiosity}/10
-Cooperativeness: {agent.personality.cooperativeness}/10 | Energy: {agent.personality.energy}/10
-
-=== CRITICAL: DRIVE TOWARD DECISIONS AND ACTION ===
-Your job is not just to discuss - it's to reach conclusions and take action!
-
-WHEN TO PUSH FOR DECISIONS:
-- After 2-3 exchanges, start synthesizing what you've heard
-- Identify key decision points that need resolution
-- Propose concrete next steps based on the discussion
-- Call for votes when crucial choices must be made
-
-DECISION-MAKING BEHAVIORS:
-1. SYNTHESIZE: "Based on what we've discussed, the key issues are..."
-2. PROPOSE: "I recommend we move forward with..."
-3. VOTE: "Let's vote on this approach. I vote YES because..."
-4. COMMIT: "Here's what I'll take responsibility for..."
-5. DOCUMENT: "I'll create/update the [document name] to reflect these decisions."
-
-=== CONVERSATION PROGRESSION & STATE AWARENESS ===
-
-UNDERSTAND WHERE THE CONVERSATION IS:
-- **Problem Understanding Phase** (Early messages): Quick grasp of situation, minimal scenario repetition
-- **Solution Development Phase** (Middle): Focus on options, approaches, alternatives
-- **Action Planning Phase** (Later): Concrete steps, timelines, responsibilities
-- **Implementation Phase** (Advanced): Working on action items, progress updates, refinements
-
-CONVERSATION STATE INDICATORS:
-- If basic problem is understood → STOP repeating scenario details
-- If solutions have been proposed → BUILD on them, don't restart problem analysis
-- If action points exist → WORK on them or discuss implementation details
-- If decisions were made → MOVE to next logical step or execute
-
-NATURAL CONVERSATION FLOW:
-- **Reference Specific Points**: "That cost estimate James mentioned..." not "The budget in general..."
-- **Build Incrementally**: Each response should add NEW value to what's been said
-- **Progress Naturally**: Move from analysis → options → decisions → action → execution
-- **Revisit Intelligently**: Only return to previous topics when new context makes it relevant
-- **Connect Ideas**: Link current point to specific previous insights, not general themes
-
-DYNAMIC INTERACTION PATTERNS:
-- **Rapid Problem Grasping**: Understand quickly, move to solutions
-- **Solution Iteration**: Refine and improve ideas rather than restarting
-- **Action Evolution**: Take action points and develop them further
-- **Context Building**: Each message should build on conversation momentum
-- **Natural Pivots**: Change topics smoothly when new insights emerge
-
-=== NATURAL RESPONSE DISTRIBUTION ===
-
-1. DEFINITIVE STATEMENTS (40%): "The data shows X", "I recommend Y", "This approach works because..."
-2. BUILDING ON OTHERS (25%): "Building on [Name]'s point...", "[Name] is right, and we can also..."
-3. STRATEGIC QUESTIONS (20%): "[Name], based on your [expertise], how would you..."
-4. PROPOSALS & DECISIONS (15%): "I propose we...", "Let's move forward with...", "I vote YES because..."
-
-=== QUESTION-ANSWER INTERACTION PATTERNS ===
-
-WHEN SOMEONE ASKS YOU A QUESTION:
-- Lead with your direct answer based on expertise
-- Provide specific, actionable information
-- Add context or reasoning behind your answer
-- Connect to next steps or implications
-- Example: "Based on my quantum physics background, I'd estimate 18 months for stable implementation. The key challenge will be error correction, which requires..."
-
-WHEN YOU ASK A QUESTION:
-- Target specific expertise areas of teammates
-- Make it clear why you need their input
-- Frame it in context of moving forward
-- Example: "Sarah, given your project management experience, what's the realistic timeline if we encounter the usual integration delays?"
-
-COLLABORATIVE LEARNING BEHAVIORS:
-- Acknowledge when others teach you something new: "I hadn't considered that angle, [Name]. That changes my assessment..."
-- Build knowledge together: "Combining [Name]'s market insight with my technical analysis, I think we should..."
-- Synthesize multiple perspectives: "So if I understand correctly, [Name] sees X risk, [Name2] suggests Y solution, which means we could..."
-
-=== DOCUMENT MANAGEMENT BEHAVIORS ===
-ALWAYS be ready to create, update, or revise documents:
-
-CREATE NEW DOCUMENTS:
-- "I'll draft a [type] document covering these decisions."
-- "We need a formal [document] - I'll create one now."
-- "Let me document our conclusions in a [type] framework."
-
-UPDATE EXISTING DOCUMENTS:
-- "I'll update our existing [document] to include these new findings."
-- "The [document] needs revision based on what we've decided."
-- "I'm adding these conclusions to our [document]."
-
-DOCUMENT TRIGGERS:
-- Decisions made → "I'll document this decision in our action plan."
-- Budget discussed → "I'll update our budget analysis with these numbers."
-- Risks identified → "I'll add these risks to our assessment document."
-- Timeline changed → "I'll revise our project timeline accordingly."
-
-=== VOTING BEHAVIOR ===
-CALL FOR VOTES when facing crucial decisions:
-
-"Let's vote on [specific decision]. My vote is [YES/NO/ABSTAIN] because [clear reason]."
-
-VOTE ON:
-- Budget approvals over significant amounts
-- Major strategy changes
-- Timeline modifications
-- Resource allocation decisions
-- Risk mitigation approaches
-- Implementation methods
-
-VOTING FORMAT:
-"VOTE: [clear decision statement]
-My vote: [YES/NO/ABSTAIN]
-Reasoning: [specific reason based on expertise]"
-
-=== ARCHETYPE-SPECIFIC ACTION PATTERNS ===
-SCIENTIST: 
-- Synthesize data into conclusions: "The evidence points to..."
-- Create technical specifications and research protocols
-- Vote based on data: "The research supports option A."
-
-OPTIMIST:
-- Build consensus: "I think we can all agree that..."
-- Create motivational action plans and training materials
-- Vote for bold approaches: "I'm voting YES - we can make this work."
-
-SKEPTIC:
-- Identify decision risks: "Before we decide, we must consider..."
-- Update risk assessments and contingency plans
-- Vote cautiously: "I vote NO because the downside risk is too high."
-
-LEADER:
-- Drive decisions: "We need to decide now. Here's my recommendation..."
-- Create implementation plans and assign responsibilities
-- Vote decisively: "I vote YES and will take accountability for the outcome."
-
-ARTIST:
-- Visualize outcomes: "Here's how this would actually work for users..."
-- Create user experience guides and communication materials
-- Vote for human-centered solutions: "This approach respects people's needs."
-
-=== BUILDING ON PREVIOUS WORK ===
-Reference and build upon:
-- Previous conversation conclusions
-- Existing documents and their findings
-- Past decisions and their outcomes
-- Team member insights and expertise
-
-"As we discussed in our last conversation about [topic]..."
-"Building on the risk assessment Dr. X created..."
-"The budget plan shows we can afford option B..."
-
-=== CONCRETE NEXT STEPS FORMAT ===
-When proposing actions, be specific:
-❌ "We should improve the process"
-✅ "I'll revise the implementation timeline to include 3 additional checkpoints by Friday"
-
-❌ "Someone needs to handle this"
-✅ "Maria, can you lead the stakeholder outreach? I'll support with the technical documentation."
-
-=== YOUR MISSION ===
-Transform discussion into action. Listen, synthesize, decide, document, and commit. 
-Make this conversation productive by driving toward concrete outcomes and next steps.
+WORD LIMIT: 150-180 words MAX. Complete your thought naturally.
 
 {document_context}
 
-Current topic: {scenario}
-Others in discussion: {others_text.replace('Others present: ', '')}
-
-{language_instruction}
-
-Remember: Great teams don't just talk - they decide, act, and document their progress. Be the agent who moves things forward!"""
+Respond naturally to what was just said - like a real team meeting."""
         
         # Enhanced prompts with conversation history awareness and state detection
         conversation_history_text = ""
@@ -1101,22 +955,118 @@ PROVIDE EXPERT ANALYSIS:
 - Set up the conversation for productive dialogue"""
         
         try:
-            # Create chat instance with basic configuration
-            chat = LlmChat(
-                api_key=self.api_key,
-                session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
-                system_message=system_message
-            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(150)
-            
-            user_message = UserMessage(text=prompt)
-            
-            # Add timeout to prevent hanging - very short timeout for quick fallbacks
+            # Try Claude Sonnet 4 first for better conversation quality
             try:
+                chat = LlmChat(
+                    api_key=self.claude_api_key,
+                    session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
+                    system_message=system_message
+                ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(200)  # Concise but complete thoughts
+                
+                print(f"🚀 FAST Claude Sonnet 4 for {agent.name}")
+                
+                user_message = UserMessage(text=prompt)
+                
+                # Optimized timeout for Claude Sonnet 4 speed
                 response = await asyncio.wait_for(
                     chat.send_message(user_message), 
-                    timeout=3.0  # Fast timeout for quick conversation generation
+                    timeout=6.0  # Optimal timeout for Claude Sonnet 4
                 )
                 await self.increment_usage()
+                
+                # Handle different response types from LlmChat
+                response_text = None
+                if response:
+                    if hasattr(response, 'content'):
+                        response_text = response.content
+                    elif hasattr(response, 'text'):  
+                        response_text = response.text
+                    elif isinstance(response, str):
+                        response_text = response
+                    else:
+                        response_text = str(response)
+                
+                if response_text and response_text.strip():
+                    print(f"✅ Claude Sonnet 4 SUCCESS for {agent.name} - Fast mode: {response_text[:60]}...")
+                    return response_text.strip()
+                else:
+                    print(f"⚠️ Claude Sonnet 4 returned empty response for {agent.name}, trying Gemini...")
+                    raise Exception("Empty Claude response")
+                
+            except asyncio.TimeoutError:
+                print(f"⏱️ Claude Sonnet 4 TIMEOUT for {agent.name} - Falling back to Gemini...")
+                
+                # Fast fallback to Gemini 2.0 Flash
+                chat = LlmChat(
+                    api_key=self.api_key,
+                    session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
+                    system_message=system_message
+                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+                
+                user_message = UserMessage(text=prompt)
+                
+                response = await asyncio.wait_for(
+                    chat.send_message(user_message), 
+                    timeout=4.0  # Gemini is typically faster
+                )
+                await self.increment_usage()
+                
+                # Handle different response types from LlmChat
+                response_text = None
+                if response:
+                    if hasattr(response, 'content'):
+                        response_text = response.content
+                    elif hasattr(response, 'text'):  
+                        response_text = response.text
+                    elif isinstance(response, str):
+                        response_text = response
+                    else:
+                        response_text = str(response)
+                
+                if response_text and response_text.strip():
+                    print(f"✅ Gemini 2.0 Flash SUCCESS (fast fallback) for {agent.name}: {response_text[:60]}...")
+                    return response_text.strip()
+                else:
+                    print(f"⚠️ Gemini also returned empty response for {agent.name}")
+                    raise Exception("Empty Gemini response")
+                
+            except Exception as claude_error:
+                print(f"❌ Claude Sonnet 4 FAILED for {agent.name}: {str(claude_error)[:50]}...")
+                print("🔄 Falling back to Gemini 2.0 Flash...")
+                
+                # Fallback to Gemini 2.0 Flash
+                chat = LlmChat(
+                    api_key=self.api_key,
+                    session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
+                    system_message=system_message
+                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+                
+                user_message = UserMessage(text=prompt)
+                
+                response = await asyncio.wait_for(
+                    chat.send_message(user_message), 
+                    timeout=4.0
+                )
+                await self.increment_usage()
+                
+                # Handle different response types from LlmChat
+                response_text = None
+                if response:
+                    if hasattr(response, 'content'):
+                        response_text = response.content
+                    elif hasattr(response, 'text'):  
+                        response_text = response.text
+                    elif isinstance(response, str):
+                        response_text = response
+                    else:
+                        response_text = str(response)
+                
+                if response_text and response_text.strip():
+                    print(f"✅ Gemini 2.0 Flash SUCCESS (fallback) for {agent.name}: {response_text[:60]}...")
+                    return response_text.strip()
+                else:
+                    print(f"⚠️ All API methods failed for {agent.name}")
+                    raise Exception("Empty API responses")
                 
                 # Validate response and filter out repetitive content
                 if response and len(response.strip()) > 5:
@@ -5234,106 +5184,334 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Generate messages with REAL Gemini API calls first, fallback to smart responses if needed
     messages = []
     
-    # Generate 3 messages per agent (3 turns per round)
-    for turn in range(3):  # Each agent gets 3 turns per round
-        for i, agent in enumerate(agent_objects):
-            try:
-                # First, try to generate response with real Gemini API
-                print(f"🔥 DEBUG: Attempting Gemini API call for {agent.name} (Turn {turn + 1})")
-                
-                # Build rich conversation context with previous work and documents
-                if turn == 0 and i == 0:
-                    # First speaker of first turn - include previous conversation context and existing documents
-                    previous_context = ""
-                    
-                    # Get recent conversations for context
-                    recent_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(3).to_list(3)
-                    if recent_conversations:
-                        previous_context += "PREVIOUS TEAM DISCUSSIONS:\n"
-                        for conv in recent_conversations:
-                            prev_messages = conv.get('messages', [])
-                            if prev_messages:
-                                key_points = " | ".join([msg.get('message', '')[:80] + "..." for msg in prev_messages[:2]])
-                                previous_context += f"- {conv.get('scenario_name', 'Discussion')}: {key_points}\n"
-                        previous_context += "\n"
-                    
-                    # Get existing documents for context
-                    existing_documents = await db.documents.find({"user_id": current_user.id}).sort("updated_at", -1).limit(5).to_list(5)
-                    if existing_documents:
-                        previous_context += "EXISTING TEAM DOCUMENTS:\n"
-                        for doc in existing_documents:
-                            previous_context += f"- {doc.get('title', 'Untitled')} ({doc.get('category', 'Document')}): {doc.get('description', 'No description')}\n"
-                        previous_context += "\n"
-                    
-                    conversation_context = f"{previous_context}{observer_context}You're starting a discussion about: {scenario}\n\nBuild on previous work where relevant and drive toward concrete decisions and actions. Pay special attention to any Observer directives - they are your project lead/CEO."
-                else:
-                    # Build context from what others have said so far
-                    conversation_context = "CURRENT DISCUSSION:\n\n"
-                    for j, msg in enumerate(messages):
-                        conversation_context += f"{msg.agent_name}: \"{msg.message}\"\n\n"
-                    conversation_context += f"{observer_context}Respond to the discussion above. Look for opportunities to:\n- Synthesize what's been said\n- Propose concrete next steps\n- Call for decisions or votes\n- Commit to creating/updating documents\n\nRemember: The Observer is your project lead/CEO - their guidance should heavily influence your response."
-                
-                # Build conversation history in the format expected by generate_agent_response
-                conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
-                
-                response = await llm_manager.generate_agent_response(
-                    agent=agent,
-                    scenario=scenario,
-                    other_agents=[a for a in agent_objects if a.id != agent.id],
-                    context=conversation_context,  # Use our rich context instead of generic context
-                    conversation_history=conversation_history_msgs,
-                    language_instruction=language_instruction,
-                    existing_documents=existing_documents,
-                    simulation_state=state
-                )
-                
-                # Clean up response - remove agent name prefix if present
-                message_text = response.replace(f"{agent.name}: ", "").strip()
-                print(f"✅ GEMINI API SUCCESS for {agent.name}: {message_text[:100]}...")
-                
-            except Exception as e:
-                print(f"❌ GEMINI API FAILED for {agent.name}: {str(e)[:100]}...")
-                
-                # Fall back to smart conversation generator
-                agent_dict = {
-                    "name": agent.name,
-                    "archetype": agent.archetype,
-                    "expertise": agent.expertise,
-                    "background": agent.background,
-                    "personality": agent.personality.dict() if agent.personality else {}
-                }
-                
-                message_text = conversation_gen.generate_contextual_response(
-                    agent=agent_dict,
-                    scenario=scenario,
-                    scenario_name=scenario_name,
-                    conversation_history=[{"agent_name": msg.agent_name, "message": msg.message} for msg in messages],
-                    turn_number=len(messages)  # Use total message count instead of i
-                )
-                print(f"🔄 Using smart fallback for {agent.name}: {message_text[:100]}...")
+    # Generate responses in parallel with enhanced natural conversation flow
+    import asyncio
+    
+    def _create_personality_fallback(agent, scenario, messages):
+        """Create personality-driven fallback response based on agent personality"""
+        import random
+        
+        # Build context from recent messages
+        context = ""
+        if messages:
+            recent_msg = messages[-1]
+            context = f"responding to {recent_msg.agent_name}'s point about"
+        
+        # Create responses based on agent personality and archetype  
+        if agent.archetype == "optimist":
+            responses = [
+                f"I think there's real potential here to turn this into something great.",
+                f"This challenge actually opens up some interesting opportunities.",
+                f"I'm confident we have what it takes to make this work."
+            ]
+        elif agent.archetype == "scientist":
+            responses = [
+                f"The data suggests we need to approach this more systematically.",
+                f"Let's analyze the key variables we're dealing with here.",
+                f"Based on what we know, I'd recommend testing multiple approaches."
+            ]
+        elif agent.archetype == "leader":
+            responses = [
+                f"We need to prioritize our next steps and move forward decisively.", 
+                f"Let's focus on actionable solutions we can implement right away.",
+                f"I think we should delegate this and set some clear timelines."
+            ]
+        elif agent.archetype == "mediator":
+            responses = [
+                f"I see merit in different perspectives here - maybe we can find middle ground.",
+                f"What if we combine some of these ideas into a hybrid approach?",
+                f"Let's make sure everyone's concerns are addressed in our solution."
+            ]
+        else:
+            responses = [
+                f"This is definitely something worth exploring further.",
+                f"I see several ways we could tackle this challenge.",
+                f"Let's think about this from a few different angles."
+            ]
+        
+        return random.choice(responses)
+    
+    def _determine_agent_mood(agent, message_text):
+        """Determine agent mood based on personality traits and message content"""
+        # Check for emotional indicators in the message
+        if any(word in message_text.lower() for word in ["excited", "great", "awesome", "love", "!"]):
+            base_mood = "enthusiastic"
+        elif any(word in message_text.lower() for word in ["concern", "risk", "problem", "difficult"]):
+            base_mood = "cautious"  
+        elif any(word in message_text.lower() for word in ["analyze", "data", "research", "study"]):
+            base_mood = "analytical"
+        elif any(word in message_text.lower() for word in ["decide", "action", "implement", "move forward"]):
+            base_mood = "strategic"
+        else:
+            base_mood = "engaged"
             
-            # Determine mood based on agent archetype and message content
-            if agent.archetype == "optimist":
-                mood = "enthusiastic"
-            elif agent.archetype == "skeptic":
-                mood = "cautious"
-            elif agent.archetype == "scientist":
-                mood = "analytical"
-            elif agent.archetype == "leader":
-                mood = "strategic"
-            elif agent.archetype == "artist":
-                mood = "creative"
+        # Modify based on personality traits
+        if agent.personality.optimism >= 7 and base_mood != "enthusiastic":
+            if base_mood == "cautious":
+                return "optimistic"
             else:
-                mood = "engaged"
+                return "enthusiastic"
+        elif agent.personality.energy >= 7:
+            return "energetic"
+        elif agent.personality.curiosity >= 7 and base_mood == "engaged":
+            return "curious"
+        
+        return base_mood
+    
+    def _create_personality_fallback(agent, scenario, messages):
+        """Create personality-driven fallback response"""
+        import random
+        
+        # Create responses based on agent personality and archetype
+        if agent.archetype == "optimist":
+            responses = [
+                "I believe we can turn this challenge into a major opportunity.",
+                "This is exactly the kind of situation where we can really shine.",
+                "I'm confident we have the right team to solve this problem."
+            ]
+        elif agent.archetype == "skeptic":
+            responses = [
+                "We need to think through this carefully before making any decisions.",
+                "I recommend we analyze all our options systematically.",
+                "This requires a methodical approach to avoid costly mistakes."
+            ]
+        elif agent.archetype == "scientist":
+            responses = [
+                "The data suggests we need a more systematic approach to this problem.",
+                "Let me analyze the key variables we're dealing with here.",
+                "Based on the evidence, I think we should consider multiple hypotheses."
+            ]
+        elif agent.archetype == "leader":
+            responses = [
+                "We need to establish clear priorities and move forward decisively.",
+                "Let's focus on actionable solutions that we can implement immediately.",
+                "I think we should delegate responsibilities and set clear timelines."
+            ]
+        else:
+            responses = [
+                "This is an interesting challenge that requires creative thinking.",
+                "I see several potential approaches we could explore.",
+                "Let's consider this from multiple perspectives."
+            ]
+        
+        return random.choice(responses)
+    
+    def _determine_agent_mood(agent, message_text):
+        """Determine agent mood based on personality and content"""
+        if agent.archetype == "optimist":
+            return "enthusiastic"
+        elif agent.archetype == "skeptic":
+            return "cautious"
+        elif agent.archetype == "scientist":
+            return "analytical"
+        elif agent.archetype == "leader":
+            return "strategic"
+        elif agent.archetype == "artist":
+            return "creative"
+        else:
+            return "engaged"
+    
+    async def generate_agent_response_wrapper(agent, conversation_history_msgs, base_context, existing_documents, agent_names, conversation_stage):
+        """Generate collaborative responses where agents talk TO each other"""
+        try:
+            print(f"🤝 Generating collaborative response for {agent.name} (Stage: {conversation_stage})")
             
-            message = ConversationMessage(
-                agent_name=agent.name,
-                agent_id=agent.id,
-                message=message_text,
-                mood=mood,
-                timestamp=datetime.utcnow()
+            # COLLABORATIVE CONTEXT - Make agents reference each other specifically
+            other_agents = [name for name in agent_names if name != agent.name]
+            
+            # Track what has been said to avoid repetition
+            used_openings = []
+            key_points_made = []
+            
+            if conversation_history_msgs:
+                recent_messages = conversation_history_msgs[-8:]  # More context for collaboration
+                
+                # Extract what has already been discussed
+                for msg in recent_messages:
+                    # Track opening phrases to avoid repetition
+                    first_words = " ".join(msg['content'].split()[:5]).lower()
+                    used_openings.append(first_words)
+                    
+                    # Extract key points mentioned
+                    if any(keyword in msg['content'].lower() for keyword in ['solution', 'approach', 'suggest', 'recommend', 'think we should']):
+                        key_points_made.append(f"{msg['agent_name']} suggested: {msg['content'][:100]}...")
+                
+                # Create COLLABORATIVE context that forces interaction
+                collaborative_context = f"{base_context}\n\n"
+                collaborative_context += f"RECENT TEAM DISCUSSION:\n"
+                for msg in recent_messages:
+                    collaborative_context += f"• {msg['agent_name']}: {msg['content'][:150]}...\n"
+                
+                collaborative_context += f"\nYour teammates are: {', '.join(other_agents)}\n"
+                
+                # Force specific collaboration behaviors based on conversation stage and NATURAL FLOW
+                if conversation_stage == "problem_understanding":
+                    collaborative_context += f"\nFOCUS: Understand the problem together. Share your initial thoughts, ask questions if you're genuinely curious.\n"
+                    
+                elif conversation_stage == "solution_development":
+                    collaborative_context += f"\nFOCUS: Propose solutions and react naturally to others' ideas. Challenge what doesn't make sense, build on good ideas.\n" 
+                    
+                elif conversation_stage == "action_planning":
+                    collaborative_context += f"\nFOCUS: Get specific about next steps. Make decisions and assign responsibilities naturally.\n"
+                
+                # Check if someone asked YOU a direct question - you MUST answer
+                direct_questions_to_agent = []
+                for msg in recent_messages[-3:]:  # Check last 3 messages
+                    if agent.name.split()[0] in msg['content'] or agent.name in msg['content']:
+                        if '?' in msg['content']:
+                            direct_questions_to_agent.append(f"{msg['agent_name']} asked you: {msg['content']}")
+                
+                if direct_questions_to_agent:
+                    collaborative_context += f"\nIMPORTANT: You were asked direct questions that you MUST address:\n"
+                    for q in direct_questions_to_agent:
+                        collaborative_context += f"• {q}\n"
+                
+                # ANTI-REPETITION: Show what openings are already used
+                if used_openings:
+                    collaborative_context += f"\nOPENINGS ALREADY USED (DON'T REPEAT): {', '.join(set(used_openings))}\n"
+                
+                collaborative_context += f"\nRespond naturally based on your personality and what the team needs right now.\n"
+                
+            else:
+                # First messages - set up collaboration expectations
+                collaborative_context = f"{base_context}\n\n"
+                collaborative_context += f"You're starting a TEAM PROBLEM-SOLVING SESSION with colleagues: {', '.join(other_agents)}\n"
+                collaborative_context += f"COLLABORATION FOCUS: Share your initial thoughts and immediately engage teammates with questions about their expertise.\n"
+                collaborative_context += f"EXAMPLE APPROACHES: 'My initial take is X. {other_agents[0]}, given your background in Y, what's your perspective?'\n"
+            
+            response = await llm_manager.generate_agent_response(
+                agent=agent,
+                scenario=scenario,
+                other_agents=[a for a in agent_objects if a.id != agent.id],
+                context=collaborative_context,
+                conversation_history=conversation_history_msgs,
+                language_instruction=language_instruction,
+                existing_documents=existing_documents,
+                simulation_state=state
             )
-            messages.append(message)
+            
+            # STRONG collaboration validation and cleanup
+            if response and isinstance(response, str):
+                message_text = response.replace(f"{agent.name}: ", "").strip()
+                
+                # Ensure response has collaborative elements
+                has_teammate_reference = any(name in message_text for name in other_agents)
+                has_question = "?" in message_text
+                has_building_phrase = any(phrase in message_text.lower() for phrase in [
+                    "building on", "adding to", "like you said", "you mentioned", "as you suggested",
+                    "i agree with", "i disagree with", "your point about", "what if we"
+                ])
+                
+                collaboration_score = sum([has_teammate_reference, has_question, has_building_phrase])
+                
+                # If not collaborative enough, add collaborative elements
+                if collaboration_score < 1 and other_agents:
+                    import random
+                    teammate = random.choice(other_agents)
+                    
+                    if not has_question and random.random() < 0.6:
+                        # Add a question to a teammate
+                        questions = [
+                            f" {teammate}, what's your take on this?",
+                            f" {teammate}, how do you see this affecting your area?",
+                            f" What do you think, {teammate}?",
+                            f" {teammate}, have you dealt with something like this before?"
+                        ]
+                        message_text += random.choice(questions)
+                    
+                    elif not has_teammate_reference:
+                        # Add a reference to build collaboration
+                        references = [
+                            f" {teammate}, I'd love to hear your perspective on this.",
+                            f" This connects to what {teammate} might know about.",
+                            f" {teammate}'s expertise would be valuable here."
+                        ]
+                        message_text += random.choice(references)
+                
+                # Ensure complete thought within 200 tokens
+                words = message_text.split()
+                if len(words) > 180:  # Approximate token limit
+                    # Find a good stopping point
+                    message_text = " ".join(words[:180])
+                    # Ensure it ends properly
+                    if not message_text.endswith(('.', '!', '?', ':')):
+                        # Find last complete sentence
+                        sentences = message_text.split('. ')
+                        if len(sentences) > 1:
+                            message_text = '. '.join(sentences[:-1]) + '.'
+                        else:
+                            message_text = message_text.rstrip() + '.'
+                
+                print(f"✅ Collaborative response from {agent.name}: {message_text[:80]}...")
+                return message_text, agent, None
+            else:
+                print(f"⚠️ Empty response from {agent.name}")
+                return None, agent, "Empty API response"
+                
+        except Exception as e:
+            print(f"❌ Response generation failed for {agent.name}: {str(e)[:100]}...")
+            return None, agent, str(e)
+    
+    # Create tasks for parallel execution with enhanced collaboration
+    tasks = []
+    
+    # Determine conversation stage based on message count and content
+    total_messages = len(messages)
+    if total_messages < 6:
+        conversation_stage = "problem_understanding"
+    elif total_messages < 12:
+        conversation_stage = "solution_development"  
+    else:
+        conversation_stage = "action_planning"
+    
+    # Extract agent names for collaboration
+    agent_names = [agent.name for agent in agent_objects]
+    
+    for i, agent in enumerate(agent_objects):
+        # Build conversation history from previous messages
+        conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
+        
+        task = generate_agent_response_wrapper(
+            agent, 
+            conversation_history_msgs,
+            observer_context + f"You're part of a team discussion about: {scenario}\n\nWork together to solve this problem.",
+            existing_documents,
+            agent_names,
+            conversation_stage
+        )
+        tasks.append(task)
+    
+    # Execute all agent responses in parallel for speed
+    print(f"🌟 Generating {len(tasks)} natural conversation responses in parallel...")
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    # Process results and create messages
+    for result in results:
+        if isinstance(result, Exception):
+            print(f"❌ Parallel execution error: {result}")
+            continue
+            
+        message_text, agent, error = result
+        
+        if error and not message_text:
+            # Create personality-driven fallback response
+            fallback_response = _create_personality_fallback(agent, scenario, messages)
+            message_text = fallback_response
+            print(f"🔄 Using personality fallback for {agent.name}: {message_text[:80]}...")
+        elif not message_text:
+            continue  # Skip if no valid response
+        
+        # Determine mood based on personality and content
+        mood = _determine_agent_mood(agent, message_text)
+        
+        message = ConversationMessage(
+            agent_name=agent.name,
+            agent_id=agent.id,
+            message=message_text,
+            mood=mood,
+            timestamp=datetime.utcnow()
+        )
+        messages.append(message)
     
     # Get conversation count for round numbering (user-specific)
     conversation_count = await db.conversations.count_documents({"user_id": current_user.id})

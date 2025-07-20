@@ -484,6 +484,9 @@ const ObserverLogo = () => {
 
 // Main App Content Component
 const AppContent = () => {
+  // Use simulation context for global state management
+  const { simulationData, updateSimulationData } = useSimulation();
+  
   // Initialize state with safe defaults
   const [activeTab, setActiveTab] = useState(() => {
     try {
@@ -1313,11 +1316,11 @@ const AppContent = () => {
                       return { success: false, message: 'Not authenticated' };
                     }
 
+                    console.log('🤖 Adding agent:', agent.name);
+
                     const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
                     
                     // Create agent in user's agent database
-                    // Since the backend automatically includes all user agents in simulations,
-                    // this agent will immediately appear in the Observatory
                     const response = await fetch(`${API}/agents`, {
                       method: 'POST',
                       headers: {
@@ -1329,10 +1332,20 @@ const AppContent = () => {
 
                     const result = await response.json();
                     if (response.ok) {
-                      console.log('✅ Agent added successfully and will appear in Observatory:', result);
+                      console.log('✅ Agent added successfully to backend:', result);
                       
-                      // Trigger Observatory refresh to show the new agent
+                      // FORCE IMMEDIATE UI UPDATE
+                      // Get current agents and add the new one
+                      const currentAgents = simulationData?.agents || [];
+                      updateSimulationData({
+                        agents: [...currentAgents, result],
+                        lastUpdated: new Date().toISOString()
+                      });
+                      
+                      // Trigger Observatory refresh as backup
                       triggerObservatoryRefresh();
+                      
+                      console.log('✅ Agent added to UI immediately');
                       
                       return { success: true, message: 'Agent added successfully' };
                     } else {

@@ -629,7 +629,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       const intervalId = setInterval(() => {
         console.log('⏰ Auto-generating conversation...');
         generateNewConversation(true); // Mark as auto-generated
-      }, 5000); // Generate new conversation every 5 seconds
+      }, 8000); // Generate new conversation every 8 seconds (optimized for fast Claude Sonnet 4)
       
       setAutoGenerateInterval(intervalId);
       
@@ -734,7 +734,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       setConversationLoading(true);
       
       const response = await axios.post(`${API}/conversation/generate`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 12000  // 12 second timeout for optimized parallel processing
       });
       
       if (response.data) {
@@ -987,37 +988,61 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     try {
       setLoading(true);
       
-      console.log('🎯 Setting scenario:', { customScenario, scenarioName });
+      // Validate inputs
+      if (!customScenario.trim() || !scenarioName.trim()) {
+        alert('Please enter both a scenario name and description.');
+        return;
+      }
       
-      // Optimistic update to global context
+      // Check authentication
+      if (!token) {
+        alert('Please log in to set scenarios.');
+        return;
+      }
+      
+      console.log('🎯 Setting scenario:', { customScenario, scenarioName });
+      console.log('🔑 Using token:', token ? 'Token available' : 'No token');
+      
+      const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
+      
+      // Make backend call first to ensure data is saved
+      const response = await axios.post(`${API}/simulation/set-scenario`, {
+        scenario: customScenario,
+        scenario_name: scenarioName
+      }, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('✅ Backend call completed, scenario set successfully:', response.data);
+      
+      // Update global context after successful backend call
       updateSimulationData({
         scenario: customScenario,
         customScenario: customScenario,
         scenarioName: scenarioName
       });
+      
       setShowSetScenario(false);
       
-      console.log('✅ Optimistic update completed, calling backend...');
+      console.log('✅ Frontend state updated with scenario');
       
-      await axios.post(`${API}/simulation/set-scenario`, { // Fixed endpoint name
-        scenario: customScenario,
-        scenario_name: scenarioName
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('✅ Backend call completed, scenario set successfully');
-      
-      // Debounced refresh
-      setTimeout(() => fetchSimulationState(), 200);
     } catch (error) {
       console.error('Error setting scenario:', error);
-      // Revert optimistic update on error
-      updateSimulationData({
-        scenario: '',
-        customScenario: '',
-        scenarioName: ''
-      });
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      if (error.response?.status === 401) {
+        alert('Authentication failed. Please log in again.');
+        // Try to refresh the token or redirect to login
+        window.location.reload();
+      } else if (error.response?.status === 400) {
+        alert('Invalid scenario data. Please check your inputs.');
+      } else {
+        alert(`Failed to set scenario: ${error.response?.data?.detail || error.message}`);
+      }
     } finally {
       setLoading(false);
     }
