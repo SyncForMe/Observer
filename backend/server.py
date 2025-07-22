@@ -1138,9 +1138,10 @@ PROVIDE EXPERT ANALYSIS:
                 
                 if response_text and response_text.strip():
                     print(f"✅ Gemini 2.0 Flash SUCCESS (fallback) for {agent.name}: {response_text[:60]}...")
-                    # Remove character narrations (text in asterisks)
+                    # Remove character narrations and ensure complete sentences
                     cleaned_response = self._remove_narrations(response_text.strip())
-                    return cleaned_response
+                    complete_response = self._ensure_complete_response(cleaned_response)
+                    return complete_response
                 else:
                     print(f"⚠️ All API methods failed for {agent.name}")
                     raise Exception("Empty API responses")
