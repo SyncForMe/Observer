@@ -6317,7 +6317,7 @@ Continue building on the progress above. The team should advance the solutions a
         scenario=scenario,
         scenario_name=scenario_name,
         messages=messages,
-        user_id=""  # Empty for global simulation conversations (until auth is fixed)
+        user_id=current_user.id  # Use current user's ID for proper association
     )
     
     await db.conversations.insert_one(conversation_round.dict())
