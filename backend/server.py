@@ -7144,6 +7144,172 @@ async def add_agent_memory(agent_id: str, request: dict):
         "urls_processed": len(re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', new_memory))
     }
 
+@api_router.post("/conversation/generate-enhanced")
+async def generate_enhanced_conversation(current_user: User = Depends(get_current_user)):
+    """Generate enhanced conversation with 3 messages per agent and detailed debugging"""
+    # Create LLM manager for API calls
+    llm_manager = LLMManager()
+    
+    # Get current user's agents
+    all_agents = await db.agents.find({"user_id": current_user.id}).to_list(100)
+    if len(all_agents) < 2:
+        raise HTTPException(status_code=400, detail="Need at least 2 agents for conversation. Please add more agents to your simulation.")
+    
+    # Use ALL user's agents for comprehensive conversations
+    agent_objects = [Agent(**agent) for agent in all_agents]
+    
+    print(f"🤖 Using {len(agent_objects)} agents for enhanced conversation generation")
+    
+    # Get user's simulation state and scenario
+    state = await db.simulation_state.find_one({"user_id": current_user.id})
+    if not state:
+        raise HTTPException(status_code=400, detail="No active simulation")
+    
+    scenario = state.get("scenario", "General discussion about current topics")
+    scenario_name = state.get("scenario_name", "General Discussion")
+    
+    # Get conversation count for round numbering
+    conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
+    
+    # Calculate day and time period
+    day = state.get("current_day", 1)
+    time_period = state.get("current_time_period", "morning")
+    
+    # Get existing documents for context
+    existing_documents = await db.documents.find({"user_id": current_user.id}).sort("updated_at", -1).limit(5).to_list(5)
+    
+    # Build context for enhanced conversation
+    context = f"Day {day}, {time_period}. You are working on: {scenario}\n\n"
+    context += f"IMPORTANT: Your team's goal is to work towards creating helpful documents that capture your decisions, analysis, and plans.\n"
+    context += f"As you discuss, consider what documents would be valuable:\n"
+    context += f"- Protocols for repeatable processes\n"
+    context += f"- Implementation plans for actions\n" 
+    context += f"- Risk assessments for important decisions\n"
+    context += f"- Technical specifications for solutions\n"
+    context += f"- Training guides for new procedures\n"
+    context += f"- Budget proposals for resource allocation\n"
+    context += f"- Timeline documents for project planning\n"
+    context += f"\nWhen you reach consensus or make important decisions, suggest creating a document to formalize it.\n"
+    
+    # ===== ENHANCED ROUND STRUCTURE: 3 MESSAGES PER AGENT =====
+    messages = []
+    conversation_so_far = ""
+    
+    print(f"🎯 TARGET: {len(agent_objects)} agents × 3 messages = {len(agent_objects) * 3} total messages")
+    
+    # Generate 3 sequential messages per agent for deeper conversation
+    try:
+        for round_iteration in range(3):
+            print(f"🔄 Starting round {round_iteration + 1}/3 with {len(agent_objects)} agents...")
+            
+            for i, agent in enumerate(agent_objects):
+                try:
+                    print(f"  🤖 Generating message for {agent.name} (Round {round_iteration + 1}, Agent {i + 1}/{len(agent_objects)})")
+                    
+                    # Choose response type based on conversation flow and iteration with document focus
+                    if round_iteration == 0:
+                        # First iteration: Set the stage with document awareness
+                        if i == 0:
+                            agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area. Consider what documentation we might need."
+                        elif i == 1:
+                            agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities. Think about what processes might need documentation."
+                        else:
+                            agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention and what documents could help formalize our approach."
+                    elif round_iteration == 1:
+                        # Second iteration: Deep dive with document planning
+                        if len(messages) < len(agent_objects) * 2:  # Still in second round
+                            agent_guidance = f"Reference specific points made by your teammates in their previous messages. Provide detailed analysis or concrete solutions. If you see consensus forming, consider proposing a document to capture it."
+                        else:
+                            agent_guidance = f"We're making good progress. Look at the solutions and decisions emerging. What specific documents should we create to formalize our conclusions?"
+                    else:
+                        # Third iteration: Synthesis and document creation
+                        agent_guidance = f"Synthesize the discussion so far. Make specific recommendations for both actions AND documents. If there's clear consensus on any point, suggest we create documentation for it."
+                    
+                    # Build comprehensive context including conversation history
+                    current_context = f"{context}\n\n{agent_guidance}\n"
+                    
+                    # Include ALL previous messages from this round for full context
+                    if messages:
+                        current_context += f"\nConversation so far:\n"
+                        # Group messages by agent to show conversation flow clearly
+                        agent_messages = {}
+                        for prev_msg in messages:
+                            if prev_msg.agent_name not in agent_messages:
+                                agent_messages[prev_msg.agent_name] = []
+                            agent_messages[prev_msg.agent_name].append(prev_msg.message)
+                        
+                        for agent_name, agent_msgs in agent_messages.items():
+                            if agent_name != agent.name:  # Don't show current agent's own messages
+                                for j, msg in enumerate(agent_msgs, 1):
+                                    current_context += f"• {agent_name} (Message {j}): {msg}\n"
+                        
+                        current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
+                    
+                    # Add delay to prevent rate limiting and ensure quality responses
+                    if len(messages) > 0:
+                        await asyncio.sleep(1)  # Reduced delay to prevent timeout issues
+                    
+                    response = await llm_manager.generate_agent_response(
+                        agent, scenario, agent_objects, current_context, [], "Respond in English.", existing_documents, state
+                    )
+                    
+                    message = ConversationMessage(
+                        agent_id=agent.id,
+                        agent_name=agent.name,
+                        message=response,
+                        mood=agent.current_mood
+                    )
+                    messages.append(message)
+                    
+                    # Update conversation_so_far for next agent
+                    conversation_so_far += f"{agent.name}: {response}\n"
+                    
+                    print(f"    ✅ Generated message for {agent.name} (Round {round_iteration + 1}, Total messages: {len(messages)})")
+                    
+                except Exception as agent_error:
+                    print(f"    ❌ Error generating message for {agent.name}: {agent_error}")
+                    # Continue with next agent instead of breaking
+                    continue
+            
+            print(f"✅ Completed round {round_iteration + 1}/3. Messages so far: {len(messages)}")
+    
+    except Exception as e:
+        print(f"❌ Error in conversation generation loop: {e}")
+        # Continue with whatever messages we have
+    
+    print(f"🎯 Completed conversation generation: {len(messages)} total messages from {len(agent_objects)} agents")
+    
+    # Verify we got the expected number of messages
+    expected_messages = len(agent_objects) * 3
+    if len(messages) == expected_messages:
+        print(f"✅ Perfect! Got exactly {expected_messages} messages as expected")
+    else:
+        print(f"⚠️ Expected {expected_messages} messages, got {len(messages)}")
+        
+        # Show distribution
+        agent_message_count = {}
+        for msg in messages:
+            agent_name = msg.agent_name
+            agent_message_count[agent_name] = agent_message_count.get(agent_name, 0) + 1
+        
+        for agent_name, count in sorted(agent_message_count.items()):
+            status = "✅" if count == 3 else "❌"
+            print(f"  {status} {agent_name}: {count} messages")
+    
+    # Create conversation round  
+    conversation_round = ConversationRound(
+        round_number=conversation_count + 1,
+        time_period=f"Day {day} - {time_period}",
+        scenario=scenario,
+        scenario_name=scenario_name,
+        messages=messages,
+        user_id=current_user.id  # Use current user's ID for proper association
+    )
+    
+    await db.conversations.insert_one(conversation_round.dict())
+    
+    return conversation_round
+
 @api_router.post("/conversation/generate-single/{agent_id}")
 async def generate_single_response(agent_id: str):
     """Generate a single response from one agent - useful for testing"""
