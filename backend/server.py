@@ -5604,7 +5604,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
         task = generate_agent_response_wrapper(
             agent, 
             conversation_history_msgs,
-            observer_context + f"You're part of a team discussion about: {scenario}\n\nWork together to solve this problem.",
+            observer_context + f"\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n\nYour job is to collaborate with your teammates to find concrete, actionable solutions. Reference what others say, build on their ideas, and work toward implementation.",
             existing_documents,
             agent_names,
             conversation_stage
