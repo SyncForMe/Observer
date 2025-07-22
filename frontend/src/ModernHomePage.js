@@ -19,12 +19,20 @@ const ModernHomePage = () => {
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
+      // Don't load data if no token
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      
       try {
+        const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+        
         const [agentsRes, conversationsRes, documentsRes, simStateRes] = await Promise.all([
-          axios.get(`${API}/agents`),
-          axios.get(`${API}/conversations`),
-          axios.get(`${API}/documents`),
-          axios.get(`${API}/simulation/state`)
+          axios.get(`${API}/agents`, authHeaders),
+          axios.get(`${API}/conversations`, authHeaders),
+          axios.get(`${API}/documents`, authHeaders),
+          axios.get(`${API}/simulation/state`, authHeaders)
         ]);
 
         setAgents(agentsRes.data);
