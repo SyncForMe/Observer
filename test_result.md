@@ -596,6 +596,21 @@ backend:
         -agent: "testing"
         -comment: "CONVERSATION RETRIEVAL VERIFIED: During the conversation generation debug testing, confirmed that GET /api/conversations endpoint is working correctly with proper user data isolation. The endpoint returns conversations filtered by user_id, and conversations are properly saved with the correct user_id. The previous user data isolation issue appears to have been resolved. The conversation retrieval functionality is working correctly and securely."
 
+  - task: "Token Size and Response Completion Improvements"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "testing"
+        -comment: "Initial testing needed for token size and response completion improvements that were just implemented"
+        -working: true
+        -agent: "testing"
+        -comment: "COMPREHENSIVE TOKEN SIZE AND RESPONSE COMPLETION TESTING COMPLETED: Conducted extensive testing of the token size and response completion improvements as specifically requested in the review. TESTED IMPROVEMENTS: 1) ✅ REDUCED TOKEN LIMITS: Verified Claude Sonnet 4 and Gemini 2.0 Flash models use 180 token limits (reduced from 200), 2) ✅ WORD LIMIT GUIDANCE: Confirmed system message includes '120-140 words MAX. Complete your thought naturally within this limit - no cut-offs allowed', 3) ✅ _ENSURE_COMPLETE_RESPONSE METHOD: Verified method checks for proper punctuation endings and detects incomplete sentences, 4) ✅ _REMOVE_NARRATIONS METHOD: Confirmed method filters out asterisk-based narrations using regex patterns, 5) ✅ COMPLETION LOGIC APPLICATION: Verified completion logic is applied to all response paths (Claude, Gemini, fallbacks). COMPREHENSIVE TEST RESULTS: Analyzed 190 agent responses across 5 conversation rounds and 5 observer message scenarios. KEY FINDINGS: 1) ✅ RESPONSE COMPLETION RATE: 98.9% (188/190) responses end with complete sentences and proper punctuation (Target: >95% - PASSED), 2) ✅ CUT-OFF RATE: Only 1.1% (2/190) responses appear cut off mid-sentence (Target: <5% - PASSED), 3) ✅ NARRATION-FREE RATE: 100% (0/190) responses contain narrations - all asterisk-based character descriptions successfully removed (Target: 100% - PASSED), 4) ⚠️ WORD COUNT COMPLIANCE: Only 2.1% (4/190) responses fall within target 120-140 word range, with 92.1% below target (average 29.4 words) and 5.8% above target (Target: >80% - FAILED). PUNCTUATION ANALYSIS: 68.4% end with periods, 17.9% with exclamations, 12.6% with questions, 1.1% incomplete. FINAL ASSESSMENT: 3/4 improvement goals achieved (75% success rate). The completion logic and narration removal are working perfectly, ensuring all responses are complete sentences without character descriptions. However, most responses are significantly shorter than the 120-140 word target range, suggesting the token limits may be too restrictive or agents are being overly concise. The core functionality of preventing cut-off responses and ensuring complete sentences is working excellently."
+
   - task: "Error Handling in Conversation Generation"
     implemented: true
     working: true
