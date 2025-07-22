@@ -175,7 +175,7 @@ def test_enhanced_conversation_generation():
     start_time = time.time()
     
     # Use longer timeout for conversation generation as it involves multiple LLM calls
-    conv_response = make_request("POST", "/conversation/generate", headers=headers, timeout=180)
+    conv_response = make_request("POST", "/conversation/generate-enhanced", headers=headers, timeout=180)
     
     end_time = time.time()
     generation_time = end_time - start_time
