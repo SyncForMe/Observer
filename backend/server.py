@@ -5452,9 +5452,10 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     if len(all_agents) < 2:
         raise HTTPException(status_code=400, detail="Need at least 2 agents for conversation. Please add more agents to your simulation.")
     
-    # Limit to 3 agents per conversation for very fast generation
+    # Use ALL agents (up to 10 for conversation quality) instead of limiting to 3
     import random
-    agents = random.sample(all_agents, min(3, len(all_agents)))
+    # Use all agents up to 10 for better conversation quality
+    agents = all_agents[:10] if len(all_agents) >= 10 else all_agents
     agent_objects = [Agent(**agent) for agent in agents]
     
     # Get user's simulation state and scenario
