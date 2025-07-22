@@ -8270,13 +8270,13 @@ The team has voted to approve these changes. Create an updated version of the do
         logging.error(f"Error proposing document update: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to propose document update: {str(e)}")
 
-@api_router.post("/documents/{document_id}/review-suggestion")
-async def handle_improvement_suggestion(
+@api_router.post("/documents/{document_id}/request-review")
+async def request_document_review(
     document_id: str,
     request: Dict[str, Any],
     current_user: User = Depends(get_current_user)
 ):
-    """Handle creator's decision on document improvement suggestions"""
+    """Request review of a document by other agents"""
     try:
         # Get the document
         document = await db.documents.find_one({
@@ -8287,92 +8287,184 @@ async def handle_improvement_suggestion(
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
         
-        suggestion_id = request.get("suggestion_id")
-        decision = request.get("decision")  # "accept" or "reject"
-        creator_agent_id = request.get("creator_agent_id")
+        reviewer_agent_ids = request.get("reviewer_agent_ids", [])
+        if not reviewer_agent_ids:
+            raise HTTPException(status_code=400, detail="At least one reviewer agent must be specified")
         
-        if not all([suggestion_id, decision, creator_agent_id]):
-            raise HTTPException(status_code=400, detail="Missing required fields")
+        # Update document status to under_review
+        metadata = document.get("metadata", {})
+        if "document_status" not in metadata:
+            metadata["document_status"] = DocumentStatus().dict()
         
-        # Get the suggestion
-        suggestion = await db.document_suggestions.find_one({"id": suggestion_id})
-        if not suggestion:
-            raise HTTPException(status_code=404, detail="Suggestion not found")
+        metadata["document_status"]["status"] = "under_review"
+        metadata["document_status"]["reviewers"] = reviewer_agent_ids
+        metadata["updated_at"] = datetime.utcnow().isoformat()
         
-        if decision == "accept":
-            # Get the creator agent
-            creator_agent_doc = await db.agents.find_one({"id": creator_agent_id})
-            if not creator_agent_doc:
-                raise HTTPException(status_code=404, detail="Creator agent not found")
-            
-            creator_agent = Agent(**creator_agent_doc)
-            
-            # Generate improved document content
-            improvement_context = f"""Original document content:
-{document['content']}
-
-Accepted improvement suggestion: {suggestion['suggestion']}
-
-Incorporate these improvements into the document while maintaining its overall structure and purpose."""
-            
-            improved_content = await llm_manager.generate_document_content(
-                document['metadata']['category'].lower(),
-                document['metadata']['title'],
-                improvement_context,
-                creator_agent
-            )
-            
-            # Update the document
-            updated_metadata = DocumentMetadata(**document['metadata'])
-            updated_metadata.updated_at = datetime.utcnow()
-            updated_metadata.status = "Updated"
-            
-            await db.documents.update_one(
-                {"id": document_id},
-                {
-                    "$set": {
-                        "content": improved_content,
-                        "metadata": updated_metadata.dict()
-                    }
-                }
-            )
-            
-            # Update suggestion status
-            await db.document_suggestions.update_one(
-                {"id": suggestion_id},
-                {"$set": {"status": "accepted"}}
-            )
-            
-            # Update creator's memory
-            creator_memory = f"I accepted improvement suggestions for '{document['metadata']['title']}' from {suggestion['suggesting_agent_name']} and updated the document accordingly."
-            current_memory = creator_agent.memory_summary or ""
-            updated_memory = f"{current_memory}\n\n[Document Update]: {creator_memory}".strip()
-            
-            await db.agents.update_one(
-                {"id": creator_agent_id},
-                {"$set": {"memory_summary": updated_memory}}
-            )
-            
-            return {
-                "success": True,
-                "message": "Document updated with accepted improvements",
-                "updated_content": improved_content
-            }
-        else:
-            # Reject the suggestion
-            await db.document_suggestions.update_one(
-                {"id": suggestion_id},
-                {"$set": {"status": "rejected"}}
-            )
-            
-            return {
-                "success": True,
-                "message": "Improvement suggestion rejected"
-            }
-    
+        await db.documents.update_one(
+            {"id": document_id},
+            {"$set": {"metadata": metadata}}
+        )
+        
+        return {
+            "success": True,
+            "message": "Document review requested successfully",
+            "reviewers": reviewer_agent_ids,
+            "status": "under_review"
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logging.error(f"Error handling improvement suggestion: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to handle suggestion: {str(e)}")
+        logging.error(f"Error requesting document review: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to request review: {str(e)}")
+
+@api_router.post("/documents/{document_id}/vote")
+async def vote_on_document(
+    document_id: str,
+    request: Dict[str, Any],
+    current_user: User = Depends(get_current_user)
+):
+    """Vote to approve or reject a document"""
+    try:
+        # Get the document
+        document = await db.documents.find_one({
+            "id": document_id,
+            "metadata.user_id": current_user.id
+        })
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        agent_id = request.get("agent_id")
+        vote = request.get("vote")  # "approve" or "reject"
+        suggestion = request.get("suggestion", "")  # Optional improvement suggestion
+        
+        if not all([agent_id, vote]):
+            raise HTTPException(status_code=400, detail="Agent ID and vote are required")
+        
+        if vote not in ["approve", "reject"]:
+            raise HTTPException(status_code=400, detail="Vote must be 'approve' or 'reject'")
+        
+        # Get the agent to verify it exists and belongs to user
+        agent_doc = await db.agents.find_one({
+            "id": agent_id,
+            "user_id": current_user.id
+        })
+        
+        if not agent_doc:
+            raise HTTPException(status_code=404, detail="Agent not found")
+        
+        # Update document status
+        metadata = document.get("metadata", {})
+        if "document_status" not in metadata:
+            metadata["document_status"] = DocumentStatus().dict()
+        
+        doc_status = metadata["document_status"]
+        
+        # Update vote counts
+        if vote == "approve":
+            doc_status["approval_votes"] = doc_status.get("approval_votes", 0) + 1
+        else:
+            doc_status["rejection_votes"] = doc_status.get("rejection_votes", 0) + 1
+        
+        # Add suggestion if provided
+        if suggestion:
+            if "suggestions" not in doc_status:
+                doc_status["suggestions"] = []
+            doc_status["suggestions"].append({
+                "agent_id": agent_id,
+                "agent_name": agent_doc["name"],
+                "suggestion": suggestion,
+                "timestamp": datetime.utcnow().isoformat()
+            })
+        
+        # Determine final status based on votes
+        total_reviewers = len(doc_status.get("reviewers", []))
+        approval_votes = doc_status.get("approval_votes", 0)
+        rejection_votes = doc_status.get("rejection_votes", 0)
+        
+        # Simple majority rule
+        if approval_votes > total_reviewers / 2:
+            doc_status["status"] = "approved"
+        elif rejection_votes > total_reviewers / 2:
+            doc_status["status"] = "rejected"
+        
+        metadata["updated_at"] = datetime.utcnow().isoformat()
+        
+        await db.documents.update_one(
+            {"id": document_id},
+            {"$set": {"metadata": metadata}}
+        )
+        
+        return {
+            "success": True,
+            "vote_recorded": vote,
+            "current_status": doc_status["status"],
+            "approval_votes": doc_status.get("approval_votes", 0),
+            "rejection_votes": doc_status.get("rejection_votes", 0),
+            "suggestions_count": len(doc_status.get("suggestions", []))
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error voting on document: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to record vote: {str(e)}")
+
+@api_router.get("/documents/{document_id}/review-status")
+async def get_document_review_status(
+    document_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get detailed review status of a document"""
+    try:
+        # Get the document
+        document = await db.documents.find_one({
+            "id": document_id,
+            "metadata.user_id": current_user.id
+        })
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        metadata = document.get("metadata", {})
+        doc_status = metadata.get("document_status", {})
+        
+        # Get reviewer details
+        reviewer_ids = doc_status.get("reviewers", [])
+        reviewers = []
+        
+        if reviewer_ids:
+            reviewer_docs = await db.agents.find({
+                "id": {"$in": reviewer_ids},
+                "user_id": current_user.id
+            }).to_list(100)
+            
+            reviewers = [{
+                "id": agent["id"],
+                "name": agent["name"],
+                "archetype": agent["archetype"]
+            } for agent in reviewer_docs]
+        
+        return {
+            "document_id": document_id,
+            "title": metadata.get("title", ""),
+            "status": doc_status.get("status", "draft"),
+            "created_by_agent": doc_status.get("created_by_agent", ""),
+            "reviewers": reviewers,
+            "approval_votes": doc_status.get("approval_votes", 0),
+            "rejection_votes": doc_status.get("rejection_votes", 0),
+            "suggestions": doc_status.get("suggestions", []),
+            "total_suggestions": len(doc_status.get("suggestions", [])),
+            "created_at": metadata.get("created_at"),
+            "updated_at": metadata.get("updated_at")
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error getting document review status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get review status: {str(e)}")
 
 @api_router.get("/documents/{document_id}/suggestions")
 async def get_document_suggestions(
