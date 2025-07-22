@@ -5014,8 +5014,9 @@ async def auto_generate_documents_from_conversation(conversation_round, agent_ob
     # Check if agents made decisions, votes, or commitments that need documentation
     decisions_made = extract_decisions_from_conversation(conversation_text)
     
-    # Get existing documents to see what needs updating
-    existing_docs = await db.documents.find({"user_id": ""}).to_list(100)
+    # Get existing documents to see what needs updating (use conversation user_id)
+    user_id = getattr(conversation_round, 'user_id', '')
+    existing_docs = await db.documents.find({"metadata.user_id": user_id}).to_list(100)
     
     # Determine if we should update existing documents or create new ones
     needed_actions = determine_document_actions(scenario, scenario_name, conversation_text, existing_docs, decisions_made)
