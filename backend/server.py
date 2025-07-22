@@ -616,6 +616,46 @@ class LLMManager:
         
         return cleaned_text
     
+    def _ensure_complete_response(self, response_text: str) -> str:
+        """Ensure response ends with a complete sentence and isn't cut off"""
+        if not response_text or not response_text.strip():
+            return response_text
+            
+        response_text = response_text.strip()
+        
+        # Check if response ends with proper punctuation
+        if response_text.endswith(('.', '!', '?')):
+            return response_text
+        
+        # If it ends with a comma, period, or other punctuation that suggests continuation
+        if response_text.endswith((',', ';', ':')):
+            # Find the last complete sentence
+            sentences = re.split(r'[.!?]+', response_text)
+            if len(sentences) > 1:
+                # Return all complete sentences except the last incomplete one
+                complete_sentences = sentences[:-1]
+                result = '. '.join(complete_sentences).strip()
+                if result and not result.endswith('.'):
+                    result += '.'
+                return result
+        
+        # If response seems cut off (doesn't end with punctuation)
+        if not response_text.endswith(('.', '!', '?', ',', ';', ':')):
+            # Find the last complete sentence
+            sentences = re.split(r'[.!?]+', response_text)
+            if len(sentences) > 1:
+                # Return all but the last incomplete sentence
+                complete_sentences = sentences[:-1]
+                result = '. '.join(complete_sentences).strip()
+                if result and not result.endswith('.'):
+                    result += '.'
+                return result
+            else:
+                # Single incomplete sentence - add appropriate punctuation
+                return response_text + '.'
+        
+        return response_text
+    
     async def fetch_url_content(self, url: str) -> str:
         """Fetch and summarize content from a URL for agent memory"""
         try:
