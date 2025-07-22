@@ -1,20 +1,12 @@
 # 🤖 AI Agent Simulation Platform
 
-<div align="center">
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![React](https://img.shields.io/badge/React-18.0+-61DAFB.svg)](https://reactjs.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-00A86B.svg)](https://fastapi.tiangolo.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-4.4+-47A248.svg)](https://www.mongodb.com/)
-[![Claude](https://img.shields.io/badge/Claude-3.5_Sonnet-FF6B35.svg)](https://claude.ai/)
-[![Gemini](https://img.shields.io/badge/Gemini-2.0_Flash-4285F4.svg)](https://gemini.google.com/)
+[![React](https://img.shields.io/badge/React-18.0.0-blue.svg)](https://reactjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-green.svg)](https://fastapi.tiangolo.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-6.0-brightgreen.svg)](https://mongodb.com/)
+[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://python.org/)
 
-**A sophisticated enterprise-grade platform for creating, managing, and running AI agent simulations with real-time conversations, advanced analytics, and professional reporting capabilities.**
-
-[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [API Reference](#-api-reference) • [Contributing](#-contributing)
-
-</div>
+> **A sophisticated AI-powered simulation platform for creating, managing, and running real-time conversations among multiple AI agents. Perfect for testing scenarios, research, and understanding AI collaboration dynamics.**
 
 ---
 
