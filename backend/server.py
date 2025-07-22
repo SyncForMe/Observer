@@ -5029,7 +5029,7 @@ async def auto_generate_documents_from_conversation(conversation_round, agent_ob
                 creating_agent = select_best_agent_for_document(agent_objects, doc_type)
                 document = await create_contextual_document(
                     creating_agent, doc_type, doc_title, conversation_text, 
-                    scenario, scenario_name, llm_manager
+                    scenario, scenario_name, llm_manager, user_id
                 )
                 await db.documents.insert_one(document)
                 print(f"📄 Created: {doc_title} by {creating_agent.name}")
