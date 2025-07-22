@@ -5233,7 +5233,7 @@ def select_best_agent_for_document(agent_objects, doc_type):
     # If no preferred archetype found, return first agent
     return agent_objects[0]
 
-async def create_contextual_document(creating_agent, doc_type, title, conversation_text, scenario, scenario_name, llm_manager):
+async def create_contextual_document(creating_agent, doc_type, title, conversation_text, scenario, scenario_name, llm_manager, user_id=""):
     """Create a specific document based on conversation context"""
     
     # Document templates
