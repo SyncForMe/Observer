@@ -6162,17 +6162,50 @@ Continue building on the progress above. The team should advance the solutions a
     
     progression_guidance = progression_prompts[progression_stage]
     
-    # Build conversation context with progression awareness
-    context = f"Day {day}, {time_period}. {progression_guidance}"
-    
+    # ===== ENHANCED CROSS-ROUND REFERENCE SYSTEM =====
+    # Build comprehensive historical context from ALL previous conversations
+    historical_context = ""
     if recent_conversations:
-        # Add context about recent discussions to avoid loops
-        context += f"\n\nRecent discussion themes (avoid repeating these exactly):\n"
-        for i, topic in enumerate(recent_topics[-3:], 1):
-            context += f"- Theme {i}: {topic}...\n"
-        context += "\nBuild on these ideas or introduce new angles rather than restating the same points."
-    else:
-        context += "\nStart a focused discussion about the scenario."
+        # Create searchable conversation history for cross-round references
+        conversation_history = []
+        for conv_idx, conv in enumerate(recent_conversations[-10:]):  # Last 10 conversations for reference
+            round_number = conv.get('round_number', conv_idx + 1)
+            time_period = conv.get('time_period', f'Round {round_number}')
+            
+            for msg in conv.get('messages', []):
+                conversation_history.append({
+                    'round': round_number,
+                    'time_period': time_period,
+                    'agent_name': msg.get('agent_name'),
+                    'message': msg.get('message'),
+                    'content_preview': msg.get('message', '')[:150] + '...' if len(msg.get('message', '')) > 150 else msg.get('message', '')
+                })
+        
+        # Add cross-round reference context
+        if conversation_history:
+            historical_context = f"\n\n===== CONVERSATION HISTORY FOR REFERENCE =====\n"
+            historical_context += "You can reference specific points made in previous rounds:\n\n"
+            
+            # Group by rounds for easier reference
+            rounds_dict = {}
+            for entry in conversation_history:
+                round_key = f"Round {entry['round']} ({entry['time_period']})"
+                if round_key not in rounds_dict:
+                    rounds_dict[round_key] = []
+                rounds_dict[round_key].append(entry)
+            
+            # Show last 3 rounds for reference
+            round_keys = list(rounds_dict.keys())[-3:]
+            for round_key in round_keys:
+                historical_context += f"\n{round_key}:\n"
+                for entry in rounds_dict[round_key]:
+                    historical_context += f"• {entry['agent_name']}: {entry['content_preview']}\n"
+            
+            historical_context += f"\nREFERENCE INSTRUCTIONS:\n"
+            historical_context += f"- When relevant, reference specific points made in previous rounds\n"
+            historical_context += f"- Use phrases like 'As [Agent Name] mentioned in Round X' or 'Building on the point from earlier about...'\n"
+            historical_context += f"- Show how discussions have evolved and what new insights you have\n"
+            historical_context += f"- Don't just repeat - ADVANCE the conversation based on what was previously discussed\n"
     
     # ===== ENHANCED ROUND STRUCTURE: 3 MESSAGES PER AGENT =====
     messages = []
