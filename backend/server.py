@@ -864,7 +864,7 @@ QUESTION TYPES (when you do ask):
 • Ask questions that move the discussion forward
 • Identify concrete next steps and implementation approaches
 
-WORD LIMIT: 150-180 words MAX. Complete your thought naturally.
+WORD LIMIT: 120-140 words MAX. Complete your thought naturally within this limit - no cut-offs allowed.
 
 {document_context}
 
