@@ -6109,8 +6109,7 @@ Continue building on the progress above. The team should advance the solutions a
         print(f"Document auto-generation failed: {e}")
         # Don't let document generation failure break conversation generation
     
-    # DISABLED: Early return to enable enhanced 3-round conversation generation
-    # return conversation_round
+    return conversation_round
     agent_objects = [Agent(**agent) for agent in agents]
     
     # Get simulation state including language setting
