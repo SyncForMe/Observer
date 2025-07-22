@@ -7883,6 +7883,132 @@ async def delete_document(
         logging.error(f"Error deleting document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete document: {str(e)}")
 
+@api_router.get("/documents/{document_id}/pdf")
+async def download_document_pdf(
+    document_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Download document as professionally formatted PDF"""
+    try:
+        # Get the document
+        doc = await db.documents.find_one({
+            "id": document_id,
+            "$or": [
+                {"metadata.user_id": current_user.id},
+                {"metadata.user_id": ""},
+                {"metadata.user_id": {"$exists": False}}
+            ]
+        })
+        
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        # Prepare document data for PDF generation
+        metadata = doc.get("metadata", {})
+        content = doc.get("content", "")
+        
+        # Generate PDF
+        pdf_generator = ProfessionalPDFGenerator()
+        pdf_bytes = pdf_generator.generate_pdf(
+            content=content,
+            title=metadata.get("title", "Untitled Document"),
+            authors=metadata.get("authors", ["AI Agent System"]),
+            category=metadata.get("category", "General"),
+            description=metadata.get("description", ""),
+            keywords=metadata.get("keywords", []),
+            created_at=metadata.get("created_at", datetime.now().isoformat())
+        )
+        
+        # Prepare filename
+        safe_title = re.sub(r'[^a-zA-Z0-9\s\-_]', '', metadata.get("title", "document"))
+        safe_title = re.sub(r'\s+', '_', safe_title)
+        filename = f"{safe_title}_{datetime.now().strftime('%Y%m%d')}.pdf"
+        
+        # Return PDF as streaming response
+        pdf_stream = io.BytesIO(pdf_bytes)
+        
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Length": str(len(pdf_bytes))
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generating PDF for document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
+
+@api_router.post("/documents/bulk-pdf")
+async def download_multiple_documents_pdf(
+    request: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Download multiple documents as individual PDFs in a single response"""
+    try:
+        document_ids = request.get("document_ids", [])
+        
+        if not document_ids:
+            raise HTTPException(status_code=400, detail="No document IDs provided")
+        
+        # Get all requested documents
+        docs = await db.documents.find({
+            "id": {"$in": document_ids},
+            "$or": [
+                {"metadata.user_id": current_user.id},
+                {"metadata.user_id": ""},
+                {"metadata.user_id": {"$exists": False}}
+            ]
+        }).to_list(100)
+        
+        if not docs:
+            raise HTTPException(status_code=404, detail="No documents found")
+        
+        pdf_generator = ProfessionalPDFGenerator()
+        generated_pdfs = []
+        
+        # Generate PDF for each document
+        for doc in docs:
+            metadata = doc.get("metadata", {})
+            content = doc.get("content", "")
+            
+            pdf_bytes = pdf_generator.generate_pdf(
+                content=content,
+                title=metadata.get("title", "Untitled Document"),
+                authors=metadata.get("authors", ["AI Agent System"]),
+                category=metadata.get("category", "General"),
+                description=metadata.get("description", ""),
+                keywords=metadata.get("keywords", []),
+                created_at=metadata.get("created_at", datetime.now().isoformat())
+            )
+            
+            # Create filename
+            safe_title = re.sub(r'[^a-zA-Z0-9\s\-_]', '', metadata.get("title", "document"))
+            safe_title = re.sub(r'\s+', '_', safe_title)
+            filename = f"{safe_title}_{datetime.now().strftime('%Y%m%d')}.pdf"
+            
+            generated_pdfs.append({
+                "document_id": doc["id"],
+                "filename": filename,
+                "title": metadata.get("title", "Untitled Document"),
+                "pdf_base64": base64.b64encode(pdf_bytes).decode('utf-8'),
+                "size_bytes": len(pdf_bytes)
+            })
+        
+        return {
+            "success": True,
+            "total_documents": len(generated_pdfs),
+            "pdfs": generated_pdfs
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generating bulk PDFs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate PDFs: {str(e)}")
 
 
 @api_router.post("/documents/analyze-conversation")
