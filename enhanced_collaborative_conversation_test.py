@@ -270,7 +270,7 @@ def setup_simulation():
         method="POST",
         data=scenario_data,
         auth=True,
-        expected_keys=["message", "state"]
+        expected_keys=["message", "scenario"]
     )
     
     if scenario_test:
