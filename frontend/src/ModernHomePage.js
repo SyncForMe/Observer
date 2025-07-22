@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from './AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 // Modern Homepage for the main simulation interface
 const ModernHomePage = () => {
+  const { token } = useAuth(); // Add authentication hook
   const [agents, setAgents] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [documents, setDocuments] = useState([]);
