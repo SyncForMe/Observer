@@ -52,10 +52,13 @@ const ModernHomePage = () => {
 
   // Simulation Controls
   const startSimulation = async () => {
+    if (!token) return;
+    
     try {
-      await axios.post(`${API}/simulation/start`);
+      const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+      await axios.post(`${API}/simulation/start`, {}, authHeaders);
       // Refresh simulation state
-      const response = await axios.get(`${API}/simulation/state`);
+      const response = await axios.get(`${API}/simulation/state`, authHeaders);
       setSimulationState(response.data);
     } catch (error) {
       console.error('Error starting simulation:', error);
@@ -63,8 +66,11 @@ const ModernHomePage = () => {
   };
 
   const generateConversation = async () => {
+    if (!token) return;
+    
     try {
-      const response = await axios.post(`${API}/conversation/generate`);
+      const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.post(`${API}/conversation/generate`, {}, authHeaders);
       if (response.data.conversation) {
         setConversations(prev => [response.data.conversation, ...prev]);
       }
@@ -74,10 +80,14 @@ const ModernHomePage = () => {
   };
 
   const handleSetScenario = async (scenario, scenarioName) => {
+    if (!token) return;
+    
     try {
+      const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
       await axios.post(`${API}/simulation/set-scenario`, {
         scenario,
         scenario_name: scenarioName
+      }, authHeaders);
       });
       setCurrentScenario(scenario);
     } catch (error) {
