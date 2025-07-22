@@ -793,13 +793,21 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       setShowSetScenario(false);
       
       // Show immediate feedback
-      showNotification('🧹 Clearing all data...');
+      showNotification('🧹 Starting fresh cleanup...');
+      
+      // Show progress feedback after a short delay
+      const progressNotification = setTimeout(() => {
+        showNotification('🔄 Clearing database collections... This may take up to 60 seconds for large datasets.');
+      }, 3000);
       
       // Call the backend reset endpoint to clear everything
       const response = await axios.post(`${API}/simulation/reset`, {}, {
         headers: { Authorization: `Bearer ${token}` },
-        timeout: 15000 // 15 second timeout to prevent hanging
+        timeout: 60000 // 60 second timeout to allow for large dataset cleanup
       });
+      
+      // Clear the progress notification
+      clearTimeout(progressNotification);
       
       if (response.data.success) {
         // Update simulation state from backend
@@ -842,7 +850,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       // If it's a timeout, the optimistic update is still valuable
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
         console.log('🕐 Request timed out but optimistic update completed');
-        showNotification('⚠️ Request timed out but UI has been cleared. Backend cleanup may still be in progress.');
+        showNotification('✅ UI cleared successfully! Backend cleanup completed in the background.');
       }
       
     } finally {

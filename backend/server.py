@@ -598,6 +598,64 @@ class LLMManager:
             upsert=True
         )
     
+    def _remove_narrations(self, response_text: str) -> str:
+        """Remove character narrations and stage directions from response text"""
+        import re
+        
+        # Remove text within asterisks (narrations like *leans forward*, *mechanical breathing*, etc.)
+        cleaned_text = re.sub(r'\*[^*]*\*', '', response_text)
+        
+        # Remove extra whitespace that might be left after removing asterisks
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        
+        # Remove empty parentheses that might be left
+        cleaned_text = re.sub(r'\(\s*\)', '', cleaned_text)
+        
+        # Clean up any double spaces
+        cleaned_text = re.sub(r'  +', ' ', cleaned_text)
+        
+        return cleaned_text
+    
+    def _ensure_complete_response(self, response_text: str) -> str:
+        """Ensure response ends with a complete sentence and isn't cut off"""
+        if not response_text or not response_text.strip():
+            return response_text
+            
+        response_text = response_text.strip()
+        
+        # Check if response ends with proper punctuation
+        if response_text.endswith(('.', '!', '?')):
+            return response_text
+        
+        # If it ends with a comma, period, or other punctuation that suggests continuation
+        if response_text.endswith((',', ';', ':')):
+            # Find the last complete sentence
+            sentences = re.split(r'[.!?]+', response_text)
+            if len(sentences) > 1:
+                # Return all complete sentences except the last incomplete one
+                complete_sentences = sentences[:-1]
+                result = '. '.join(complete_sentences).strip()
+                if result and not result.endswith('.'):
+                    result += '.'
+                return result
+        
+        # If response seems cut off (doesn't end with punctuation)
+        if not response_text.endswith(('.', '!', '?', ',', ';', ':')):
+            # Find the last complete sentence
+            sentences = re.split(r'[.!?]+', response_text)
+            if len(sentences) > 1:
+                # Return all but the last incomplete sentence
+                complete_sentences = sentences[:-1]
+                result = '. '.join(complete_sentences).strip()
+                if result and not result.endswith('.'):
+                    result += '.'
+                return result
+            else:
+                # Single incomplete sentence - add appropriate punctuation
+                return response_text + '.'
+        
+        return response_text
+    
     async def fetch_url_content(self, url: str) -> str:
         """Fetch and summarize content from a URL for agent memory"""
         try:
@@ -828,18 +886,29 @@ QUESTION TYPES (when you do ask):
 • Technical: "What about the implementation details?"
 • Strategic: "How does this align with our main objective?"
 
-=== CRITICAL RULES ===
-• If someone asks YOU a direct question, ALWAYS answer it
-• Don't ask questions just to ask - only when it feels natural
-• Mix different response types naturally
-• Reference teammates by name when relevant
-• Stay focused on solving the problem together
+=== CRITICAL COLLABORATION RULES ===
+• If someone asks YOU a direct question, ALWAYS answer it first
+• Reference specific points made by teammates: "Sarah, your point about..." or "Building on what Marcus said..."
+• Don't just share your view - respond to what others actually said
+• Ask follow-up questions when teammates make interesting points
+• Work toward concrete solutions that the team can implement
+• Challenge ideas constructively: "I see it differently because..."
+• Build on good ideas: "That's solid, and we could also..."
+• NO CHARACTER NARRATIONS: Do not use asterisks or describe your physical actions (e.g., *leans forward*, *adjusts glasses*, *mechanical breathing*)
+• Speak directly as yourself without stage directions or narrative descriptions
 
-WORD LIMIT: 150-180 words MAX. Complete your thought naturally.
+=== SOLUTION-FOCUSED CONVERSATION ===
+• Always work toward solving the actual problem/scenario
+• Propose specific, actionable solutions
+• Build on teammates' solutions rather than ignoring them
+• Ask questions that move the discussion forward
+• Identify concrete next steps and implementation approaches
+
+WORD LIMIT: 120-140 words MAX. Complete your thought naturally within this limit - no cut-offs allowed.
 
 {document_context}
 
-Respond naturally to what was just said - like a real team meeting."""
+Respond naturally to what was just said - like a real collaborative team meeting working toward solutions."""
         
         # Enhanced prompts with conversation history awareness and state detection
         conversation_history_text = ""
@@ -961,7 +1030,7 @@ PROVIDE EXPERT ANALYSIS:
                     api_key=self.claude_api_key,
                     session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
                     system_message=system_message
-                ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(200)  # Concise but complete thoughts
+                ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(180)  # Conservative limit to ensure complete thoughts
                 
                 print(f"🚀 FAST Claude Sonnet 4 for {agent.name}")
                 
@@ -988,7 +1057,10 @@ PROVIDE EXPERT ANALYSIS:
                 
                 if response_text and response_text.strip():
                     print(f"✅ Claude Sonnet 4 SUCCESS for {agent.name} - Fast mode: {response_text[:60]}...")
-                    return response_text.strip()
+                    # Remove character narrations and ensure complete sentences
+                    cleaned_response = self._remove_narrations(response_text.strip())
+                    complete_response = self._ensure_complete_response(cleaned_response)
+                    return complete_response
                 else:
                     print(f"⚠️ Claude Sonnet 4 returned empty response for {agent.name}, trying Gemini...")
                     raise Exception("Empty Claude response")
@@ -1001,7 +1073,7 @@ PROVIDE EXPERT ANALYSIS:
                     api_key=self.api_key,
                     session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
                     system_message=system_message
-                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(180)
                 
                 user_message = UserMessage(text=prompt)
                 
@@ -1025,7 +1097,10 @@ PROVIDE EXPERT ANALYSIS:
                 
                 if response_text and response_text.strip():
                     print(f"✅ Gemini 2.0 Flash SUCCESS (fast fallback) for {agent.name}: {response_text[:60]}...")
-                    return response_text.strip()
+                    # Remove character narrations and ensure complete sentences
+                    cleaned_response = self._remove_narrations(response_text.strip())
+                    complete_response = self._ensure_complete_response(cleaned_response)
+                    return complete_response
                 else:
                     print(f"⚠️ Gemini also returned empty response for {agent.name}")
                     raise Exception("Empty Gemini response")
@@ -1039,7 +1114,7 @@ PROVIDE EXPERT ANALYSIS:
                     api_key=self.api_key,
                     session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
                     system_message=system_message
-                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(180)
                 
                 user_message = UserMessage(text=prompt)
                 
@@ -1063,7 +1138,10 @@ PROVIDE EXPERT ANALYSIS:
                 
                 if response_text and response_text.strip():
                     print(f"✅ Gemini 2.0 Flash SUCCESS (fallback) for {agent.name}: {response_text[:60]}...")
-                    return response_text.strip()
+                    # Remove character narrations and ensure complete sentences
+                    cleaned_response = self._remove_narrations(response_text.strip())
+                    complete_response = self._ensure_complete_response(cleaned_response)
+                    return complete_response
                 else:
                     print(f"⚠️ All API methods failed for {agent.name}")
                     raise Exception("Empty API responses")
@@ -1278,7 +1356,7 @@ PROVIDE EXPERT ANALYSIS:
                             "This requires a methodical approach to avoid costly mistakes."
                         ]
             
-            return random.choice(responses)
+            return self._remove_narrations(random.choice(responses))
 
     async def update_agent_memory(self, agent: Agent, conversations: List):
         """Update agent's memory summary based on recent conversations"""
@@ -5187,6 +5265,64 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Generate responses in parallel with enhanced natural conversation flow
     import asyncio
     
+    def remove_narrations(response_text: str) -> str:
+        """Remove character narrations and stage directions from response text"""
+        import re
+        
+        # Remove text within asterisks (narrations like *leans forward*, *mechanical breathing*, etc.)
+        cleaned_text = re.sub(r'\*[^*]*\*', '', response_text)
+        
+        # Remove extra whitespace that might be left after removing asterisks
+        cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        
+        # Remove empty parentheses that might be left
+        cleaned_text = re.sub(r'\(\s*\)', '', cleaned_text)
+        
+        # Clean up any double spaces
+        cleaned_text = re.sub(r'  +', ' ', cleaned_text)
+        
+        return cleaned_text
+    
+    def ensure_complete_response(response_text: str) -> str:
+        """Ensure response ends with a complete sentence and isn't cut off"""
+        if not response_text or not response_text.strip():
+            return response_text
+            
+        response_text = response_text.strip()
+        
+        # Check if response ends with proper punctuation
+        if response_text.endswith(('.', '!', '?')):
+            return response_text
+        
+        # If it ends with a comma, period, or other punctuation that suggests continuation
+        if response_text.endswith((',', ';', ':')):
+            # Find the last complete sentence
+            sentences = re.split(r'[.!?]+', response_text)
+            if len(sentences) > 1:
+                # Return all complete sentences except the last incomplete one
+                complete_sentences = sentences[:-1]
+                result = '. '.join(complete_sentences).strip()
+                if result and not result.endswith('.'):
+                    result += '.'
+                return result
+        
+        # If response seems cut off (doesn't end with punctuation)
+        if not response_text.endswith(('.', '!', '?', ',', ';', ':')):
+            # Find the last complete sentence
+            sentences = re.split(r'[.!?]+', response_text)
+            if len(sentences) > 1:
+                # Return all but the last incomplete sentence
+                complete_sentences = sentences[:-1]
+                result = '. '.join(complete_sentences).strip()
+                if result and not result.endswith('.'):
+                    result += '.'
+                return result
+            else:
+                # Single incomplete sentence - add appropriate punctuation
+                return response_text + '.'
+        
+        return response_text
+    
     def _create_personality_fallback(agent, scenario, messages):
         """Create personality-driven fallback response based on agent personality"""
         import random
@@ -5229,7 +5365,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                 f"Let's think about this from a few different angles."
             ]
         
-        return random.choice(responses)
+        return ensure_complete_response(remove_narrations(random.choice(responses)))
     
     def _determine_agent_mood(agent, message_text):
         """Determine agent mood based on personality traits and message content"""
@@ -5294,7 +5430,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                 "Let's consider this from multiple perspectives."
             ]
         
-        return random.choice(responses)
+        return ensure_complete_response(remove_narrations(random.choice(responses)))
     
     def _determine_agent_mood(agent, message_text):
         """Determine agent mood based on personality and content"""
@@ -5312,72 +5448,132 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
             return "engaged"
     
     async def generate_agent_response_wrapper(agent, conversation_history_msgs, base_context, existing_documents, agent_names, conversation_stage):
-        """Generate collaborative responses where agents talk TO each other"""
+        """Generate truly collaborative responses where agents build on each other's ideas and work toward solutions"""
         try:
             print(f"🤝 Generating collaborative response for {agent.name} (Stage: {conversation_stage})")
             
-            # COLLABORATIVE CONTEXT - Make agents reference each other specifically
+            # ENHANCED COLLABORATIVE CONTEXT - Force agents to interact and build solutions
             other_agents = [name for name in agent_names if name != agent.name]
             
-            # Track what has been said to avoid repetition
-            used_openings = []
-            key_points_made = []
+            # Track conversation elements for better collaboration
+            key_solutions_mentioned = []
+            questions_asked = []
+            specific_points_to_address = []
+            direct_questions_to_me = []
             
             if conversation_history_msgs:
-                recent_messages = conversation_history_msgs[-8:]  # More context for collaboration
+                recent_messages = conversation_history_msgs[-6:]  # Focus on most recent context
                 
-                # Extract what has already been discussed
+                # ANALYZE WHAT NEEDS TO BE ADDRESSED
                 for msg in recent_messages:
-                    # Track opening phrases to avoid repetition
-                    first_words = " ".join(msg['content'].split()[:5]).lower()
-                    used_openings.append(first_words)
+                    msg_content = msg['content'].lower()
+                    msg_agent = msg['agent_name']
                     
-                    # Extract key points mentioned
-                    if any(keyword in msg['content'].lower() for keyword in ['solution', 'approach', 'suggest', 'recommend', 'think we should']):
-                        key_points_made.append(f"{msg['agent_name']} suggested: {msg['content'][:100]}...")
+                    # Extract specific solutions or proposals mentioned
+                    if any(keyword in msg_content for keyword in ['solution', 'approach', 'propose', 'suggest', 'recommend', 'plan', 'strategy']):
+                        key_solutions_mentioned.append({
+                            'agent': msg_agent,
+                            'content': msg['content'][:200],
+                            'type': 'solution'
+                        })
+                    
+                    # Extract questions that need responses
+                    if '?' in msg['content']:
+                        questions_asked.append({
+                            'agent': msg_agent,
+                            'question': msg['content'],
+                            'answered': False
+                        })
+                    
+                    # Check if someone is asking ME specifically
+                    agent_first_name = agent.name.split()[0].lower()
+                    agent_last_name = agent.name.split()[-1].lower() if len(agent.name.split()) > 1 else ""
+                    
+                    if (agent_first_name in msg_content or agent_last_name in msg_content or 
+                        agent.name.lower() in msg_content) and '?' in msg['content']:
+                        direct_questions_to_me.append({
+                            'from': msg_agent,
+                            'question': msg['content']
+                        })
+                    
+                    # Extract points that warrant discussion/reaction
+                    if any(keyword in msg_content for keyword in ['concern', 'risk', 'challenge', 'opportunity', 'important', 'critical']):
+                        specific_points_to_address.append({
+                            'agent': msg_agent,
+                            'point': msg['content'][:150],
+                            'type': 'discussion_point'
+                        })
                 
-                # Create COLLABORATIVE context that forces interaction
+                # CREATE FOCUSED COLLABORATIVE PROMPT
                 collaborative_context = f"{base_context}\n\n"
-                collaborative_context += f"RECENT TEAM DISCUSSION:\n"
-                for msg in recent_messages:
-                    collaborative_context += f"• {msg['agent_name']}: {msg['content'][:150]}...\n"
+                collaborative_context += f"ACTIVE TEAM PROBLEM-SOLVING SESSION:\n"
                 
-                collaborative_context += f"\nYour teammates are: {', '.join(other_agents)}\n"
+                # Show recent discussion for context
+                collaborative_context += f"RECENT DISCUSSION:\n"
+                for msg in recent_messages[-3:]:  # Last 3 messages
+                    collaborative_context += f"• {msg['agent_name']}: {msg['content']}\n"
                 
-                # Force specific collaboration behaviors based on conversation stage and NATURAL FLOW
+                collaborative_context += f"\nYOUR TEAMMATES: {', '.join(other_agents)}\n"
+                
+                # PRIORITY 1: Answer direct questions first
+                if direct_questions_to_me:
+                    collaborative_context += f"\n🎯 URGENT - YOU WERE ASKED DIRECTLY:\n"
+                    for q in direct_questions_to_me[-2:]:  # Last 2 questions
+                        collaborative_context += f"• {q['from']} asked you: \"{q['question']}\"\n"
+                    collaborative_context += f"YOU MUST ANSWER THESE QUESTIONS FIRST, then contribute your own insights.\n"
+                
+                # PRIORITY 2: Build on solutions mentioned
+                elif key_solutions_mentioned:
+                    latest_solution = key_solutions_mentioned[-1]
+                    collaborative_context += f"\n💡 SOLUTION TO BUILD ON:\n"
+                    collaborative_context += f"• {latest_solution['agent']} suggested: {latest_solution['content']}\n"
+                    collaborative_context += f"RESPOND BY: Either building on this idea, pointing out issues you see, or proposing improvements/alternatives.\n"
+                
+                # PRIORITY 3: Address important discussion points
+                elif specific_points_to_address:
+                    latest_point = specific_points_to_address[-1]
+                    collaborative_context += f"\n🔍 IMPORTANT POINT TO ADDRESS:\n"
+                    collaborative_context += f"• {latest_point['agent']} mentioned: {latest_point['point']}\n"
+                    collaborative_context += f"RESPOND BY: Sharing your perspective on this point and contributing to the solution.\n"
+                
+                # PRIORITY 4: Move conversation toward solutions
+                else:
+                    collaborative_context += f"\n🎯 SOLUTION FOCUS:\n"
+                    collaborative_context += f"The team needs to work toward concrete solutions. CONTRIBUTE BY:\n"
+                    collaborative_context += f"• Proposing a specific approach or solution\n"
+                    collaborative_context += f"• Asking a clarifying question that helps move toward solutions\n"
+                    collaborative_context += f"• Identifying what we still need to figure out\n"
+                
+                # Add conversation stage guidance
                 if conversation_stage == "problem_understanding":
-                    collaborative_context += f"\nFOCUS: Understand the problem together. Share your initial thoughts, ask questions if you're genuinely curious.\n"
-                    
+                    collaborative_context += f"\n📋 CURRENT STAGE: Problem Understanding\n"
+                    collaborative_context += f"Focus on understanding the challenge deeply and asking good questions.\n"
                 elif conversation_stage == "solution_development":
-                    collaborative_context += f"\nFOCUS: Propose solutions and react naturally to others' ideas. Challenge what doesn't make sense, build on good ideas.\n" 
-                    
+                    collaborative_context += f"\n💡 CURRENT STAGE: Solution Development\n"
+                    collaborative_context += f"Focus on proposing specific solutions and building on others' ideas.\n"
                 elif conversation_stage == "action_planning":
-                    collaborative_context += f"\nFOCUS: Get specific about next steps. Make decisions and assign responsibilities naturally.\n"
+                    collaborative_context += f"\n⚡ CURRENT STAGE: Action Planning\n"
+                    collaborative_context += f"Focus on concrete next steps, timelines, and implementation details.\n"
                 
-                # Check if someone asked YOU a direct question - you MUST answer
-                direct_questions_to_agent = []
-                for msg in recent_messages[-3:]:  # Check last 3 messages
-                    if agent.name.split()[0] in msg['content'] or agent.name in msg['content']:
-                        if '?' in msg['content']:
-                            direct_questions_to_agent.append(f"{msg['agent_name']} asked you: {msg['content']}")
-                
-                if direct_questions_to_agent:
-                    collaborative_context += f"\nIMPORTANT: You were asked direct questions that you MUST address:\n"
-                    for q in direct_questions_to_agent:
-                        collaborative_context += f"• {q}\n"
-                
-                # ANTI-REPETITION: Show what openings are already used
-                if used_openings:
-                    collaborative_context += f"\nOPENINGS ALREADY USED (DON'T REPEAT): {', '.join(set(used_openings))}\n"
-                
-                collaborative_context += f"\nRespond naturally based on your personality and what the team needs right now.\n"
+                # Force natural conversation flow
+                collaborative_context += f"\n🗣️ CONVERSATION STYLE:\n"
+                collaborative_context += f"• Reference specific points made by teammates\n"
+                collaborative_context += f"• Use names when responding (e.g., 'Sarah, your point about...')\n"
+                collaborative_context += f"• Ask follow-up questions when genuinely curious\n"
+                collaborative_context += f"• Build on good ideas with 'Building on that...' or 'Adding to what X said...'\n"
+                collaborative_context += f"• Politely disagree when you see issues: 'I see it differently because...'\n"
+                collaborative_context += f"• Work toward practical solutions the team can implement\n"
                 
             else:
-                # First messages - set up collaboration expectations
+                # First messages - set collaborative expectations
                 collaborative_context = f"{base_context}\n\n"
-                collaborative_context += f"You're starting a TEAM PROBLEM-SOLVING SESSION with colleagues: {', '.join(other_agents)}\n"
-                collaborative_context += f"COLLABORATION FOCUS: Share your initial thoughts and immediately engage teammates with questions about their expertise.\n"
-                collaborative_context += f"EXAMPLE APPROACHES: 'My initial take is X. {other_agents[0]}, given your background in Y, what's your perspective?'\n"
+                collaborative_context += f"TEAM PROBLEM-SOLVING SESSION STARTING\n"
+                collaborative_context += f"Your teammates: {', '.join(other_agents)}\n\n"
+                collaborative_context += f"🎯 YOUR OPENING CONTRIBUTION:\n"
+                collaborative_context += f"• Share your initial perspective on the challenge\n"
+                collaborative_context += f"• Ask teammates about their expertise/thoughts\n"
+                collaborative_context += f"• Set up collaborative problem-solving\n"
+                collaborative_context += f"Example: 'My initial take is X. [Teammate], given your background in Y, what do you think?'\n"
             
             response = await llm_manager.generate_agent_response(
                 agent=agent,
@@ -5455,14 +5651,31 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Create tasks for parallel execution with enhanced collaboration
     tasks = []
     
-    # Determine conversation stage based on message count and content
+    # Determine conversation stage based on content analysis and message count
     total_messages = len(messages)
-    if total_messages < 6:
+    conversation_text_lower = " ".join([msg.message.lower() for msg in messages[-6:]]) if messages else ""
+    
+    # Smart stage detection based on conversation content
+    has_solutions = any(word in conversation_text_lower for word in ['solution', 'approach', 'propose', 'suggest', 'plan', 'strategy'])
+    has_action_items = any(word in conversation_text_lower for word in ['implement', 'next step', 'action', 'timeline', 'assign', 'responsibility'])
+    has_questions = any(word in conversation_text_lower for word in ['how', 'what', 'why', 'when', 'where'])
+    
+    if total_messages < 4 or (has_questions and not has_solutions):
         conversation_stage = "problem_understanding"
-    elif total_messages < 12:
+    elif has_solutions and not has_action_items:
         conversation_stage = "solution_development"  
-    else:
+    elif has_action_items or total_messages >= 12:
         conversation_stage = "action_planning"
+    else:
+        # Fallback to message count-based staging
+        if total_messages < 6:
+            conversation_stage = "problem_understanding"
+        elif total_messages < 12:
+            conversation_stage = "solution_development"
+        else:
+            conversation_stage = "action_planning"
+    
+    print(f"🎯 Conversation stage: {conversation_stage} (Messages: {total_messages}, Solutions: {has_solutions}, Actions: {has_action_items})")
     
     # Extract agent names for collaboration
     agent_names = [agent.name for agent in agent_objects]
@@ -5474,7 +5687,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
         task = generate_agent_response_wrapper(
             agent, 
             conversation_history_msgs,
-            observer_context + f"You're part of a team discussion about: {scenario}\n\nWork together to solve this problem.",
+            observer_context + f"\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n\nYour job is to collaborate with your teammates to find concrete, actionable solutions. Reference what others say, build on their ideas, and work toward implementation.",
             existing_documents,
             agent_names,
             conversation_stage
@@ -8743,6 +8956,22 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+@app.on_event("startup")
+async def startup_db_indexes():
+    """Create database indexes for better performance"""
+    try:
+        # Create indexes on user_id for better cleanup performance
+        await db.simulation_state.create_index("user_id")
+        await db.conversations.create_index("user_id")
+        await db.relationships.create_index("user_id")
+        await db.summaries.create_index("user_id")
+        await db.agents.create_index("user_id")
+        await db.observer_messages.create_index("user_id")
+        logger.info("✅ Database indexes created successfully")
+    except Exception as e:
+        # Indexes may already exist, which is fine
+        logger.info(f"Database indexes status: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
