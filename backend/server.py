@@ -990,7 +990,7 @@ PROVIDE EXPERT ANALYSIS:
                     api_key=self.claude_api_key,
                     session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
                     system_message=system_message
-                ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(200)  # Concise but complete thoughts
+                ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(180)  # Conservative limit to ensure complete thoughts
                 
                 print(f"🚀 FAST Claude Sonnet 4 for {agent.name}")
                 
