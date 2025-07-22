@@ -49,7 +49,7 @@ test_results = {
 auth_token = None
 test_user_id = None
 
-def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, auth=False, headers=None, params=None, timeout=120):
+def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, auth=False, headers=None, params=None, timeout=30):
     """Run a test against the specified endpoint with extended timeout for conversation generation"""
     url = f"{API_URL}{endpoint}"
     print(f"\n{'='*80}\nTesting: {test_name} ({method} {url})")
