@@ -6215,8 +6215,21 @@ Continue building on the progress above. The team should advance the solutions a
         context += f"\n\nRECENT DISCUSSION THEMES (build upon these, don't repeat):\n"
         for i, topic in enumerate(recent_topics[-3:], 1):
             context += f"- Theme {i}: {topic}...\n"
-    else:
-        context += "\nStart a focused discussion about the scenario."
+    # ===== ENHANCED DOCUMENT-FOCUSED CONVERSATION SYSTEM =====
+    # Add document creation focus to the conversation context
+    context += f"\n\n===== DOCUMENT CREATION FOCUS =====\n"
+    context += f"IMPORTANT: Your team's goal is to work towards creating helpful documents that capture your decisions, analysis, and plans.\n"
+    context += f"As you discuss, consider what documents would be valuable:\n"
+    context += f"- Protocols for repeatable processes\n"
+    context += f"- Implementation plans for actions\n" 
+    context += f"- Risk assessments for important decisions\n"
+    context += f"- Technical specifications for solutions\n"
+    context += f"- Training guides for new procedures\n"
+    context += f"- Budget proposals for resource allocation\n"
+    context += f"- Timeline documents for project planning\n"
+    context += f"\nWhen you reach consensus or make important decisions, suggest creating a document to formalize it.\n"
+    
+    # ===== ENHANCED ROUND STRUCTURE: 3 MESSAGES PER AGENT =====
     messages = []
     conversation_so_far = ""
     
@@ -6225,21 +6238,24 @@ Continue building on the progress above. The team should advance the solutions a
         print(f"🔄 Generating message set {round_iteration + 1}/3 for {len(agent_objects)} agents...")
         
         for i, agent in enumerate(agent_objects):
-            # Choose response type based on conversation flow and iteration
+            # Choose response type based on conversation flow and iteration with document focus
             if round_iteration == 0:
-                # First iteration: Set the stage
+                # First iteration: Set the stage with document awareness
                 if i == 0:
-                    agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area."
+                    agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area. Consider what documentation we might need."
                 elif i == 1:
-                    agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities."
+                    agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities. Think about what processes might need documentation."
                 else:
-                    agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention."
+                    agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention and what documents could help formalize our approach."
             elif round_iteration == 1:
-                # Second iteration: Deep dive
-                agent_guidance = f"Reference specific points made by your teammates in their previous messages. Provide detailed analysis or concrete solutions. Don't repeat what was already said."
+                # Second iteration: Deep dive with document planning
+                if len(messages) < len(agent_objects) * 2:  # Still in second round
+                    agent_guidance = f"Reference specific points made by your teammates in their previous messages. Provide detailed analysis or concrete solutions. If you see consensus forming, consider proposing a document to capture it."
+                else:
+                    agent_guidance = f"We're making good progress. Look at the solutions and decisions emerging. What specific documents should we create to formalize our conclusions?"
             else:
-                # Third iteration: Synthesis and action
-                agent_guidance = f"Synthesize the discussion so far. Make specific recommendations or decisions based on all the input provided."
+                # Third iteration: Synthesis and document creation
+                agent_guidance = f"Synthesize the discussion so far. Make specific recommendations for both actions AND documents. If there's clear consensus on any point, suggest we create documentation for it."
             
             # Build comprehensive context including conversation history
             current_context = f"{context}\n\n{agent_guidance}\n"
