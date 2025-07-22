@@ -111,7 +111,7 @@ const AgentCreateModal = ({ isOpen, onClose, onCreate, loading }) => {
     setAvatarError('');
     
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await axios.post(`${API}/avatars/generate`, {
         prompt: formData.avatar_prompt
       }, {
