@@ -48,7 +48,7 @@ const ModernHomePage = () => {
     };
 
     loadData();
-  }, []);
+  }, [token]);
 
   // Simulation Controls
   const startSimulation = async () => {
