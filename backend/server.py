@@ -223,6 +223,27 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'ai_simulation')]
 
+# Ensure conversation_summaries collection exists
+async def ensure_conversation_summaries_collection():
+    """Ensure the conversation summaries collection exists with proper indexes"""
+    try:
+        # Create index for efficient querying by user_id and scenario
+        await db.conversation_summaries.create_index([
+            ("user_id", 1),
+            ("scenario", 1),
+            ("created_at", -1)
+        ])
+        print("✅ Conversation summaries collection ready")
+    except Exception as e:
+        print(f"⚠️ Could not create conversation summaries index: {e}")
+
+# Initialize collections on startup
+import asyncio
+try:
+    asyncio.create_task(ensure_conversation_summaries_collection())
+except:
+    pass  # Will be created when first used
+
 # Configure fal.ai
 import fal_client
 fal_client.api_key = os.environ.get('FAL_KEY')
@@ -455,6 +476,18 @@ async def get_observer_messages(current_user: User = Depends(get_current_user)):
             message['_id'] = str(message['_id'])
     
     return messages
+
+@api_router.get("/internal/conversation-summaries")
+async def get_conversation_summaries_internal(current_user: User = Depends(get_current_user)):
+    """INTERNAL: Get conversation summaries for AI context management (not for frontend display)"""
+    summaries = await db.conversation_summaries.find({"user_id": current_user.id}).sort("created_at", -1).to_list(100)
+    
+    # Convert ObjectId to string for JSON serialization
+    for summary in summaries:
+        if '_id' in summary:
+            summary['_id'] = str(summary['_id'])
+    
+    return summaries
 
 
 class Agent(BaseModel):
@@ -804,6 +837,176 @@ class LLMManager:
             
         return "\n".join(f"- {g}" for g in guidance)
 
+    async def generate_conversation_summary(self, conversation_history: List, scenario: str, agent_objects: List[Agent]) -> str:
+        """Generate intelligent conversation progress summary when context window is full"""
+        if not conversation_history or not await self.can_make_request():
+            return ""
+        
+        print(f"🧠 Generating conversation progress summary for {len(conversation_history)} messages...")
+        
+        # Extract key information from conversation
+        conversation_text = ""
+        solutions_proposed = []
+        decisions_made = []
+        questions_raised = []
+        agent_contributions = {}
+        
+        for msg in conversation_history:
+            if hasattr(msg, 'agent_name') and hasattr(msg, 'message'):
+                agent_name = msg.agent_name
+                message_text = msg.message
+                conversation_text += f"{agent_name}: {message_text}\n"
+                
+                # Track agent contributions
+                if agent_name not in agent_contributions:
+                    agent_contributions[agent_name] = []
+                agent_contributions[agent_name].append(message_text[:100])
+                
+                # Identify solutions
+                if any(keyword in message_text.lower() for keyword in ['solution', 'approach', 'propose', 'recommend', 'plan', 'strategy']):
+                    solutions_proposed.append(f"{agent_name}: {message_text[:150]}")
+                
+                # Identify decisions
+                if any(keyword in message_text.lower() for keyword in ['decision', 'agree', 'consensus', 'settled', 'concluded']):
+                    decisions_made.append(f"{agent_name}: {message_text[:150]}")
+                    
+                # Identify open questions
+                if '?' in message_text:
+                    questions_raised.append(f"{agent_name}: {message_text[:150]}")
+        
+        # Create comprehensive summary prompt
+        agent_names = [agent.name for agent in agent_objects]
+        summary_prompt = f"""CONVERSATION PROGRESS SUMMARY GENERATION
+
+SCENARIO: {scenario}
+TEAM MEMBERS: {', '.join(agent_names)}
+
+CONVERSATION TO SUMMARIZE:
+{conversation_text}
+
+CREATE A COMPREHENSIVE PROGRESS SUMMARY INCLUDING:
+
+1. 🎯 MAIN OBJECTIVE & CURRENT FOCUS
+   - What problem/challenge the team is working on
+   - Current stage of problem-solving
+
+2. 💡 SOLUTIONS PROPOSED SO FAR
+   - Key approaches suggested by each team member
+   - Technical details and implementation ideas discussed
+
+3. ✅ DECISIONS MADE & AGREEMENTS REACHED  
+   - What the team has agreed on
+   - Consensus points and settled issues
+
+4. 🔄 ONGOING DISCUSSIONS & OPEN QUESTIONS
+   - What still needs to be resolved
+   - Debates in progress and pending decisions
+
+5. 👥 INDIVIDUAL CONTRIBUTIONS & EXPERTISE
+   - What each team member has contributed
+   - Their areas of focus and specialization shown
+
+6. 📋 NEXT STEPS & IMMEDIATE PRIORITIES
+   - What the team should focus on next
+   - Logical progression from current state
+
+FORMAT: Use clear headers and bullet points. Be specific with names, technical details, and solution components. This summary will help agents continue the conversation seamlessly.
+
+WORD LIMIT: 400-500 words for comprehensive yet concise summary."""
+
+        try:
+            # Use Claude for high-quality summarization
+            chat = LlmChat(
+                api_key=self.claude_api_key,
+                session_id=f"summary_{int(datetime.now().timestamp())}",
+                system_message="You are an expert conversation analyst creating progress summaries for collaborative problem-solving teams."
+            ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(600)
+            
+            user_message = UserMessage(text=summary_prompt)
+            response = await asyncio.wait_for(chat.send_message(user_message), timeout=10.0)
+            
+            if response and hasattr(response, 'content'):
+                summary = response.content.strip()
+                await self.increment_usage()
+                print(f"✅ Generated conversation summary ({len(summary)} chars)")
+                return summary
+            else:
+                print("⚠️ Claude summary failed, using Gemini fallback...")
+                
+        except Exception as e:
+            print(f"⚠️ Claude summary error: {e}, using Gemini fallback...")
+        
+        # Fallback to Gemini
+        try:
+            chat = LlmChat(
+                api_key=self.api_key,
+                session_id=f"summary_gemini_{int(datetime.now().timestamp())}",
+                system_message="Create comprehensive conversation progress summaries for collaborative teams."
+            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(600)
+            
+            user_message = UserMessage(text=summary_prompt)
+            response = await asyncio.wait_for(chat.send_message(user_message), timeout=8.0)
+            
+            if response and hasattr(response, 'content'):
+                summary = response.content.strip()
+                await self.increment_usage()
+                print(f"✅ Generated conversation summary with Gemini ({len(summary)} chars)")
+                return summary
+                
+        except Exception as e:
+            print(f"❌ Both Claude and Gemini failed for summary: {e}")
+        
+        # Fallback summary if AI fails
+        return f"""🎯 CONVERSATION PROGRESS SUMMARY
+
+SCENARIO: {scenario}
+PARTICIPANTS: {', '.join(agent_names)}
+
+📊 PROGRESS STATUS:
+- {len(conversation_history)} messages exchanged
+- {len(solutions_proposed)} solutions proposed
+- {len(decisions_made)} decisions made
+- {len(questions_raised)} questions raised
+
+💡 KEY SOLUTIONS PROPOSED:
+{chr(10).join([f"- {sol}" for sol in solutions_proposed[-5:]])}
+
+✅ DECISIONS MADE:
+{chr(10).join([f"- {dec}" for dec in decisions_made[-3:]])}
+
+🔄 OPEN QUESTIONS:
+{chr(10).join([f"- {q}" for q in questions_raised[-3:]])}
+
+The team should continue building on these foundations to reach concrete solutions."""
+
+    async def store_conversation_summary(self, summary: str, user_id: str, scenario: str):
+        """Store conversation summary for future reference"""
+        summary_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "scenario": scenario,
+            "summary": summary,
+            "created_at": datetime.utcnow().isoformat(),
+            "type": "conversation_progress_summary"
+        }
+        
+        await db.conversation_summaries.insert_one(summary_doc)
+        print(f"✅ Stored conversation summary: {summary_doc['id']}")
+        return summary_doc['id']
+
+    async def get_latest_conversation_summary(self, user_id: str, scenario: str) -> str:
+        """Get the most recent conversation summary for context"""
+        try:
+            summary_doc = await db.conversation_summaries.find_one(
+                {"user_id": user_id, "scenario": scenario},
+                sort=[("created_at", -1)]
+            )
+            if summary_doc:
+                return summary_doc.get("summary", "")
+        except:
+            pass
+        return ""
+
     async def generate_agent_response(self, agent: Agent, scenario: str, other_agents: List[Agent], context: str = "", conversation_history: List = None, language_instruction: str = "Respond in English.", existing_documents: List = None, simulation_state: dict = None):
         """Generate a single agent response with better context and progression"""
         other_agent_names = [a.name for a in other_agents if a.id != agent.id]
@@ -835,13 +1038,13 @@ class LLMManager:
                     time_pressure_context += f"- You must now summarize conclusions and present final recommendations\n"
                     time_pressure_context += f"- Focus on what was accomplished and key decisions made\n"
         
-        # Build document context if available
+        # Build document context if available (keep subtle)
         document_context = ""
         if existing_documents and len(existing_documents) > 0:
-            document_context = f"\n\nAVAILABLE DOCUMENTS (you can reference these):\n"
-            for i, doc in enumerate(existing_documents[:5], 1):  # Limit to 5 most recent
-                document_context += f"{i}. '{doc.get('title', 'Untitled')}' ({doc.get('category', 'Unknown')}) - {doc.get('description', 'No description')}\n"
-            document_context += "\nYou can reference these documents by name in your responses and suggest improvements if relevant.\n"
+            document_context = f"\n\n📋 BACKGROUND INFO (if relevant to discussion):\n"
+            for i, doc in enumerate(existing_documents[:3], 1):  # Limit to 3 most recent, less intrusive
+                document_context += f"- {doc.get('title', 'Document')} available\n"
+            document_context += "\nOnly mention these if genuinely relevant to what you're discussing.\n"
         
         # Get conversation count for context
         conversation_count = await db.conversations.count_documents({})
@@ -870,6 +1073,22 @@ CONVERSATION TYPES (Choose what feels right):
 • **ANSWERS**: Always respond if someone asks YOU a direct question
 • **OBSERVATIONS**: Point out patterns, risks, or opportunities
 
+🚫 AVOID REPETITIVE PATTERNS:
+• Don't start with the same phrases you've used recently
+• Vary your response types (statements, questions, building, challenging)
+• If you've asked about someone's "take" or "perspective" before, try different approaches
+• Mix up your expertise contributions - don't just repeat the same technical points
+
+🎯 CONVERSATION VARIETY & EMOTIONS:
+• **Show excitement**: "That's brilliant!" or "Exactly!" or "Now we're getting somewhere!"
+• **Express concern**: "Wait, that sounds risky..." or "I'm worried about..."  
+• **Show confusion**: "I don't follow..." or "What do you mean by..."
+• **Build enthusiastically**: "Yes! And we could also..." or "That gives me an idea..."
+• **Challenge constructively**: "I see it differently because..." or "What about this problem..."
+• **Ask for clarity**: "When you say X, do you mean Y?" or "Can you explain that part?"
+• **Redirect focus**: "Before we go there, shouldn't we..." or "Hold on, what about..."
+• **Synthesize ideas**: "So it sounds like we're saying..." or "Let me see if I understand..."
+
 PERSONALITY-BASED RESPONSES:
 • High Extroversion ({agent.personality.extroversion}/10): Speak up frequently, be direct
 • High Curiosity ({agent.personality.curiosity}/10): Ask probing questions naturally  
@@ -887,13 +1106,20 @@ QUESTION TYPES (when you do ask):
 • Strategic: "How does this align with our main objective?"
 
 === CRITICAL COLLABORATION RULES ===
-• If someone asks YOU a direct question, ALWAYS answer it first
+🚨 MANDATORY COLLABORATION REQUIREMENTS:
+• If someone asks YOU a direct question, ALWAYS answer it first - this is non-negotiable
 • Reference specific points made by teammates: "Sarah, your point about..." or "Building on what Marcus said..."
 • Don't just share your view - respond to what others actually said
 • Ask follow-up questions when teammates make interesting points
 • Work toward concrete solutions that the team can implement
 • Challenge ideas constructively: "I see it differently because..."
 • Build on good ideas: "That's solid, and we could also..."
+
+🚫 BANNED BEHAVIOR:
+• Starting with "Fascinating challenge" or "Interesting problem" (overused phrases)
+• Ignoring direct questions asked to you
+• Talking in isolation without referencing others' contributions
+• Repeating the same opening phrases in multiple messages
 • NO CHARACTER NARRATIONS: Do not use asterisks or describe your physical actions (e.g., *leans forward*, *adjusts glasses*, *mechanical breathing*)
 • Speak directly as yourself without stage directions or narrative descriptions
 
@@ -919,7 +1145,7 @@ Respond naturally to what was just said - like a real collaborative team meeting
         if conversation_history and len(conversation_history) > 0:
             # Analyze conversation history for state awareness
             all_messages = []
-            recent_messages = conversation_history[-5:]  # Get more context for better state awareness
+            recent_messages = conversation_history[-25:]  # Optimal context for collaborative problem-solving
             
             for msg in conversation_history:
                 if hasattr(msg, 'message'):
@@ -951,16 +1177,32 @@ Respond naturally to what was just said - like a real collaborative team meeting
                     agent_name = msg.agent_name
                     conversation_history_text += f"{agent_name}: {message_text[:200]}...\n"
                     
-                    # Detect questions directed at this agent
-                    if ("?" in message_text and 
-                        (agent.name.lower() in message_text.lower() or 
-                         agent.expertise.lower() in message_text.lower() or
-                         any(keyword in message_text.lower() for keyword in agent.expertise.lower().split()))):
-                        pending_questions.append({
-                            "asker": agent_name,
-                            "question": message_text,
-                            "relevance": "direct"
-                        })
+                    # Detect questions directed at this agent - IMPROVED LOGIC
+                    if "?" in message_text:
+                        agent_name_mentioned = agent.name.lower() in message_text.lower()
+                        agent_first_name = agent.name.split()[0].lower()
+                        first_name_mentioned = agent_first_name in message_text.lower()
+                        
+                        # Common question patterns
+                        question_patterns = [
+                            "what's your take",
+                            "your thoughts", 
+                            "what do you think",
+                            "your perspective",
+                            "how do you see",
+                            "your opinion",
+                            "what would you",
+                            "how would you"
+                        ]
+                        
+                        has_question_pattern = any(pattern in message_text.lower() for pattern in question_patterns)
+                        
+                        if agent_name_mentioned or first_name_mentioned or has_question_pattern:
+                            pending_questions.append({
+                                "asker": agent_name,
+                                "question": message_text,
+                                "relevance": "direct"
+                            })
                 elif isinstance(msg, dict):
                     message_text = msg.get('message', '')
                     agent_name = msg.get('agent_name', 'Unknown')
@@ -983,17 +1225,22 @@ Respond naturally to what was just said - like a real collaborative team meeting
                 prompt = f"""{context}
 {conversation_history_text}
 
-IMPORTANT: {most_relevant_q['asker']} asked you a question that relates to your expertise.
+🚨 DIRECT QUESTION RESPONSE: {most_relevant_q['asker']} asked you something.
 Question: "{most_relevant_q['question']}"
 
-RESPOND BY:
-1. Directly answering the question with your expert knowledge
-2. Building on this to advance the conversation further
-3. NO repetition of scenario/background details already covered
-4. Connect your answer to concrete next steps or decisions
+NATURAL RESPONSE APPROACH:
+1. **Acknowledge the person naturally**: "{most_relevant_q['asker']}, that's a great question..." or "{most_relevant_q['asker']}, I've been thinking about that too..."
+2. **Give your genuine perspective** based on your expertise and personality
+3. **Reference specific points** they or others have made recently  
+4. **Build on the discussion** rather than just answering in isolation
+5. **NO formulaic responses** - respond as you would naturally in a real conversation
 
-Topics already covered: {', '.join(conversation_topics_covered) if conversation_topics_covered else 'None yet'}
-Action points mentioned: {len(action_points_mentioned)} previous action items exist"""
+CONVERSATION FLOW:
+- Previous topics: {', '.join(conversation_topics_covered) if conversation_topics_covered else 'None yet'}
+- Current focus: Work collaboratively toward solutions
+- Your role: Contribute your unique expertise while building on others' ideas
+
+Respond naturally and authentically as {agent.name}."""
             else:
                 # Regular response with state awareness
                 prompt = f"""{context}
@@ -1004,13 +1251,22 @@ CONVERSATION STATE AWARENESS:
 - Phase: {conversation_phase if 'conversation_phase' in locals() else 'early'}
 - Action points mentioned: {len(action_points_mentioned)} previous items
 
-RESPOND BY:
-- Building SPECIFICALLY on the most recent point made (reference exact details)
-- Adding NEW value - don't repeat what's been covered
-- If in implementation phase: work on action items or refine them
-- If solutions exist: improve them, don't restart problem analysis
-- NO scenario restatement unless absolutely necessary for new context
-- Focus on advancing the conversation forward"""
+🎯 NATURAL CONVERSATION GUIDELINES:
+- **React to specific points**: If someone mentions "resonant frequencies," ask about THAT specifically
+- **Show genuine emotions**: "That's brilliant!" "Wait, that's concerning..." "I'm not following..."
+- **Build immediately on the last point**: Don't just give your general perspective 
+- **Ask clarifying questions**: "What do you mean by..." "How would that work exactly?"
+- **Challenge when appropriate**: "I don't think that'll work because..." 
+- **Show excitement/concern**: Let your personality show through emotional reactions
+- **Reference specific details**: "Tesla, when you said X, did you mean Y?"
+
+🗣️ CONVERSATION FLOW:
+- **Direct responses**: Address what the person just said before adding your own ideas
+- **Natural questions**: Ask when genuinely curious, not to fill space
+- **Emotional reactions**: Show enthusiasm, concern, confusion, or disagreement naturally
+- **Specific building**: "Building on Tesla's frequency idea..." not "From my perspective..."
+
+Respond authentically to what was just said, then add your expertise naturally."""
         else:
             # This agent is speaking first
             prompt = f"""Current situation: {scenario}
@@ -1156,7 +1412,8 @@ PROVIDE EXPERT ANALYSIS:
                         
                         # Expert/perspective statements - NO CREDENTIALS MENTIONING
                         "as an expert in", "as a", "this is concerning", "this is interesting",
-                        "this is exciting", "this is fascinating", "let me share my perspective",
+                        "this is exciting", "this is fascinating", "fascinating challenge", 
+                        "fascinating problem", "interesting challenge", "let me share my perspective",
                         "from my perspective", "from my experience in", "in my experience with",
                         "based on my experience", "given my background", "with my expertise",
                         "as someone with", "having worked in", "in my field", "as a professional",
@@ -5187,6 +5444,9 @@ SCENARIO: {scenario}"""
 @api_router.post("/conversation/generate")
 async def generate_conversation(current_user: User = Depends(get_current_user)):
     """Generate a conversation round between agents with sequential responses and progression tracking"""
+    # Create LLM manager for API calls (moved to top to fix scoping issue)
+    llm_manager = LLMManager()
+    
     # Get current user's agents
     all_agents = await db.agents.find({"user_id": current_user.id}).to_list(100)
     if len(all_agents) < 2:
@@ -5208,28 +5468,94 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Get conversation count for round numbering and context (user-specific)
     conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
     
-    # Get existing conversations for context (user-specific)
-    existing_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(5).to_list(5)
+    # ===== ROLLING CONTEXT WINDOW WITH AUTOMATIC SUMMARIZATION =====
+    # This is BACKEND-ONLY for AI agent memory management - USER EXPERIENCE UNCHANGED
+    # Get existing conversations for rolling context (user-specific)
+    existing_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", -1).limit(30).to_list(30)
+    
+    # Check if we need to create a conversation summary (when context window is full)
+    conversation_history_msgs = []
+    conversation_summary = ""
+    
+    if existing_conversations:
+        # Flatten all messages from conversations 
+        all_messages = []
+        for conv in reversed(existing_conversations):  # Reverse to get chronological order
+            for msg in conv.get('messages', []):
+                all_messages.append({
+                    'agent_name': msg.get('agent_name'),
+                    'content': msg.get('message'),
+                    'timestamp': conv.get('created_at')
+                })
+        
+        # Check if we need to summarize (when we have more than 25 messages)
+        if len(all_messages) >= 25:
+            print(f"🧠 AI Context Management: {len(all_messages)} messages. Generating backend summary for agents...")
+            
+            # Convert messages to proper format for summarization
+            summary_messages = []
+            for msg in all_messages:
+                summary_msg = type('Message', (), {
+                    'agent_name': msg['agent_name'],
+                    'message': msg['content']
+                })()
+                summary_messages.append(summary_msg)
+            
+            # Generate comprehensive conversation summary (BACKEND ONLY - NOT SHOWN TO USER)
+            conversation_summary = await llm_manager.generate_conversation_summary(
+                conversation_history=summary_messages,
+                scenario=scenario,
+                agent_objects=agent_objects
+            )
+            
+            # Store the summary for AI context management (BACKEND ONLY)
+            await llm_manager.store_conversation_summary(
+                summary=conversation_summary,
+                user_id=current_user.id,
+                scenario=scenario
+            )
+            
+            # FOR AI CONTEXT: Keep only the most recent 5 conversations for AI processing
+            # NOTE: This does NOT delete conversations from database - just limits AI context
+            conversations_for_ai = existing_conversations[:5]  # Most recent 5 for AI
+            
+            # Create AI context messages from recent conversations only
+            conversation_history_msgs = []
+            for conv in reversed(conversations_for_ai):
+                for msg in conv.get('messages', []):
+                    conversation_history_msgs.append({
+                        'agent_name': msg.get('agent_name'),
+                        'content': msg.get('message'),
+                        'timestamp': conv.get('created_at')
+                    })
+            
+            print(f"✅ AI Context Management: Using {len(conversation_history_msgs)} recent messages + summary for AI processing")
+            
+        else:
+            # Context window not full yet, AI uses all messages
+            conversation_history_msgs = all_messages
+            
+            # Check if we have any existing summary for AI context
+            conversation_summary = await llm_manager.get_latest_conversation_summary(current_user.id, scenario)
+        
+    else:
+        # No existing conversations, check for existing summary for AI context
+        conversation_summary = await llm_manager.get_latest_conversation_summary(current_user.id, scenario)
     
     # Get recent observer messages for context (user-specific)
     recent_observer_messages = await db.observer_messages.find({"user_id": current_user.id}).sort("timestamp", -1).limit(3).to_list(3)
     
-    # Get recent observer messages for context 
-    recent_observer_messages = await db.observer_messages.find().sort("timestamp", -1).limit(3).to_list(3)
-    
-    # Build context from previous conversations
+    # Build AI context (BACKEND ONLY - NOT SHOWN TO USER)
     context = ""
-    if existing_conversations:
+    if conversation_summary:
+        context = f"""📚 AI CONTEXT SUMMARY (Internal - Not shown to user):
+{conversation_summary}
+
+💬 RECENT DISCUSSION:
+Continue building on the progress above. The team should advance the solutions and decisions already in progress."""
+    elif existing_conversations:
         recent_conv = existing_conversations[0]
         context = f"In previous discussions: {'; '.join([msg.get('message', '') for msg in recent_conv.get('messages', [])][:2])}"
-    
-    # Add observer context if there are recent observer messages
-    observer_context = ""
-    if recent_observer_messages:
-        observer_context = "\n\n🎯 RECENT OBSERVER DIRECTIVES (CEO/PROJECT LEAD):\n"
-        for i, obs_msg in enumerate(recent_observer_messages[:2]):  # Last 2 observer messages
-            observer_context += f"Observer said: \"{obs_msg.get('message', '')}\"\n"
-        observer_context += "\nThe Observer is your project lead/CEO. Their guidance should heavily influence your approach, though you can politely suggest alternatives if needed.\n"
     
     # Add observer context if there are recent observer messages
     observer_context = ""
@@ -5255,9 +5581,6 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     
     # Create smart conversation generator for fallbacks only
     conversation_gen = SmartConversationGenerator()
-    
-    # Create LLM manager for real Gemini API calls
-    llm_manager = LLMManager()
     
     # Generate messages with REAL Gemini API calls first, fallback to smart responses if needed
     messages = []
@@ -5600,29 +5923,11 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                 
                 collaboration_score = sum([has_teammate_reference, has_question, has_building_phrase])
                 
-                # If not collaborative enough, add collaborative elements
-                if collaboration_score < 1 and other_agents:
-                    import random
-                    teammate = random.choice(other_agents)
-                    
-                    if not has_question and random.random() < 0.6:
-                        # Add a question to a teammate
-                        questions = [
-                            f" {teammate}, what's your take on this?",
-                            f" {teammate}, how do you see this affecting your area?",
-                            f" What do you think, {teammate}?",
-                            f" {teammate}, have you dealt with something like this before?"
-                        ]
-                        message_text += random.choice(questions)
-                    
-                    elif not has_teammate_reference:
-                        # Add a reference to build collaboration
-                        references = [
-                            f" {teammate}, I'd love to hear your perspective on this.",
-                            f" This connects to what {teammate} might know about.",
-                            f" {teammate}'s expertise would be valuable here."
-                        ]
-                        message_text += random.choice(references)
+                # Natural collaboration validation - remove forced question injection
+                # Let conversations flow naturally without artificial questions
+                if collaboration_score < 1 and other_agents and len(message_text) > 50:
+                    # Instead of adding questions, encourage natural collaboration in the prompt
+                    print(f"⚠️ Low collaboration score for {agent.name}, but allowing natural flow")
                 
                 # Ensure complete thought within 200 tokens
                 words = message_text.split()
@@ -5639,7 +5944,7 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
                             message_text = message_text.rstrip() + '.'
                 
                 print(f"✅ Collaborative response from {agent.name}: {message_text[:80]}...")
-                return message_text, agent, None
+                return remove_narrations(message_text), agent, None
             else:
                 print(f"⚠️ Empty response from {agent.name}")
                 return None, agent, "Empty API response"
@@ -5681,12 +5986,13 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     agent_names = [agent.name for agent in agent_objects]
     
     for i, agent in enumerate(agent_objects):
-        # Build conversation history from previous messages
-        conversation_history_msgs = [{"agent_name": msg.agent_name, "content": msg.message} for msg in messages]
+        # Use the rolling context messages we prepared earlier
+        # conversation_history_msgs already contains proper rolling context with summaries
+        agent_history_msgs = [{"agent_name": msg.get('agent_name'), "content": msg.get('content')} for msg in conversation_history_msgs]
         
         task = generate_agent_response_wrapper(
             agent, 
-            conversation_history_msgs,
+            agent_history_msgs,
             observer_context + f"\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n\nYour job is to collaborate with your teammates to find concrete, actionable solutions. Reference what others say, build on their ideas, and work toward implementation.",
             existing_documents,
             agent_names,
