@@ -5,8 +5,10 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from smart_conversation import SmartConversationGenerator
 from enhanced_document_system import DocumentQualityGate, ProfessionalDocumentFormatter
+from pdf_generator import ProfessionalPDFGenerator, generate_document_pdf
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, EmailStr
 import bcrypt
 import jwt
