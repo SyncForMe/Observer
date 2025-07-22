@@ -5568,14 +5568,31 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
     # Create tasks for parallel execution with enhanced collaboration
     tasks = []
     
-    # Determine conversation stage based on message count and content
+    # Determine conversation stage based on content analysis and message count
     total_messages = len(messages)
-    if total_messages < 6:
+    conversation_text_lower = " ".join([msg.message.lower() for msg in messages[-6:]]) if messages else ""
+    
+    # Smart stage detection based on conversation content
+    has_solutions = any(word in conversation_text_lower for word in ['solution', 'approach', 'propose', 'suggest', 'plan', 'strategy'])
+    has_action_items = any(word in conversation_text_lower for word in ['implement', 'next step', 'action', 'timeline', 'assign', 'responsibility'])
+    has_questions = any(word in conversation_text_lower for word in ['how', 'what', 'why', 'when', 'where'])
+    
+    if total_messages < 4 or (has_questions and not has_solutions):
         conversation_stage = "problem_understanding"
-    elif total_messages < 12:
+    elif has_solutions and not has_action_items:
         conversation_stage = "solution_development"  
-    else:
+    elif has_action_items or total_messages >= 12:
         conversation_stage = "action_planning"
+    else:
+        # Fallback to message count-based staging
+        if total_messages < 6:
+            conversation_stage = "problem_understanding"
+        elif total_messages < 12:
+            conversation_stage = "solution_development"
+        else:
+            conversation_stage = "action_planning"
+    
+    print(f"🎯 Conversation stage: {conversation_stage} (Messages: {total_messages}, Solutions: {has_solutions}, Actions: {has_action_items})")
     
     # Extract agent names for collaboration
     agent_names = [agent.name for agent in agent_objects]
