@@ -5438,17 +5438,35 @@ SCENARIO: {scenario}"""
         print(f"LLM document generation failed: {e}")
         content = template.format(title=title)
     
-    # Create document object
+    # Create document object with proper structure for new DocumentMetadata
+    metadata = {
+        "title": title,
+        "filename": f"{title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.md",
+        "authors": [creating_agent.name],
+        "category": doc_type.title(),
+        "description": f"Auto-generated {doc_type} document based on team discussion",
+        "keywords": [doc_type, "auto-generated", scenario_name.lower()],
+        "user_id": user_id,  # Use provided user_id
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow(),
+        "status": "draft",
+        "document_status": {
+            "status": "draft",
+            "created_by_agent": creating_agent.id,
+            "reviewers": [],
+            "approval_votes": 0,
+            "rejection_votes": 0,
+            "suggestions": []
+        }
+    }
+    
     document = {
         "id": str(uuid.uuid4()),
-        "title": title,
+        "metadata": metadata,
         "content": content,
-        "category": doc_type.title(),
-        "created_by": creating_agent.name,
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
-        "description": f"Auto-generated {doc_type} document based on team discussion",
-        "user_id": ""  # Global document accessible to all
+        "created_by_agents": [creating_agent.id],
+        "conversation_context": conversation_text[:500],  # Store first 500 chars
+        "action_trigger": ""
     }
     
     return document
