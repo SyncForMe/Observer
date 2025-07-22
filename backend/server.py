@@ -846,20 +846,29 @@ QUESTION TYPES (when you do ask):
 • Technical: "What about the implementation details?"
 • Strategic: "How does this align with our main objective?"
 
-=== CRITICAL RULES ===
-• If someone asks YOU a direct question, ALWAYS answer it
-• Don't ask questions just to ask - only when it feels natural
-• Mix different response types naturally
-• Reference teammates by name when relevant
-• Stay focused on solving the problem together
+=== CRITICAL COLLABORATION RULES ===
+• If someone asks YOU a direct question, ALWAYS answer it first
+• Reference specific points made by teammates: "Sarah, your point about..." or "Building on what Marcus said..."
+• Don't just share your view - respond to what others actually said
+• Ask follow-up questions when teammates make interesting points
+• Work toward concrete solutions that the team can implement
+• Challenge ideas constructively: "I see it differently because..."
+• Build on good ideas: "That's solid, and we could also..."
 • NO CHARACTER NARRATIONS: Do not use asterisks or describe your physical actions (e.g., *leans forward*, *adjusts glasses*, *mechanical breathing*)
 • Speak directly as yourself without stage directions or narrative descriptions
+
+=== SOLUTION-FOCUSED CONVERSATION ===
+• Always work toward solving the actual problem/scenario
+• Propose specific, actionable solutions
+• Build on teammates' solutions rather than ignoring them
+• Ask questions that move the discussion forward
+• Identify concrete next steps and implementation approaches
 
 WORD LIMIT: 150-180 words MAX. Complete your thought naturally.
 
 {document_context}
 
-Respond naturally to what was just said - like a real team meeting."""
+Respond naturally to what was just said - like a real collaborative team meeting working toward solutions."""
         
         # Enhanced prompts with conversation history awareness and state detection
         conversation_history_text = ""
