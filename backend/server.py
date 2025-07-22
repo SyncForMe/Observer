@@ -6261,72 +6261,107 @@ Continue building on the progress above. The team should advance the solutions a
     messages = []
     conversation_so_far = ""
     
-    # Generate 3 sequential messages per agent for deeper conversation
-    for round_iteration in range(3):
-        print(f"🔄 Generating message set {round_iteration + 1}/3 for {len(agent_objects)} agents...")
-        
-        for i, agent in enumerate(agent_objects):
-            # Choose response type based on conversation flow and iteration with document focus
-            if round_iteration == 0:
-                # First iteration: Set the stage with document awareness
-                if i == 0:
-                    agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area. Consider what documentation we might need."
-                elif i == 1:
-                    agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities. Think about what processes might need documentation."
-                else:
-                    agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention and what documents could help formalize our approach."
-            elif round_iteration == 1:
-                # Second iteration: Deep dive with document planning
-                if len(messages) < len(agent_objects) * 2:  # Still in second round
-                    agent_guidance = f"Reference specific points made by your teammates in their previous messages. Provide detailed analysis or concrete solutions. If you see consensus forming, consider proposing a document to capture it."
-                else:
-                    agent_guidance = f"We're making good progress. Look at the solutions and decisions emerging. What specific documents should we create to formalize our conclusions?"
-            else:
-                # Third iteration: Synthesis and document creation
-                agent_guidance = f"Synthesize the discussion so far. Make specific recommendations for both actions AND documents. If there's clear consensus on any point, suggest we create documentation for it."
-            
-            # Build comprehensive context including conversation history
-            current_context = f"{context}\n\n{agent_guidance}\n"
-            
-            # Include ALL previous messages from this round for full context
-            if messages:
-                current_context += f"\nConversation so far:\n"
-                # Group messages by agent to show conversation flow clearly
-                agent_messages = {}
-                for prev_msg in messages:
-                    if prev_msg.agent_name not in agent_messages:
-                        agent_messages[prev_msg.agent_name] = []
-                    agent_messages[prev_msg.agent_name].append(prev_msg.message)
-                
-                for agent_name, agent_msgs in agent_messages.items():
-                    if agent_name != agent.name:  # Don't show current agent's own messages
-                        for j, msg in enumerate(agent_msgs, 1):
-                            current_context += f"• {agent_name} (Message {j}): {msg}\n"
-                
-                current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
-            
-            # Add delay to prevent rate limiting and ensure quality responses
-            if len(messages) > 0:
-                await asyncio.sleep(2)  # 2 second delay between agents for better API performance
-            
-            response = await llm_manager.generate_agent_response(
-                agent, scenario, agent_objects, current_context, recent_conversations, language_instruction, existing_documents, state
-            )
-            
-            message = ConversationMessage(
-                agent_id=agent.id,
-                agent_name=agent.name,
-                message=response,
-                mood=agent.current_mood
-            )
-            messages.append(message)
-            
-            # Update conversation_so_far for next agent
-            conversation_so_far += f"{agent.name}: {response}\n"
-            
-            print(f"✅ Generated message for {agent.name} (Round {round_iteration + 1}, Message {len(messages)})")
+    print(f"🎯 TARGET: {len(agent_objects)} agents × 3 messages = {len(agent_objects) * 3} total messages")
     
-    print(f"🎯 Completed conversation generation: {len(messages)} total messages from {len(agent_objects)} agents (3 messages each)")
+    # Generate 3 sequential messages per agent for deeper conversation
+    try:
+        for round_iteration in range(3):
+            print(f"🔄 Starting round {round_iteration + 1}/3 with {len(agent_objects)} agents...")
+            
+            for i, agent in enumerate(agent_objects):
+                try:
+                    print(f"  🤖 Generating message for {agent.name} (Round {round_iteration + 1}, Agent {i + 1}/{len(agent_objects)})")
+                    
+                    # Choose response type based on conversation flow and iteration with document focus
+                    if round_iteration == 0:
+                        # First iteration: Set the stage with document awareness
+                        if i == 0:
+                            agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area. Consider what documentation we might need."
+                        elif i == 1:
+                            agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities. Think about what processes might need documentation."
+                        else:
+                            agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention and what documents could help formalize our approach."
+                    elif round_iteration == 1:
+                        # Second iteration: Deep dive with document planning
+                        if len(messages) < len(agent_objects) * 2:  # Still in second round
+                            agent_guidance = f"Reference specific points made by your teammates in their previous messages. Provide detailed analysis or concrete solutions. If you see consensus forming, consider proposing a document to capture it."
+                        else:
+                            agent_guidance = f"We're making good progress. Look at the solutions and decisions emerging. What specific documents should we create to formalize our conclusions?"
+                    else:
+                        # Third iteration: Synthesis and document creation
+                        agent_guidance = f"Synthesize the discussion so far. Make specific recommendations for both actions AND documents. If there's clear consensus on any point, suggest we create documentation for it."
+                    
+                    # Build comprehensive context including conversation history
+                    current_context = f"{context}\n\n{agent_guidance}\n"
+                    
+                    # Include ALL previous messages from this round for full context
+                    if messages:
+                        current_context += f"\nConversation so far:\n"
+                        # Group messages by agent to show conversation flow clearly
+                        agent_messages = {}
+                        for prev_msg in messages:
+                            if prev_msg.agent_name not in agent_messages:
+                                agent_messages[prev_msg.agent_name] = []
+                            agent_messages[prev_msg.agent_name].append(prev_msg.message)
+                        
+                        for agent_name, agent_msgs in agent_messages.items():
+                            if agent_name != agent.name:  # Don't show current agent's own messages
+                                for j, msg in enumerate(agent_msgs, 1):
+                                    current_context += f"• {agent_name} (Message {j}): {msg}\n"
+                        
+                        current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
+                    
+                    # Add delay to prevent rate limiting and ensure quality responses
+                    if len(messages) > 0:
+                        await asyncio.sleep(1)  # Reduced delay to prevent timeout issues
+                    
+                    response = await llm_manager.generate_agent_response(
+                        agent, scenario, agent_objects, current_context, recent_conversations, language_instruction, existing_documents, state
+                    )
+                    
+                    message = ConversationMessage(
+                        agent_id=agent.id,
+                        agent_name=agent.name,
+                        message=response,
+                        mood=agent.current_mood
+                    )
+                    messages.append(message)
+                    
+                    # Update conversation_so_far for next agent
+                    conversation_so_far += f"{agent.name}: {response}\n"
+                    
+                    print(f"    ✅ Generated message for {agent.name} (Round {round_iteration + 1}, Total messages: {len(messages)})")
+                    
+                except Exception as agent_error:
+                    print(f"    ❌ Error generating message for {agent.name}: {agent_error}")
+                    # Continue with next agent instead of breaking
+                    continue
+            
+            print(f"✅ Completed round {round_iteration + 1}/3. Messages so far: {len(messages)}")
+    
+    except Exception as e:
+        print(f"❌ Error in conversation generation loop: {e}")
+        # Continue with whatever messages we have
+    
+    print(f"🎯 Completed conversation generation: {len(messages)} total messages from {len(agent_objects)} agents")
+    
+    # Verify we got the expected number of messages
+    expected_messages = len(agent_objects) * 3
+    if len(messages) == expected_messages:
+        print(f"✅ Perfect! Got exactly {expected_messages} messages as expected")
+    else:
+        print(f"⚠️ Expected {expected_messages} messages, got {len(messages)}")
+        
+        # Show distribution
+        agent_message_count = {}
+        for msg in messages:
+            agent_name = msg.agent_name
+            agent_message_count[agent_name] = agent_message_count.get(agent_name, 0) + 1
+        
+        for agent_name, count in sorted(agent_message_count.items()):
+            status = "✅" if count == 3 else "❌"
+            print(f"  {status} {agent_name}: {count} messages")
+    
     
     
     # Create conversation round  
