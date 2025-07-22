@@ -5356,72 +5356,132 @@ async def generate_conversation(current_user: User = Depends(get_current_user)):
             return "engaged"
     
     async def generate_agent_response_wrapper(agent, conversation_history_msgs, base_context, existing_documents, agent_names, conversation_stage):
-        """Generate collaborative responses where agents talk TO each other"""
+        """Generate truly collaborative responses where agents build on each other's ideas and work toward solutions"""
         try:
             print(f"🤝 Generating collaborative response for {agent.name} (Stage: {conversation_stage})")
             
-            # COLLABORATIVE CONTEXT - Make agents reference each other specifically
+            # ENHANCED COLLABORATIVE CONTEXT - Force agents to interact and build solutions
             other_agents = [name for name in agent_names if name != agent.name]
             
-            # Track what has been said to avoid repetition
-            used_openings = []
-            key_points_made = []
+            # Track conversation elements for better collaboration
+            key_solutions_mentioned = []
+            questions_asked = []
+            specific_points_to_address = []
+            direct_questions_to_me = []
             
             if conversation_history_msgs:
-                recent_messages = conversation_history_msgs[-8:]  # More context for collaboration
+                recent_messages = conversation_history_msgs[-6:]  # Focus on most recent context
                 
-                # Extract what has already been discussed
+                # ANALYZE WHAT NEEDS TO BE ADDRESSED
                 for msg in recent_messages:
-                    # Track opening phrases to avoid repetition
-                    first_words = " ".join(msg['content'].split()[:5]).lower()
-                    used_openings.append(first_words)
+                    msg_content = msg['content'].lower()
+                    msg_agent = msg['agent_name']
                     
-                    # Extract key points mentioned
-                    if any(keyword in msg['content'].lower() for keyword in ['solution', 'approach', 'suggest', 'recommend', 'think we should']):
-                        key_points_made.append(f"{msg['agent_name']} suggested: {msg['content'][:100]}...")
+                    # Extract specific solutions or proposals mentioned
+                    if any(keyword in msg_content for keyword in ['solution', 'approach', 'propose', 'suggest', 'recommend', 'plan', 'strategy']):
+                        key_solutions_mentioned.append({
+                            'agent': msg_agent,
+                            'content': msg['content'][:200],
+                            'type': 'solution'
+                        })
+                    
+                    # Extract questions that need responses
+                    if '?' in msg['content']:
+                        questions_asked.append({
+                            'agent': msg_agent,
+                            'question': msg['content'],
+                            'answered': False
+                        })
+                    
+                    # Check if someone is asking ME specifically
+                    agent_first_name = agent.name.split()[0].lower()
+                    agent_last_name = agent.name.split()[-1].lower() if len(agent.name.split()) > 1 else ""
+                    
+                    if (agent_first_name in msg_content or agent_last_name in msg_content or 
+                        agent.name.lower() in msg_content) and '?' in msg['content']:
+                        direct_questions_to_me.append({
+                            'from': msg_agent,
+                            'question': msg['content']
+                        })
+                    
+                    # Extract points that warrant discussion/reaction
+                    if any(keyword in msg_content for keyword in ['concern', 'risk', 'challenge', 'opportunity', 'important', 'critical']):
+                        specific_points_to_address.append({
+                            'agent': msg_agent,
+                            'point': msg['content'][:150],
+                            'type': 'discussion_point'
+                        })
                 
-                # Create COLLABORATIVE context that forces interaction
+                # CREATE FOCUSED COLLABORATIVE PROMPT
                 collaborative_context = f"{base_context}\n\n"
-                collaborative_context += f"RECENT TEAM DISCUSSION:\n"
-                for msg in recent_messages:
-                    collaborative_context += f"• {msg['agent_name']}: {msg['content'][:150]}...\n"
+                collaborative_context += f"ACTIVE TEAM PROBLEM-SOLVING SESSION:\n"
                 
-                collaborative_context += f"\nYour teammates are: {', '.join(other_agents)}\n"
+                # Show recent discussion for context
+                collaborative_context += f"RECENT DISCUSSION:\n"
+                for msg in recent_messages[-3:]:  # Last 3 messages
+                    collaborative_context += f"• {msg['agent_name']}: {msg['content']}\n"
                 
-                # Force specific collaboration behaviors based on conversation stage and NATURAL FLOW
+                collaborative_context += f"\nYOUR TEAMMATES: {', '.join(other_agents)}\n"
+                
+                # PRIORITY 1: Answer direct questions first
+                if direct_questions_to_me:
+                    collaborative_context += f"\n🎯 URGENT - YOU WERE ASKED DIRECTLY:\n"
+                    for q in direct_questions_to_me[-2:]:  # Last 2 questions
+                        collaborative_context += f"• {q['from']} asked you: \"{q['question']}\"\n"
+                    collaborative_context += f"YOU MUST ANSWER THESE QUESTIONS FIRST, then contribute your own insights.\n"
+                
+                # PRIORITY 2: Build on solutions mentioned
+                elif key_solutions_mentioned:
+                    latest_solution = key_solutions_mentioned[-1]
+                    collaborative_context += f"\n💡 SOLUTION TO BUILD ON:\n"
+                    collaborative_context += f"• {latest_solution['agent']} suggested: {latest_solution['content']}\n"
+                    collaborative_context += f"RESPOND BY: Either building on this idea, pointing out issues you see, or proposing improvements/alternatives.\n"
+                
+                # PRIORITY 3: Address important discussion points
+                elif specific_points_to_address:
+                    latest_point = specific_points_to_address[-1]
+                    collaborative_context += f"\n🔍 IMPORTANT POINT TO ADDRESS:\n"
+                    collaborative_context += f"• {latest_point['agent']} mentioned: {latest_point['point']}\n"
+                    collaborative_context += f"RESPOND BY: Sharing your perspective on this point and contributing to the solution.\n"
+                
+                # PRIORITY 4: Move conversation toward solutions
+                else:
+                    collaborative_context += f"\n🎯 SOLUTION FOCUS:\n"
+                    collaborative_context += f"The team needs to work toward concrete solutions. CONTRIBUTE BY:\n"
+                    collaborative_context += f"• Proposing a specific approach or solution\n"
+                    collaborative_context += f"• Asking a clarifying question that helps move toward solutions\n"
+                    collaborative_context += f"• Identifying what we still need to figure out\n"
+                
+                # Add conversation stage guidance
                 if conversation_stage == "problem_understanding":
-                    collaborative_context += f"\nFOCUS: Understand the problem together. Share your initial thoughts, ask questions if you're genuinely curious.\n"
-                    
+                    collaborative_context += f"\n📋 CURRENT STAGE: Problem Understanding\n"
+                    collaborative_context += f"Focus on understanding the challenge deeply and asking good questions.\n"
                 elif conversation_stage == "solution_development":
-                    collaborative_context += f"\nFOCUS: Propose solutions and react naturally to others' ideas. Challenge what doesn't make sense, build on good ideas.\n" 
-                    
+                    collaborative_context += f"\n💡 CURRENT STAGE: Solution Development\n"
+                    collaborative_context += f"Focus on proposing specific solutions and building on others' ideas.\n"
                 elif conversation_stage == "action_planning":
-                    collaborative_context += f"\nFOCUS: Get specific about next steps. Make decisions and assign responsibilities naturally.\n"
+                    collaborative_context += f"\n⚡ CURRENT STAGE: Action Planning\n"
+                    collaborative_context += f"Focus on concrete next steps, timelines, and implementation details.\n"
                 
-                # Check if someone asked YOU a direct question - you MUST answer
-                direct_questions_to_agent = []
-                for msg in recent_messages[-3:]:  # Check last 3 messages
-                    if agent.name.split()[0] in msg['content'] or agent.name in msg['content']:
-                        if '?' in msg['content']:
-                            direct_questions_to_agent.append(f"{msg['agent_name']} asked you: {msg['content']}")
-                
-                if direct_questions_to_agent:
-                    collaborative_context += f"\nIMPORTANT: You were asked direct questions that you MUST address:\n"
-                    for q in direct_questions_to_agent:
-                        collaborative_context += f"• {q}\n"
-                
-                # ANTI-REPETITION: Show what openings are already used
-                if used_openings:
-                    collaborative_context += f"\nOPENINGS ALREADY USED (DON'T REPEAT): {', '.join(set(used_openings))}\n"
-                
-                collaborative_context += f"\nRespond naturally based on your personality and what the team needs right now.\n"
+                # Force natural conversation flow
+                collaborative_context += f"\n🗣️ CONVERSATION STYLE:\n"
+                collaborative_context += f"• Reference specific points made by teammates\n"
+                collaborative_context += f"• Use names when responding (e.g., 'Sarah, your point about...')\n"
+                collaborative_context += f"• Ask follow-up questions when genuinely curious\n"
+                collaborative_context += f"• Build on good ideas with 'Building on that...' or 'Adding to what X said...'\n"
+                collaborative_context += f"• Politely disagree when you see issues: 'I see it differently because...'\n"
+                collaborative_context += f"• Work toward practical solutions the team can implement\n"
                 
             else:
-                # First messages - set up collaboration expectations
+                # First messages - set collaborative expectations
                 collaborative_context = f"{base_context}\n\n"
-                collaborative_context += f"You're starting a TEAM PROBLEM-SOLVING SESSION with colleagues: {', '.join(other_agents)}\n"
-                collaborative_context += f"COLLABORATION FOCUS: Share your initial thoughts and immediately engage teammates with questions about their expertise.\n"
-                collaborative_context += f"EXAMPLE APPROACHES: 'My initial take is X. {other_agents[0]}, given your background in Y, what's your perspective?'\n"
+                collaborative_context += f"TEAM PROBLEM-SOLVING SESSION STARTING\n"
+                collaborative_context += f"Your teammates: {', '.join(other_agents)}\n\n"
+                collaborative_context += f"🎯 YOUR OPENING CONTRIBUTION:\n"
+                collaborative_context += f"• Share your initial perspective on the challenge\n"
+                collaborative_context += f"• Ask teammates about their expertise/thoughts\n"
+                collaborative_context += f"• Set up collaborative problem-solving\n"
+                collaborative_context += f"Example: 'My initial take is X. [Teammate], given your background in Y, what do you think?'\n"
             
             response = await llm_manager.generate_agent_response(
                 agent=agent,
