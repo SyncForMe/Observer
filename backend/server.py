@@ -6207,7 +6207,16 @@ Continue building on the progress above. The team should advance the solutions a
             historical_context += f"- Show how discussions have evolved and what new insights you have\n"
             historical_context += f"- Don't just repeat - ADVANCE the conversation based on what was previously discussed\n"
     
-    # ===== ENHANCED ROUND STRUCTURE: 3 MESSAGES PER AGENT =====
+    # Build conversation context with progression awareness and cross-round references
+    context = f"Day {day}, {time_period}. {progression_guidance}{historical_context}"
+    
+    if recent_conversations:
+        # Add context about recent discussions to build upon
+        context += f"\n\nRECENT DISCUSSION THEMES (build upon these, don't repeat):\n"
+        for i, topic in enumerate(recent_topics[-3:], 1):
+            context += f"- Theme {i}: {topic}...\n"
+    else:
+        context += "\nStart a focused discussion about the scenario."
     messages = []
     conversation_so_far = ""
     
