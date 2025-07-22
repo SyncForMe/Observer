@@ -175,6 +175,14 @@ class ConversationHistory(BaseModel):
     tags: List[str] = []  # User can tag conversations
 
 # File Center Models for Action-Oriented Agent Behavior
+class DocumentStatus(BaseModel):
+    status: str = "draft"  # draft, under_review, approved, rejected
+    created_by_agent: str = ""
+    reviewers: List[str] = Field(default_factory=list)
+    approval_votes: int = 0
+    rejection_votes: int = 0
+    suggestions: List[str] = Field(default_factory=list)
+
 class DocumentMetadata(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
@@ -190,6 +198,7 @@ class DocumentMetadata(BaseModel):
     conversation_round: int = 0  # Which conversation round triggered creation
     scenario_name: str = ""  # Name of the scenario for organization
     user_id: str = ""  # User who owns this simulation
+    document_status: DocumentStatus = Field(default_factory=DocumentStatus)
 
 class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
