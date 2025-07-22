@@ -1072,7 +1072,7 @@ PROVIDE EXPERT ANALYSIS:
                     api_key=self.api_key,
                     session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
                     system_message=system_message
-                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(180)
                 
                 user_message = UserMessage(text=prompt)
                 
