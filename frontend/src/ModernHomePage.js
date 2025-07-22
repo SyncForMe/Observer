@@ -88,7 +88,6 @@ const ModernHomePage = () => {
         scenario,
         scenario_name: scenarioName
       }, authHeaders);
-      });
       setCurrentScenario(scenario);
     } catch (error) {
       console.error('Error setting scenario:', error);
