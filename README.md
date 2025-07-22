@@ -21,63 +21,44 @@ The AI Agent Simulation Platform enables users to create diverse AI agents with 
 
 ## ✨ **Features**
 
-### 🧠 **Advanced Agent Management System**
-- **200+ Expert Agents** across healthcare, finance, technology, and research domains
-- **9 Professional Archetypes** with unique personalities and decision-making patterns
-- **Custom Agent Creation** with personalized backgrounds, goals, and expertise areas
-- **AI Avatar Generation** using fal.ai for professional headshots with perfect circular display
-- **Personal Agent Library** with comprehensive save, edit, and reuse functionality
-- **⭐ Favorites System** - Star agents from the library for quick access
-- **🛠️ Created Agents** - Separate section for user-created agents
-- **Auto-Save Functionality** - Seamless saving of created agents to personal library
-- **One-Click Agent Addition** - Enhanced + button navigation to Agent Library
+### **🧠 Advanced AI Agent Management**
+- **9 Unique Archetypes**: Scientist, Engineer, Leader, Skeptic, Optimist, Artist, Adventurer, Mediator, Researcher
+- **Personality Customization**: Fine-tune traits like extroversion, optimism, curiosity, cooperativeness, and energy
+- **AI Avatar Generation**: Create professional headshots using fal.ai integration
+- **Agent Library**: Save, organize, and reuse favorite agents across simulations
+- **Cross-Round References**: Agents reference previous conversations and build on past discussions
 
-### ⚡ **Real-Time Simulation Engine**
-- **Live Conversations** between AI agents with natural, context-aware dialogue
-- **3-Messages-Per-Agent System** - Each round contains 3 messages per agent for richer dialogue
-- **Turn-Based Conversations** - Agents speak in structured turns building on each other's ideas
-- **Observer Mode** for real-time interaction and guidance during simulations
-- **Multi-Language Support** with translation capabilities for global accessibility
-- **Scenario Configuration** for specific business challenges and research scenarios
-- **Auto-Generation** with configurable conversation intervals and complexity
-- **Enhanced Control System** with play/pause, reset, and observer input capabilities
+### **💬 Intelligent Conversation System**
+- **Real-Time Conversations**: Agents interact naturally in configurable scenarios
+- **Rolling Context Window**: Automatic summarization at 25+ messages for infinite conversation capability
+- **Multiple Scenarios**: 8+ pre-built scenarios including business meetings, research discussions, crisis management
+- **Multi-Language Support**: Run simulations in 5+ languages with automatic translation
+- **Document-Focused Discussions**: Agents actively work toward creating helpful documents
 
-### 📊 **Professional Analytics & Reporting**
-- **🎯 Claude 3.5 Sonnet Integration** - Primary AI for superior report generation
-- **🔄 Intelligent Fallback System** - Claude → Gemini → Manual analysis for 100% reliability
-- **📈 Executive-Level Reports** - 9-section comprehensive analysis with strategic insights
-- **📋 Weekly Summary Generation** - Automated report creation with actionable recommendations
-- **📝 Auto-Report Toggle** - Enable/disable automatic weekly report generation
-- **🗂️ Separate Report Card** - Dedicated expandable interface for report display
-- **Real-Time Metrics** tracking conversation quality, consensus building, and decision outcomes
-- **Comprehensive Dashboards** with interactive charts and visual statistics
-- **Document Generation** with AI-powered reports and action items
+### **📄 Professional Document Generation**
+- **Auto-Document Creation**: AI generates protocols, implementation plans, risk assessments, technical specifications
+- **Professional PDF Export**: Beautiful formatting with headers, authors, timestamps, and custom styling
+- **Document Review Workflow**: Democratic voting system with approval/rejection and suggestions
+- **Multiple Document Types**: Protocols, budgets, timelines, training guides, research reports
+- **Bulk PDF Download**: Export multiple documents simultaneously
 
-### 📅 **Comprehensive Time Progression System**
-- **🌅 Day Structure** - Each day consists of Morning, Afternoon, and Evening periods
-- **🔄 Round Organization** - Each time period contains 3 conversation rounds
-- **⏰ Dynamic Time Display** - Header shows current day and time (e.g., "Day 1, Afternoon")
-- **🏷️ Round Headers** - Each conversation displays "Day 1, Round 1, Morning"
-- **📊 Progress Tracking** - Automatic time calculation based on conversation progression
-- **👤 User Isolation** - Each user has independent time progression and data
+### **🔭 Observatory Control System**
+- **Visual Agent Profiles**: Professional cards showing team composition with archetype-specific colors
+- **Real-Time Monitoring**: Live simulation status, agent interactions, and progress tracking
+- **Observer Intervention**: Real-time guidance and input during active simulations
+- **Enhanced Controls**: Start/Pause/Resume, Fast Forward, Auto Mode, Summary generation
 
-### 🎨 **Modern User Experience**
-- **Professional Design** with glass morphism effects and gradient backgrounds
-- **Responsive Layout** optimized for desktop, tablet, and mobile devices
-- **Streamlined Navigation** with organized Library dropdown containing Agent Library, Conversations, and Documents
-- **Enhanced Header** with instant-loading user avatars and real-time profile updates
-- **Advanced Search** with filtering by name, expertise, and archetype
-- **Smooth Animations** using Framer Motion for engaging interactions
-- **✨ Bold Text Rendering** - Professional markdown formatting throughout the interface
-- **🎯 Optimized Spacing** - Carefully tuned layout with perfect visual hierarchy
+### **📊 Analytics & Insights**
+- **Real-Time Metrics**: Conversation counts, agent usage, API consumption tracking
+- **Visual Charts**: 30-day activity tracking with interactive visualizations
+- **Agent Rankings**: Top performers with medal system and usage statistics  
+- **Weekly Reports**: AI-generated comprehensive summaries with key discoveries and documents
 
-### 🎯 **Enhanced Scenario Management**
-- **Persistent Scenario Display** in notification bar with expandable details
-- **Professional Text Formatting** with intelligent color coding and typography
-- **Smart Highlighting** - Red for critical terms, white bold for important entities
-- **Expandable Scenario Details** with custom scrollbar and clean layout
-- **Scenario Persistence** across page refreshes with localStorage caching
-- **Clean Control Interface** with streamlined scenario controls
+### **👤 Complete User Management**
+- **Authentication**: JWT-based security with Google OAuth and guest access
+- **Profile Management**: Custom avatars, preferences, and account settings
+- **Data Isolation**: Complete user data separation and privacy protection
+- **Themes & Customization**: Multiple color schemes and interface personalization
 
 ---
 
