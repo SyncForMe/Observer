@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://1b54c023-1ff4-4804-99a2-1b109f5253cd.preview.emergentagent.com"
+BACKEND_URL = "https://7739ef7b-2781-4fb3-8a8b-8d104f76b04c.preview.emergentagent.com"
 API_BASE = f"{BACKEND_URL}/api"
 
 def print_test_header(test_name):
