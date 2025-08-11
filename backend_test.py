@@ -4054,7 +4054,10 @@ def test_agent_database():
     }
 
 if __name__ == "__main__":
-    # Run the tests
-    test_login()
-    test_agent_database()
+    print("Starting Time Progression Investigation...")
+    
+    # Primary test: Time progression investigation
+    test_time_progression_investigation()
+    
+    # Print final summary
     print_summary()
