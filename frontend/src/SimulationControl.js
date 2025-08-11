@@ -1767,18 +1767,18 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 <>
                   {/* Display Regular Conversations */}
                   {(Array.isArray(conversations) ? conversations : []).map((conversation, conversationIndex) => {
-                    const roundNumber = conversationIndex + 1;
-                    const { day, period, roundInPeriod } = calculateDayAndTime(roundNumber);
+                    // Use the time_period from the conversation data instead of calculating
+                    const timePeriodDisplay = conversation.time_period || "Day 1 - Morning";
                     
                     return (
                       <div key={conversation.id || conversationIndex} className="space-y-2">
-                        {/* Round Header */}
+                        {/* Time Period Header - Simplified */}
                         <div className="flex justify-center mb-2">
                           <div className="bg-white/5 rounded-full px-3 py-1 border border-white/10">
                             <span className="text-white/70 text-xs font-medium">
                               {conversation.scenario_name === "Observer Guidance" ? 
                                 "Observer Message" : 
-                                `Day ${day}, Round ${roundInPeriod}, ${period}`
+                                timePeriodDisplay
                               }
                             </span>
                           </div>
