@@ -4944,25 +4944,20 @@ async def check_and_advance_time_automatically(user_id: str):
         if not state or not state.get("is_active", False):
             return False
         
-        # Get current conversation
-        current_conversation = await db.conversations.find_one(
-            {"user_id": user_id}, 
-            sort=[("created_at", -1)]
-        )
+        # Get total conversation count for this user (each conversation represents a round)
+        conversation_count = await db.conversations.count_documents({"user_id": user_id})
         
-        if not current_conversation:
+        if conversation_count == 0:
             return False
         
-        messages = current_conversation.get("messages", [])
-        
-        # Auto-advance time every 8 messages (about 2 minutes at 15s intervals)
-        # More frequent time advancement for better progression
-        if len(messages) > 0 and len(messages) % 8 == 0:
-            # Check if we haven't advanced time recently for this conversation
-            last_time_advance = state.get("last_time_advance_message_count", 0)
+        # Auto-advance time every 3 rounds (conversations)
+        # Morning (rounds 1-3), Afternoon (rounds 4-6), Evening (rounds 7-9), then Day 2 Morning
+        if conversation_count > 0 and conversation_count % 3 == 0:
+            # Check if we haven't advanced time recently for this conversation count
+            last_time_advance_round = state.get("last_time_advance_round", 0)
             
-            if len(messages) > last_time_advance:
-                print(f"🕐 TIME ADVANCE TRIGGER: {len(messages)} messages, last advance at {last_time_advance}")
+            if conversation_count > last_time_advance_round:
+                print(f"🕐 TIME ADVANCE TRIGGER: {conversation_count} conversations, last advance at round {last_time_advance_round}")
                 
                 # Advance time automatically
                 current_period = state["current_time_period"]
@@ -4988,21 +4983,12 @@ async def check_and_advance_time_automatically(user_id: str):
                     {"user_id": user_id},
                     {"$set": {
                         "current_time_period": new_period,
-                        "last_time_advance_message_count": len(messages)
+                        "last_time_advance_round": conversation_count
                     }}
                 )
                 
                 print(f"🕐 AFTER: Day {current_day} {new_period}")
-                print(f"🕐 AUTO TIME ADVANCE: {user_id} - Day {current_day} {new_period.title()} (after {len(messages)} messages)")
-                
-                # Also update the conversation's time_period display
-                current_day_after = (await db.simulation_state.find_one({"user_id": user_id})).get("current_day", current_day)
-                time_display = f"Day {current_day_after} - {new_period.title()}"
-                
-                await db.conversations.update_one(
-                    {"id": current_conversation["id"]},
-                    {"$set": {"time_period": time_display}}
-                )
+                print(f"🕐 AUTO TIME ADVANCE: {user_id} - Day {current_day} {new_period.title()} (after {conversation_count} rounds)")
                 
                 return True
         
