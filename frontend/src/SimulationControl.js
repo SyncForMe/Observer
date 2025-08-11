@@ -2113,7 +2113,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                   <span className="text-white/70 text-sm font-medium">
                     {Array.isArray(agents) ? agents.length : 0}
                   </span>
-                  <span className="text-white/50 text-xs">agts</span>
+                  <span className="text-white/50 text-xs">agn</span>
                 </div>
                 
                 {/* Tooltip on hover */}
