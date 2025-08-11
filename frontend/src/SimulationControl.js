@@ -2056,7 +2056,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       return totalMessages;
                     })()}
                   </span>
-                  <span className="text-white/50 text-xs">msgs</span>
+                  <span className="text-white/50 text-xs">msg</span>
                 </div>
                 
                 {/* Tooltip on hover */}
