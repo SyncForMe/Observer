@@ -614,7 +614,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   
   // Track scroll position for potential future use (but take no automatic actions)
   useEffect(() => {
-    const conversationContainer = document.querySelector('.flex-1.overflow-y-auto');
+    const conversationContainer = document.querySelector('[data-conversation-container="true"]');
     if (!conversationContainer) return;
     
     const trackScrollPosition = () => {
