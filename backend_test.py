@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Time Progression Investigation Test
+Debugging why frontend shows "Day 1, Morning" despite having 11 messages
+"""
+
 import requests
 import json
 import time
@@ -12,10 +17,6 @@ import jwt
 from datetime import datetime, timedelta
 import statistics
 from collections import Counter, defaultdict
-from conversation_generation_test import test_conversation_generation
-from dynamic_conversation_test import test_dynamic_conversation
-from natural_expertise_test import test_natural_expertise
-from gemini_integration_test import test_gemini_integration
 
 # Load environment variables from frontend/.env
 load_dotenv('/app/frontend/.env')
