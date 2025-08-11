@@ -1698,11 +1698,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     if (simulationData?.simulationState) {
                       const day = simulationData.simulationState.current_day || 1;
                       const period = simulationData.simulationState.current_time_period || 'morning';
+                      console.log(`🕐 Time display from simulation state: Day ${day}, ${period}`);
                       return `Day ${day}, ${period.charAt(0).toUpperCase() + period.slice(1)}`;
                     } else {
                       // Fallback to calculation if simulation state not available
                       const currentRound = (Array.isArray(conversations) ? conversations : []).length + 1;
                       const { day, period } = calculateDayAndTime(currentRound);
+                      console.log(`🕐 Time display from calculation (fallback): Day ${day}, ${period}`);
                       return `Day ${day}, ${period}`;
                     }
                   })()}
