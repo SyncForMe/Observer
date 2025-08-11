@@ -436,6 +436,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const searchRefs = useRef([]);
   const messagesEndRef = useRef(null);
   const fetchingRef = useRef(false); // Performance optimization: Prevent duplicate fetches
+  const conversationBuildingRef = useRef(false); // Prevent polling conflicts during message display
 
   const [newAgent, setNewAgent] = useState({
     name: '',
@@ -473,6 +474,10 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           })
         ]);
 
+        // Store scroll position before DOM update to prevent disruption
+        const conversationContainer = document.querySelector('.flex-1.overflow-y-auto');
+        const scrollTop = conversationContainer ? conversationContainer.scrollTop : 0;
+
         // Update global simulation data
         updateSimulationData({
           simulationState: stateResponse.data,
@@ -482,6 +487,14 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           agents: agentsResponse.data || [],
           isDataLoaded: true
         });
+        
+        // Restore scroll position after DOM update to prevent reading interruption
+        setTimeout(() => {
+          if (conversationContainer && scrollTop > 0) {
+            conversationContainer.scrollTop = scrollTop;
+            console.log('🔒 Polling: Restored scroll position to:', scrollTop);
+          }
+        }, 100);
         
         console.log('✅ Optimized fetch completed - Agents:', agentsResponse.data.length, 'Conversations:', conversationsResponse.data?.length || 0);
         
@@ -500,8 +513,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     
     // Smart refresh function (defined inside useEffect to avoid circular dependency)
     const smartRefresh = () => {
-      // Increase interval when simulation is not active (less frequent polling)
-      const interval = isRunning ? 3000 : 10000; // 3s when running, 10s when stopped
+      // MUCH SLOWER polling to prevent scroll disruption while reading
+      const interval = isRunning ? 30000 : 60000; // 30 seconds active, 60 seconds idle (was 8s/20s)
       
       // Only fetch if page is visible (performance optimization)
       if (!document.hidden) {
@@ -593,19 +606,35 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
 
 
-  // Auto-scroll to bottom ONLY when observer messages are sent
-  const scrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, []);
+  // MANUAL SCROLL CONTROL ONLY - No automatic scrolling
+  // Users have complete control over their scroll position
+  const scrollPositionRef = useRef({ top: 0, isAtBottom: false });
   
-  // Auto-scroll to bottom of conversations - DISABLED to prevent interrupting reading
-  // useEffect(() => {
-  //   if (messagesEndRef.current) {
-  //     messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  //   }
-  // }, [conversations, observerMessages]);
+  // Track scroll position for potential future use (but take no automatic actions)
+  useEffect(() => {
+    const conversationContainer = document.querySelector('.flex-1.overflow-y-auto');
+    if (!conversationContainer) return;
+    
+    const trackScrollPosition = () => {
+      const scrollTop = conversationContainer.scrollTop;
+      const scrollHeight = conversationContainer.scrollHeight;
+      const clientHeight = conversationContainer.clientHeight;
+      const isAtBottom = Math.abs((scrollTop + clientHeight) - scrollHeight) <= 10;
+      
+      scrollPositionRef.current = { top: scrollTop, isAtBottom };
+      // Note: We track position but take NO automatic scroll actions
+    };
+    
+    conversationContainer.addEventListener('scroll', trackScrollPosition);
+    trackScrollPosition(); // Initial tracking
+    
+    return () => {
+      conversationContainer.removeEventListener('scroll', trackScrollPosition);
+    };
+  }, []);
+
+  // NO automatic scroll behavior - user has full manual control
+  // Removed all conversation-based scroll triggers
 
   // React to refresh trigger from Agent Library
   useEffect(() => {
@@ -615,28 +644,30 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   }, [refreshTrigger]);
 
-  // Continuous conversation generation when simulation is running
+  // Natural conversation flow when simulation is running
   useEffect(() => {
-    if (isRunning && !isPaused && agents.length >= 2) {
-      console.log('🔄 Starting continuous conversation generation...');
+    const agentsCount = Array.isArray(agents) ? agents.length : 0;
+    
+    if (isRunning && !isPaused && agentsCount >= 2) {
+      console.log('🔄 Starting natural conversation flow...');
       
       // Clear any existing interval
       if (autoGenerateInterval) {
         clearInterval(autoGenerateInterval);
       }
       
-      // Set up new interval for continuous generation
+      // Set up new interval for contextual message generation
       const intervalId = setInterval(() => {
-        console.log('⏰ Auto-generating conversation...');
-        generateNewConversation(true); // Mark as auto-generated
-      }, 8000); // Generate new conversation every 8 seconds (optimized for fast Claude Sonnet 4)
+        console.log('💬 Adding contextual message for natural conversation...');
+        addContextualMessage(); // Add contextually aware message
+      }, 15000); // Add new contextual message every 15 seconds - optimized for engaging pace
       
       setAutoGenerateInterval(intervalId);
       
     } else {
       // Clear interval when simulation stops/pauses or insufficient agents
       if (autoGenerateInterval) {
-        console.log('⏹️ Stopping continuous conversation generation');
+        console.log('⏹️ Stopping natural conversation flow');
         clearInterval(autoGenerateInterval);
         setAutoGenerateInterval(null);
       }
@@ -648,7 +679,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         clearInterval(autoGenerateInterval);
       }
     };
-  }, [isRunning, isPaused, agents.length]); // Dependencies: when these change, restart/stop interval
+  }, [isRunning, isPaused, Array.isArray(agents) ? agents.length : 0]);
 
   const showNotification = (text) => {
     // Only show notification if no scenario is currently set
@@ -726,30 +757,149 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
-  // Generate new conversation
-  const generateNewConversation = async (isAuto = false) => {
+  // Simplified conversation display - no complex animations needed
+  const displayConversation = (conversationData) => {
+    if (!conversationData) return;
+    
+    console.log('📝 Displaying conversation directly:', conversationData.id);
+    
+    // Simply add the conversation to the list
+    const currentConversations = Array.isArray(conversations) ? [...conversations] : [];
+    const existingIndex = currentConversations.findIndex(conv => conv.id === conversationData.id);
+    
+    if (existingIndex >= 0) {
+      currentConversations[existingIndex] = conversationData;
+    } else {
+      currentConversations.push(conversationData);
+    }
+    
+    updateSimulationData({
+      conversations: currentConversations
+    });
+  };
+
+  // Add contextual message from agents for natural conversation flow
+  const addContextualMessage = async () => {
+    if (conversationLoading) {
+      console.log('🚫 Contextual message generation already in progress, skipping...');
+      return;
+    }
+    
+    setConversationLoading(true);
+    
     try {
-      const logPrefix = isAuto ? '⏰ Auto' : '💬 Manual';
-      console.log(`${logPrefix} - Starting conversation generation...`);
-      setConversationLoading(true);
+      console.log('💬 Adding contextual message for natural conversation flow...');
       
-      const response = await axios.post(`${API}/conversation/generate`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 12000  // 12 second timeout for optimized parallel processing
+      const response = await axios.post(`${API}/conversation/add-contextual-message`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
-      if (response.data) {
-        console.log(`${logPrefix} - New conversation generated:`, response.data);
-        console.log(`${logPrefix} - Conversation has`, response.data.messages?.length || 0, 'messages');
+      console.log('✅ Contextual message added:', response.data);
+      
+      // Update the conversation data directly
+      if (response.data && response.data.messages) {
+        const updatedConversations = Array.isArray(conversations) ? [...conversations] : [];
         
-        // Refresh conversations to show the new one
-        setTimeout(() => fetchSimulationState(), 500);
+        // Find existing ongoing conversation or add new one
+        const existingIndex = updatedConversations.findIndex(
+          conv => conv.id === response.data.id
+        );
+        
+        if (existingIndex >= 0) {
+          // Update existing conversation
+          updatedConversations[existingIndex] = response.data;
+        } else {
+          // Add new ongoing conversation
+          updatedConversations.push(response.data);
+        }
+        
+        // Update via global context
+        updateSimulationData({
+          conversations: updatedConversations
+        });
+        
+        // Log conversation state for debugging
+        if (response.data.conversation_state) {
+          const state = response.data.conversation_state;
+          console.log('🔄 Conversation state:', state);
+          console.log('📊 Goal progress:', state.goal_progress || 0);
+          
+          // Log round-robin statistics
+          if (state.round_robin_stats) {
+            console.log('🎯 Round-robin stats:', state.round_robin_stats);
+            console.log('⚖️ Participation fairness:', state.participation_fairness || 'Not calculated');
+            
+            // Show agent participation equality
+            const stats = state.round_robin_stats;
+            const participation = Object.keys(stats).map(agent => 
+              `${agent}: ${stats[agent].message_count} messages`
+            ).join(', ');
+            console.log('📈 Agent participation:', participation);
+          }
+        }
+        
+        // Check if we have a new message with context info
+        const newMessages = response.data.messages || [];
+        if (newMessages.length > 0) {
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.context_info) {
+            console.log('🎯 Message type:', lastMessage.context_info.conversation_contribution);
+            if (lastMessage.context_info.addresses_agent) {
+              console.log('👥 Addresses:', lastMessage.context_info.addresses_agent);
+            }
+            if (lastMessage.context_info.contains_question) {
+              console.log('❓ Contains question - other agents should respond');
+            }
+          }
+        }
       }
       
     } catch (error) {
-      console.error(`❌ Error generating ${isAuto ? 'auto' : 'manual'} conversation:`, error);
-      console.log('❌ Full error details:', error.response?.data || error.message);
+      console.error('Error adding contextual message:', error);
     } finally {
+      setConversationLoading(false);
+    }
+  };
+
+  // Generate new conversation (keep for manual generation button)
+  const generateNewConversation = async (isAuto = false) => {
+    // Prevent overlapping conversation generations
+    if (conversationLoading) {
+      console.log(`🚫 ${isAuto ? 'Auto' : 'Manual'} - Conversation generation already in progress, skipping...`);
+      return;
+    }
+    
+    // Prevent multiple auto-generations
+    if (isAuto && conversationBuildingRef.current) {
+      console.log('🚫 Auto - Skipping generation, messages are still being built');
+      return;
+    }
+    
+    setConversationLoading(true);
+    
+    try {
+      const logPrefix = isAuto ? '⏰ Auto' : '💬 Manual';
+      console.log(`${logPrefix} - Starting conversation generation...`);
+      
+      // Use optimized endpoint for better performance
+      const response = await axios.post(`${API}/conversation/generate`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log(`${logPrefix} - New conversation generated:`, response.data);
+      console.log(`${logPrefix} - Conversation has ${response.data.messages?.length || 0} messages`);
+      
+      if (response.data && response.data.messages && response.data.messages.length > 0) {
+        // Display conversation directly - no complex animations needed
+        displayConversation(response.data);
+      }
+      
+      // Reset loading state immediately after receiving response
+      setConversationLoading(false);
+      
+      // Note: Smart refresh will pick up state changes automatically, no need for immediate fetch
+    } catch (error) {
+      console.error('Error generating conversation:', error);
       setConversationLoading(false);
     }
   };
@@ -759,8 +909,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       await axios.post(`${API}/simulation/fast-forward`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // Debounced refresh instead of immediate
-      setTimeout(() => fetchSimulationState(), 200);
+      // Smart refresh will automatically pick up the fast-forward state change
     } catch (error) {
       console.error('Error fast forwarding:', error);
     }
@@ -1069,6 +1218,36 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
+  // Fetch conversations only (for immediate refresh after observer messages)
+  const fetchConversationsOnly = async () => {
+    try {
+      // Store scroll position before DOM update
+      const conversationContainer = document.querySelector('.flex-1.overflow-y-auto');
+      const scrollTop = conversationContainer ? conversationContainer.scrollTop : 0;
+
+      const conversationsResponse = await axios.get(`${API}/conversations`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update only conversations in global state
+      updateSimulationData({
+        conversations: conversationsResponse.data || []
+      });
+      
+      // Restore scroll position after DOM update
+      setTimeout(() => {
+        if (conversationContainer && scrollTop > 0) {
+          conversationContainer.scrollTop = scrollTop;
+          console.log('🔒 Restored scroll position to:', scrollTop);
+        }
+      }, 50);
+      
+      console.log('✅ Conversations refreshed - Count:', conversationsResponse.data?.length || 0);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
   const handleSendObserverMessage = async () => {
     if (!observerMessage.trim()) return;
 
@@ -1080,28 +1259,27 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       // Clear input immediately for better UX
       setObserverMessage('');
 
-      // Send observer message to backend
+      // Send observer message to backend - IMMEDIATE DISPLAY VERSION
       const response = await axios.post(`${API}/observer/send-message`, {
         observer_message: messageToSend
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // The backend response contains the full conversation with observer message + agent responses
-      if (response.data && response.data.agent_responses) {
-        // Add the new conversation to the conversations array using global state
-        updateSimulationData({
-          conversations: [...conversations, response.data.agent_responses]
-        });
-        
-        // Auto-scroll to show the new observer message
-        setTimeout(() => {
-          scrollToBottom();
-        }, 100); // Small delay to ensure DOM is updated
-      }
+      // IMMEDIATE: Observer message is now stored and visible immediately
+      // Agent responses will be generated progressively in background
+      console.log('✅ Observer message sent immediately:', response.data.observer_message);
+      console.log('🔄 Agent responses generating in background...');
 
-      // Refresh state to get any updates
+      // Refresh conversations immediately to show the observer message
+      // (Agent responses will appear as they're generated in background)
+      setTimeout(() => {
+        fetchConversationsOnly(); // Immediate refresh to show observer message
+      }, 100);
+
+      // Also refresh state to get any updates
       setTimeout(() => fetchSimulationState(), 300);
+      
     } catch (error) {
       console.error('Error sending observer message:', error);
       // Restore input on error
@@ -1163,7 +1341,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     const results = [];
     
     // Search regular conversations
-    conversations.forEach((conversation, conversationIndex) => {
+    (Array.isArray(conversations) ? conversations : []).forEach((conversation, conversationIndex) => {
       if (conversation.messages) {
         conversation.messages.forEach((message, messageIndex) => {
           if (message.message.toLowerCase().includes(term.toLowerCase())) {
@@ -1481,8 +1659,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
         {/* Live Conversations Section - 50% width on large screens (Middle Position) */}
         <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col overflow-hidden">
+            <div className="flex justify-between items-center mb-4 flex-shrink-0">
               <h3 className="text-lg font-bold text-white">💬 Live Conversations</h3>
               <div className="flex items-center space-x-1">
                 <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
@@ -1491,7 +1669,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 )}
                 <span className="text-white/60 text-sm">
                   {(() => {
-                    const currentRound = conversations.length + 1;
+                    const currentRound = (Array.isArray(conversations) ? conversations : []).length + 1;
                     const { day, period } = calculateDayAndTime(currentRound);
                     return `Day ${day}, ${period}`;
                   })()}
@@ -1541,7 +1719,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
             {/* Conversations Display */}
             <div className="flex-1 overflow-y-auto space-y-3">
-              {conversations.length === 0 ? (
+              {(Array.isArray(conversations) ? conversations : []).length === 0 ? (
                 <div className="text-center py-8 space-y-4">
                   <div>
                     <p className="text-white/60 text-sm mb-2">No conversations yet</p>
@@ -1555,7 +1733,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               ) : (
                 <>
                   {/* Display Regular Conversations */}
-                  {conversations.map((conversation, conversationIndex) => {
+                  {(Array.isArray(conversations) ? conversations : []).map((conversation, conversationIndex) => {
                     const roundNumber = conversationIndex + 1;
                     const { day, period, roundInPeriod } = calculateDayAndTime(roundNumber);
                     
@@ -1644,9 +1822,10 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                               )}
                               {message.agent_name === "Observer (You)" ? (
                                 <span 
-                                  className="text-white text-xs font-bold absolute"
+                                  className="text-white text-xs font-bold"
                                   style={{
-                                    display: user && user.picture ? 'none' : 'flex'
+                                    display: user && user.picture ? 'none' : 'flex',
+                                    position: 'relative'
                                   }}
                                 >
                                   👁️
@@ -1929,7 +2108,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                     <div className="flex space-x-2 mb-3">
                       <button
                         onClick={handleGenerateReport}
-                        disabled={reportLoading || conversations.length === 0}
+                        disabled={reportLoading || (Array.isArray(conversations) ? conversations : []).length === 0}
                         className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors disabled:cursor-not-allowed"
                       >
                         {reportLoading ? 'Generating...' : 'Generate Report'}
@@ -1960,7 +2139,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       </div>
                     </div>
                     
-                    {conversations.length === 0 && (
+                    {(Array.isArray(conversations) ? conversations : []).length === 0 && (
                       <div className="text-white/50 text-xs text-center py-2">
                         No conversations available for report generation
                       </div>

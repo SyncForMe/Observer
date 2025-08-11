@@ -368,13 +368,6 @@ console.log('Environment variables loaded:', {
   NODE_ENV: process.env.NODE_ENV
 });
 
-// Authentication Context
-const AuthContext = createContext();
-
-// useAuth hook is imported from AuthContext
-
-// AuthProvider is imported from AuthContext
-
 // Animated Observer Logo Component
 const ObserverLogo = () => {
   const pupilControls = useAnimationControls();
