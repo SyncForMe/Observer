@@ -4961,29 +4961,54 @@ async def sync_simulation_state_time(user_id: str, round_number: int):
         return False
 
 async def check_and_advance_time_automatically(user_id: str):
-    """Check if time should advance automatically based on conversation activity"""
+    """Check if time should advance automatically based on round completion (agent message cycles)"""
     try:
         # Get current simulation state
         state = await db.simulation_state.find_one({"user_id": user_id})
         if not state or not state.get("is_active", False):
             return False
         
-        # Get total conversation count for this user (each conversation represents a round)
+        # Get total conversation count for this user
         conversation_count = await db.conversations.count_documents({"user_id": user_id})
         
         if conversation_count == 0:
             return False
         
-        # Auto-advance time every 3 rounds (conversations)
-        # Morning (rounds 1-3), Afternoon (rounds 4-6), Evening (rounds 7-9), then Day 2 Morning
-        if conversation_count > 0 and conversation_count % 3 == 0:
-            # Check if we haven't advanced time recently for this conversation count
+        # NEW ROUND SYSTEM: Each round = each agent sends 3 messages
+        # Time advances after each round (not every 3 conversations)
+        # Each time period (Morning/Afternoon/Evening) = 3 rounds
+        
+        # Get the latest conversation to check if it's a completed round
+        latest_conversation = await db.conversations.find_one(
+            {"user_id": user_id}, 
+            sort=[("created_at", -1)]
+        )
+        
+        if not latest_conversation:
+            return False
+        
+        messages = latest_conversation.get("messages", [])
+        
+        # Count unique agents in the latest conversation
+        unique_agents = set()
+        for msg in messages:
+            if msg.get("agent_name"):
+                unique_agents.add(msg.get("agent_name"))
+        
+        agent_count = len(unique_agents)
+        expected_messages_per_round = agent_count * 3  # 3 messages per agent
+        
+        print(f"🎯 ROUND CHECK: {len(messages)} messages, {agent_count} agents, expected {expected_messages_per_round} per round")
+        
+        # Check if this conversation completes a round (each agent sent 3 messages)
+        if len(messages) >= expected_messages_per_round:
+            # Check if we haven't advanced time for this round yet
             last_time_advance_round = state.get("last_time_advance_round", 0)
             
             if conversation_count > last_time_advance_round:
-                print(f"🕐 TIME ADVANCE TRIGGER: {conversation_count} conversations, last advance at round {last_time_advance_round}")
+                print(f"🕐 ROUND COMPLETION DETECTED: Round {conversation_count} complete with {len(messages)} messages")
                 
-                # Advance time automatically
+                # Advance time after each completed round
                 current_period = state["current_time_period"]
                 current_day = state.get("current_day", 1)
                 
@@ -5012,14 +5037,14 @@ async def check_and_advance_time_automatically(user_id: str):
                 )
                 
                 print(f"🕐 AFTER: Day {current_day} {new_period}")
-                print(f"🕐 AUTO TIME ADVANCE: {user_id} - Day {current_day} {new_period.title()} (after {conversation_count} rounds)")
+                print(f"🕐 ROUND-BASED TIME ADVANCE: {user_id} - Day {current_day} {new_period.title()} (after Round {conversation_count})")
                 
                 return True
         
         return False
         
     except Exception as e:
-        print(f"Error in automatic time advancement: {e}")
+        print(f"Error in round-based time advancement: {e}")
         import traceback
         traceback.print_exc()
         return False
