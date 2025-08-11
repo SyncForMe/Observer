@@ -1702,10 +1702,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       console.log(`🕐 Time display from simulation state: Day ${day}, ${period}`);
                       return `Day ${day}, ${period.charAt(0).toUpperCase() + period.slice(1)}`;
                     } else {
-                      // Fallback to calculation if simulation state not available
-                      const currentRound = (Array.isArray(conversations) ? conversations : []).length + 1;
-                      const { day, period } = calculateDayAndTime(currentRound);
-                      console.log(`🕐 Time display from calculation (fallback): Day ${day}, ${period}`);
+                      // Improved fallback calculation using total messages and agent count
+                      const totalMessages = Array.isArray(conversations) ? 
+                        conversations.reduce((total, conv) => total + (conv.messages?.length || 0), 0) : 0;
+                      const agentCount = Array.isArray(agents) ? agents.length : 3; // Default to 3 if unknown
+                      
+                      const { day, period } = calculateDayAndTime(totalMessages, agentCount);
+                      console.log(`🕐 Time display from calculation (fallback): Day ${day}, ${period} (${totalMessages} msgs, ${agentCount} agents)`);
                       return `Day ${day}, ${period}`;
                     }
                   })()}
