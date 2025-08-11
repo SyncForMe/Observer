@@ -4961,7 +4961,7 @@ async def sync_simulation_state_time(user_id: str, round_number: int):
         return False
 
 async def check_and_advance_time_automatically(user_id: str):
-    """SIMPLIFIED TIME SYSTEM: Advance time based on messages per agent per time period"""
+    """SIMPLIFIED TIME SYSTEM: Advance time based on messages per agent per time period (1 message per agent)"""
     try:
         # Get current simulation state
         state = await db.simulation_state.find_one({"user_id": user_id})
@@ -4996,7 +4996,7 @@ async def check_and_advance_time_automatically(user_id: str):
             print("🚨 No agents found in conversations")
             return False
         
-        # SIMPLIFIED CALCULATION: Each agent sends 9 messages per time period
+        # SIMPLIFIED CALCULATION: Each agent sends 9 messages per time period (since 1 message per conversation)
         # With 3 agents = 27 messages per time period (Morning/Afternoon/Evening)
         messages_per_agent_per_period = 9
         messages_per_time_period = agent_count * messages_per_agent_per_period
