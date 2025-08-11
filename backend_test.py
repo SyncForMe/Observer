@@ -5060,9 +5060,24 @@ def test_agent_database():
     }
 
 if __name__ == "__main__":
-    print("Starting Time Progression Investigation...")
+    print("Starting comprehensive backend testing for conversation system issues...")
     
-    # Primary test: Time progression investigation
+    # Test 1: Authentication
+    print("\n" + "="*80)
+    print("PHASE 1: AUTHENTICATION TESTING")
+    print("="*80)
+    test_login()
+    
+    # Test 2: CRITICAL - Conversation Pause/Play Persistence Testing
+    print("\n" + "="*80)
+    print("PHASE 2: CRITICAL CONVERSATION PAUSE/PLAY PERSISTENCE TESTING")
+    print("="*80)
+    test_conversation_pause_play_persistence()
+    
+    # Test 3: Time Progression Investigation
+    print("\n" + "="*80)
+    print("PHASE 3: TIME PROGRESSION INVESTIGATION")
+    print("="*80)
     test_time_progression_investigation()
     
     # Print final summary
