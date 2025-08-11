@@ -491,11 +491,12 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         
         // Restore scroll position after DOM update to prevent reading interruption
         setTimeout(() => {
+          const conversationContainer = document.querySelector('[data-conversation-container="true"]');
           if (conversationContainer && scrollTop > 0) {
             conversationContainer.scrollTop = scrollTop;
             console.log('🔒 Polling: Restored scroll position to:', scrollTop);
           }
-        }, 100);
+        }, 200); // Increased delay to ensure React has finished re-rendering
         
         console.log('✅ Optimized fetch completed - Agents:', agentsResponse.data.length, 'Conversations:', conversationsResponse.data?.length || 0);
         
