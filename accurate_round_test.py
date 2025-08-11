@@ -90,14 +90,21 @@ def test_round_based_system():
     
     # Verify each agent sent exactly 3 messages
     agent_message_counts = {}
+    agent_id_counts = {}
     for msg in conv1_messages:
         agent_name = msg.get('agent_name', 'Unknown')
+        agent_id = msg.get('agent_id', 'Unknown')
         agent_message_counts[agent_name] = agent_message_counts.get(agent_name, 0) + 1
+        agent_id_counts[agent_id] = agent_id_counts.get(agent_id, 0) + 1
     
-    print("\nRound 1 Message Distribution:")
-    all_agents_correct = True
+    print("\nRound 1 Message Distribution by Name:")
     for agent_name, count in agent_message_counts.items():
         print(f"  - {agent_name}: {count} messages")
+    
+    print("\nRound 1 Message Distribution by Agent ID:")
+    all_agents_correct = True
+    for agent_id, count in agent_id_counts.items():
+        print(f"  - Agent ID {agent_id[:8]}...: {count} messages")
         if count != expected_messages_per_agent:
             print(f"    ❌ Expected {expected_messages_per_agent} messages")
             all_agents_correct = False
