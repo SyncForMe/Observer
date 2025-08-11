@@ -515,11 +515,11 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     
     // Smart refresh function (defined inside useEffect to avoid circular dependency)
     const smartRefresh = () => {
-      // MUCH SLOWER polling to prevent scroll disruption while reading
-      const interval = isRunning ? 30000 : 60000; // 30 seconds active, 60 seconds idle (was 8s/20s)
+      // EXTREMELY SLOW polling to prevent ANY scroll disruption while reading
+      const interval = isRunning ? 60000 : 120000; // 60 seconds active, 120 seconds idle (was 30s/60s)
       
-      // Only fetch if page is visible (performance optimization)
-      if (!document.hidden) {
+      // Only fetch if page is visible and user isn't actively scrolling
+      if (!document.hidden && !isUserScrolling()) {
         performFetch();
       }
       
