@@ -711,65 +711,68 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
-  // Optimized simulation control with optimistic updates
+  // Optimized simulation control with proper pause/resume and conversation preservation
   const playPauseSimulation = async () => {
-    console.log('🎯 Play button clicked - playPauseSimulation started');
+    console.log('🎯 Play/Pause button clicked - playPauseSimulation started');
     console.log('🎯 Current state:', { isRunning, isPaused, loading, agentsCount: agents.length });
     
     try {
       setLoading(true);
       
+      // Determine the correct endpoint based on current state
+      let endpoint;
+      let targetIsRunning;
+      let targetIsPaused;
+      
+      if (isRunning && !isPaused) {
+        // Currently running -> pause
+        endpoint = '/simulation/pause';
+        targetIsRunning = true;
+        targetIsPaused = true;
+      } else if (isRunning && isPaused) {
+        // Currently paused -> resume
+        endpoint = '/simulation/resume';
+        targetIsRunning = true;
+        targetIsPaused = false;
+      } else {
+        // Currently stopped -> start
+        endpoint = '/simulation/start';
+        targetIsRunning = true;
+        targetIsPaused = false;
+      }
+      
+      console.log(`🎯 Using endpoint: ${endpoint}`);
+      console.log(`🎯 Target state: running=${targetIsRunning}, paused=${targetIsPaused}`);
+      
       // Optimistic update: Update UI immediately for better perceived performance
-      const targetState = isRunning && !isPaused ? false : true;
-      setIsRunning(targetState);
+      setIsRunning(targetIsRunning);
+      setIsPaused(targetIsPaused);
       
-      const endpoint = isRunning && !isPaused ? '/simulation/pause' : '/simulation/start';
-      console.log('🎯 Calling endpoint:', endpoint);
-      
-      // Perform API call
+      // Make API call
       const response = await axios.post(`${API}${endpoint}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('🎯 API call successful, response:', response.data);
+      console.log(`✅ ${endpoint} successful:`, response.data);
       
-      // Update with actual server response
-      if (response.data) {
-        console.log('🎯 Play button response:', response.data);
-        
-        // Parse state from nested state object
-        const simState = response.data.state || response.data;
-        setIsRunning(simState.is_active || false);
-        setIsPaused(simState.is_paused || false);
-        
-        console.log('🎯 Parsed simulation state:', {
-          is_active: simState.is_active,
-          is_paused: simState.is_paused
-        });
-        
-        // Generate conversation whenever simulation becomes active (not paused)
-        if (simState.is_active && !simState.is_paused) {
-          console.log('🎯 Simulation is active, generating first conversation...');
-          // Generate first conversation immediately, then interval takes over
-          setTimeout(() => {
-            generateNewConversation();
-          }, 1000); // Small delay to ensure simulation state is updated
-        } else {
-          console.log('🎯 Simulation not active for conversation:', {
-            is_active: simState.is_active,
-            is_paused: simState.is_paused
-          });
-        }
+      // For resume operations, explicitly refresh conversations to ensure they're restored
+      if (endpoint === '/simulation/resume') {
+        console.log('🔄 Resuming - refreshing conversations to ensure data restoration');
+        setTimeout(() => {
+          fetchSimulationState();
+          fetchConversationsOnly();
+        }, 200);
+      } else if (endpoint === '/simulation/start') {
+        console.log('🔄 Starting - refreshing all simulation data');
+        setTimeout(() => fetchSimulationState(), 200);
       }
-      
-      // Debounced state fetch (only if needed)
-      setTimeout(() => fetchSimulationState(), 100);
       
     } catch (error) {
       console.error('❌ Error controlling simulation:', error);
       console.log('❌ Full error details:', error.response?.data || error.message);
       // Revert optimistic update on error
-      setIsRunning(!isRunning);
+      setIsRunning(isRunning);
+      setIsPaused(isPaused);
     } finally {
       setLoading(false);
       console.log('🎯 playPauseSimulation completed');
