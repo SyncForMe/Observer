@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
 Time Progression Investigation Test
-Debugging why frontend shows "Day 1, Morning" despite having 11 messages
+Investigating why user reports "Day 1, Afternoon" with 27 messages when they should be in "Day 1, Morning"
+According to simplified system:
+- Each agent sends 9 messages per time period
+- With 3 agents = 27 total messages per time period
+- Time progression should be:
+  - Day 1 Morning: Messages 1-27
+  - Day 1 Afternoon: Messages 28-54
+  - Day 1 Evening: Messages 55-81
 """
 
 import requests
