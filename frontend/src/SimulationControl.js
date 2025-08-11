@@ -2030,17 +2030,20 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
         <div className="lg:col-span-1">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-bold text-white">🎛️ Control Desk</h3>
-              
+            </div>
+            
+            {/* Statistics Counters Row */}
+            <div className="flex items-center justify-center space-x-3 mb-6">
               {/* Message Count Display */}
-              <div className="flex items-center space-x-2">
-                <div className="bg-white/5 rounded-lg px-3 py-1.5 border border-white/10 hover:bg-white/10 transition-colors group relative">
-                  <div className="flex items-center space-x-1.5">
-                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <span className="text-white/70 text-sm font-medium">
+              <div className="bg-white/5 rounded-lg px-3 py-2 border border-white/10 hover:bg-white/10 transition-colors group relative flex-1">
+                <div className="flex items-center justify-center space-x-1.5">
+                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <div className="text-center">
+                    <div className="text-white/70 text-sm font-medium">
                       {(() => {
                         // Calculate total messages across all conversations
                         const totalMessages = Array.isArray(conversations) ? 
@@ -2051,53 +2054,133 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                             return total + agentMessages.length;
                           }, 0) : 0;
                         
-                        return `${totalMessages}`;
+                        return totalMessages;
                       })()}
-                    </span>
-                    <span className="text-white/50 text-xs">msgs</span>
+                    </div>
+                    <div className="text-white/50 text-xs">messages</div>
                   </div>
-                  
-                  {/* Tooltip on hover */}
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-                    <div className="text-white/80 text-xs space-y-1">
-                      <div className="font-medium text-white mb-1">Message Breakdown:</div>
-                      <div>Total Conversations: {Array.isArray(conversations) ? conversations.length : 0}</div>
-                      <div>
-                        Agent Messages: {(() => {
-                          const totalMessages = Array.isArray(conversations) ? 
-                            conversations.reduce((total, conv) => {
-                              const messages = conv.messages || [];
-                              const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
-                              return total + agentMessages.length;
-                            }, 0) : 0;
-                          return totalMessages;
-                        })()}
-                      </div>
-                      <div>
-                        Observer Messages: {(() => {
-                          const observerMessages = Array.isArray(conversations) ? 
-                            conversations.reduce((total, conv) => {
-                              const messages = conv.messages || [];
-                              const observerMsgs = messages.filter(msg => msg.agent_id === "observer");
-                              return total + observerMsgs.length;
-                            }, 0) : 0;
-                          return observerMessages;
-                        })()}
-                      </div>
-                      <div className="text-blue-400 mt-1">
-                        Time Progress: {(() => {
-                          const agentCount = Array.isArray(agents) ? agents.length : 3;
-                          const totalMessages = Array.isArray(conversations) ? 
-                            conversations.reduce((total, conv) => {
-                              const messages = conv.messages || [];
-                              const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
-                              return total + agentMessages.length;
-                            }, 0) : 0;
-                          const messagesPerPeriod = agentCount * 9;
-                          const progress = Math.min(100, (totalMessages % messagesPerPeriod) / messagesPerPeriod * 100);
-                          return `${Math.round(progress)}%`;
-                        })()}
-                      </div>
+                </div>
+                
+                {/* Tooltip on hover */}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                  <div className="text-white/80 text-xs space-y-1">
+                    <div className="font-medium text-white mb-1">Message Breakdown:</div>
+                    <div>Total Conversations: {Array.isArray(conversations) ? conversations.length : 0}</div>
+                    <div>
+                      Agent Messages: {(() => {
+                        const totalMessages = Array.isArray(conversations) ? 
+                          conversations.reduce((total, conv) => {
+                            const messages = conv.messages || [];
+                            const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
+                            return total + agentMessages.length;
+                          }, 0) : 0;
+                        return totalMessages;
+                      })()}
+                    </div>
+                    <div>
+                      Observer Messages: {(() => {
+                        const observerMessages = Array.isArray(conversations) ? 
+                          conversations.reduce((total, conv) => {
+                            const messages = conv.messages || [];
+                            const observerMsgs = messages.filter(msg => msg.agent_id === "observer");
+                            return total + observerMsgs.length;
+                          }, 0) : 0;
+                        return observerMessages;
+                      })()}
+                    </div>
+                    <div className="text-blue-400 mt-1">
+                      Time Progress: {(() => {
+                        const agentCount = Array.isArray(agents) ? agents.length : 3;
+                        const totalMessages = Array.isArray(conversations) ? 
+                          conversations.reduce((total, conv) => {
+                            const messages = conv.messages || [];
+                            const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
+                            return total + agentMessages.length;
+                          }, 0) : 0;
+                        const messagesPerPeriod = agentCount * 9;
+                        const progress = Math.min(100, (totalMessages % messagesPerPeriod) / messagesPerPeriod * 100);
+                        return `${Math.round(progress)}%`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Agent Count Display */}
+              <div className="bg-white/5 rounded-lg px-3 py-2 border border-white/10 hover:bg-white/10 transition-colors group relative flex-1">
+                <div className="flex items-center justify-center space-x-1.5">
+                  <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <div className="text-center">
+                    <div className="text-white/70 text-sm font-medium">
+                      {Array.isArray(agents) ? agents.length : 0}
+                    </div>
+                    <div className="text-white/50 text-xs">agents</div>
+                  </div>
+                </div>
+                
+                {/* Tooltip on hover */}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                  <div className="text-white/80 text-xs space-y-1">
+                    <div className="font-medium text-white mb-1">Agent Breakdown:</div>
+                    <div>Active Agents: {Array.isArray(agents) ? agents.length : 0}</div>
+                    <div>
+                      Favorite Agents: {(() => {
+                        const favoriteCount = Array.isArray(agents) ? 
+                          agents.filter(agent => agent.is_favorite).length : 0;
+                        return favoriteCount;
+                      })()}
+                    </div>
+                    <div className="text-green-400 mt-1">
+                      Messages per Period: {(() => {
+                        const agentCount = Array.isArray(agents) ? agents.length : 0;
+                        return agentCount * 9;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Report Count Display */}
+              <div className="bg-white/5 rounded-lg px-3 py-2 border border-white/10 hover:bg-white/10 transition-colors group relative flex-1">
+                <div className="flex items-center justify-center space-x-1.5">
+                  <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <div className="text-center">
+                    <div className="text-white/70 text-sm font-medium">
+                      {(() => {
+                        // Count reports from simulationData
+                        const reportCount = simulationData?.reports ? simulationData.reports.length : 0;
+                        return reportCount;
+                      })()}
+                    </div>
+                    <div className="text-white/50 text-xs">reports</div>
+                  </div>
+                </div>
+                
+                {/* Tooltip on hover */}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                  <div className="text-white/80 text-xs space-y-1">
+                    <div className="font-medium text-white mb-1">Report Breakdown:</div>
+                    <div>Generated Reports: {(() => {
+                      const reportCount = simulationData?.reports ? simulationData.reports.length : 0;
+                      return reportCount;
+                    })()}</div>
+                    <div>
+                      Latest Report: {(() => {
+                        const reports = simulationData?.reports || [];
+                        if (reports.length > 0) {
+                          const latest = reports[reports.length - 1];
+                          const date = new Date(latest.created_at || latest.timestamp);
+                          return date.toLocaleDateString();
+                        }
+                        return "None";
+                      })()}
+                    </div>
+                    <div className="text-purple-400 mt-1">
+                      Available: {Array.isArray(conversations) && conversations.length > 0 ? "Yes" : "No"}
                     </div>
                   </div>
                 </div>
