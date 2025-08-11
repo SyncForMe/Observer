@@ -1607,6 +1607,352 @@ def test_default_agents_removal():
     
     return True, "Default agents removal is working correctly"
 
+def test_comprehensive_round_based_system():
+    """Test the comprehensive round-based system fix as requested in review"""
+    print("\n" + "="*80)
+    print("COMPREHENSIVE ROUND-BASED SYSTEM TESTING")
+    print("Testing the new round-based system that should correctly:")
+    print("1. Round Numbering: Based on actual message cycles (total_messages ÷ (agent_count × 3))")
+    print("2. Time Advancement: Only after 3 completed rounds, not after each conversation")
+    print("3. Message Generation: Each conversation should generate agent_count × 3 messages consistently")
+    print("4. Time Periods: Each time period (Morning/Afternoon/Evening) should last exactly 3 rounds")
+    print("="*80)
+    
+    # Login first to get auth token
+    global auth_token, test_user_id
+    if not auth_token:
+        if not test_login():
+            print("❌ Cannot test round-based system without authentication")
+            return False, "Authentication failed"
+    
+    # Step 1: Get current state and analyze
+    print("\nStep 1: Getting current state and analyzing round/time calculation logic")
+    
+    # Get simulation state
+    state_test, state_response = run_test(
+        "Get Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True
+    )
+    
+    if not state_test or not state_response:
+        print("❌ Failed to get simulation state")
+        return False, "Failed to get simulation state"
+    
+    current_day = state_response.get('current_day', 1)
+    current_time_period = state_response.get('current_time_period', 'morning')
+    print(f"Current simulation state: Day {current_day}, {current_time_period}")
+    
+    # Get agents to determine agent count
+    agents_test, agents_response = run_test(
+        "Get Agents",
+        "/agents",
+        method="GET",
+        auth=True
+    )
+    
+    if not agents_test or not agents_response:
+        print("❌ Failed to get agents")
+        return False, "Failed to get agents"
+    
+    agent_count = len(agents_response)
+    print(f"Agent count: {agent_count}")
+    
+    if agent_count == 0:
+        print("⚠️ No agents found. Creating test agents for round-based system testing...")
+        # Initialize research station to get agents
+        init_test, init_response = run_test(
+            "Initialize Research Station",
+            "/simulation/init-research-station",
+            method="POST",
+            auth=True
+        )
+        
+        if init_test:
+            # Get agents again
+            agents_test, agents_response = run_test(
+                "Get Agents After Init",
+                "/agents",
+                method="GET",
+                auth=True
+            )
+            agent_count = len(agents_response) if agents_response else 0
+            print(f"Agent count after initialization: {agent_count}")
+        
+        if agent_count == 0:
+            print("❌ Still no agents available for testing")
+            return False, "No agents available for testing"
+    
+    # Get all conversations to analyze current message distribution
+    conversations_test, conversations_response = run_test(
+        "Get All Conversations",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not conversations_test:
+        print("❌ Failed to get conversations")
+        return False, "Failed to get conversations"
+    
+    conversations_response = conversations_response or []
+    total_conversations = len(conversations_response)
+    total_messages = 0
+    
+    print(f"\nCurrent conversation analysis:")
+    print(f"Total conversations: {total_conversations}")
+    
+    # Analyze message distribution
+    for i, conv in enumerate(conversations_response):
+        messages = conv.get('messages', [])
+        message_count = len(messages)
+        total_messages += message_count
+        round_number = conv.get('round_number', 'Unknown')
+        time_period = conv.get('time_period', 'Unknown')
+        print(f"Conversation {i+1}: Round {round_number}, {time_period}, {message_count} messages")
+    
+    print(f"Total messages across all conversations: {total_messages}")
+    
+    # Calculate expected round number based on new system
+    # Round number = (total_messages ÷ (agent_count × 3)) + 1
+    if agent_count > 0:
+        expected_round_number = (total_messages // (agent_count * 3)) + 1
+        messages_in_current_round = total_messages % (agent_count * 3)
+        print(f"\nRound calculation analysis:")
+        print(f"Formula: (total_messages ÷ (agent_count × 3)) + 1")
+        print(f"Calculation: ({total_messages} ÷ ({agent_count} × 3)) + 1 = {expected_round_number}")
+        print(f"Messages in current round: {messages_in_current_round}")
+        
+        # Calculate expected time period based on completed rounds
+        # Time advances after 3 completed rounds
+        completed_rounds = expected_round_number - 1 if messages_in_current_round > 0 else expected_round_number
+        time_advancement_cycles = completed_rounds // 3
+        expected_time_period_index = time_advancement_cycles % 3  # 0=morning, 1=afternoon, 2=evening
+        time_periods = ['morning', 'afternoon', 'evening']
+        expected_time_period = time_periods[expected_time_period_index]
+        expected_day = (time_advancement_cycles // 3) + 1
+        
+        print(f"\nTime progression analysis:")
+        print(f"Completed rounds: {completed_rounds}")
+        print(f"Time advancement cycles (completed_rounds ÷ 3): {time_advancement_cycles}")
+        print(f"Expected time period: {expected_time_period}")
+        print(f"Expected day: {expected_day}")
+    else:
+        expected_round_number = 1
+        expected_time_period = 'morning'
+        expected_day = 1
+    
+    # Step 2: Generate a new conversation and verify message generation
+    print(f"\nStep 2: Generating new conversation to test message generation consistency")
+    print(f"Expected: Should generate {agent_count} × 3 = {agent_count * 3} messages")
+    
+    # Record state before conversation generation
+    messages_before = total_messages
+    
+    # Generate conversation
+    generate_test, generate_response = run_test(
+        "Generate New Conversation",
+        "/conversation/generate",
+        method="POST",
+        auth=True,
+        measure_time=True
+    )
+    
+    if not generate_test or not generate_response:
+        print("❌ Failed to generate new conversation")
+        return False, "Failed to generate new conversation"
+    
+    print("✅ Successfully generated new conversation")
+    
+    # Get conversations again to analyze the new conversation
+    conversations_after_test, conversations_after_response = run_test(
+        "Get Conversations After Generation",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not conversations_after_test:
+        print("❌ Failed to get conversations after generation")
+        return False, "Failed to get conversations after generation"
+    
+    conversations_after_response = conversations_after_response or []
+    new_total_conversations = len(conversations_after_response)
+    new_total_messages = 0
+    
+    # Find the new conversation (should be the last one)
+    new_conversation = None
+    if new_total_conversations > total_conversations:
+        new_conversation = conversations_after_response[-1]  # Last conversation should be newest
+        new_messages = new_conversation.get('messages', [])
+        new_message_count = len(new_messages)
+        
+        print(f"\nNew conversation analysis:")
+        print(f"Messages in new conversation: {new_message_count}")
+        print(f"Expected messages: {agent_count * 3}")
+        
+        # Verify message generation consistency
+        if new_message_count == agent_count * 3:
+            print("✅ Message generation is consistent with expected formula (agent_count × 3)")
+            message_generation_correct = True
+        else:
+            print(f"❌ Message generation inconsistent. Expected {agent_count * 3}, got {new_message_count}")
+            message_generation_correct = False
+        
+        # Analyze message distribution by agent
+        agent_message_counts = {}
+        for msg in new_messages:
+            agent_name = msg.get('agent_name', 'Unknown')
+            agent_message_counts[agent_name] = agent_message_counts.get(agent_name, 0) + 1
+        
+        print(f"Message distribution by agent:")
+        for agent_name, count in agent_message_counts.items():
+            print(f"  - {agent_name}: {count} messages")
+        
+        # Check if each agent sent exactly 3 messages
+        expected_messages_per_agent = 3
+        agent_distribution_correct = all(count == expected_messages_per_agent for count in agent_message_counts.values())
+        
+        if agent_distribution_correct:
+            print("✅ Each agent sent exactly 3 messages as expected")
+        else:
+            print("❌ Agent message distribution is not consistent (each should send 3 messages)")
+    else:
+        print("❌ No new conversation was created")
+        message_generation_correct = False
+        agent_distribution_correct = False
+    
+    # Calculate total messages after generation
+    for conv in conversations_after_response:
+        messages = conv.get('messages', [])
+        new_total_messages += len(messages)
+    
+    print(f"\nTotal messages after generation: {new_total_messages}")
+    print(f"Messages added: {new_total_messages - messages_before}")
+    
+    # Step 3: Verify round number calculation
+    print(f"\nStep 3: Verifying round number calculation based on message cycles")
+    
+    # Calculate new expected round number
+    new_expected_round_number = (new_total_messages // (agent_count * 3)) + 1
+    new_messages_in_current_round = new_total_messages % (agent_count * 3)
+    
+    print(f"New round calculation:")
+    print(f"Formula: (total_messages ÷ (agent_count × 3)) + 1")
+    print(f"Calculation: ({new_total_messages} ÷ ({agent_count} × 3)) + 1 = {new_expected_round_number}")
+    print(f"Messages in current round: {new_messages_in_current_round}")
+    
+    # Check if the new conversation has the correct round number
+    if new_conversation:
+        actual_round_number = new_conversation.get('round_number', 'Unknown')
+        print(f"Actual round number in new conversation: {actual_round_number}")
+        print(f"Expected round number: {new_expected_round_number}")
+        
+        if actual_round_number == new_expected_round_number:
+            print("✅ Round numbering is correct based on message cycles")
+            round_numbering_correct = True
+        else:
+            print(f"❌ Round numbering incorrect. Expected {new_expected_round_number}, got {actual_round_number}")
+            round_numbering_correct = False
+    else:
+        round_numbering_correct = False
+    
+    # Step 4: Verify time advancement logic
+    print(f"\nStep 4: Verifying time advancement logic (only after 3 completed rounds)")
+    
+    # Get updated simulation state
+    new_state_test, new_state_response = run_test(
+        "Get Updated Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True
+    )
+    
+    if new_state_test and new_state_response:
+        new_current_day = new_state_response.get('current_day', 1)
+        new_current_time_period = new_state_response.get('current_time_period', 'morning')
+        print(f"Updated simulation state: Day {new_current_day}, {new_current_time_period}")
+        
+        # Calculate expected time progression
+        new_completed_rounds = new_expected_round_number - 1 if new_messages_in_current_round > 0 else new_expected_round_number
+        new_time_advancement_cycles = new_completed_rounds // 3
+        new_expected_time_period_index = new_time_advancement_cycles % 3
+        time_periods = ['morning', 'afternoon', 'evening']
+        new_expected_time_period = time_periods[new_expected_time_period_index]
+        new_expected_day = (new_time_advancement_cycles // 3) + 1
+        
+        print(f"Time advancement calculation:")
+        print(f"Completed rounds: {new_completed_rounds}")
+        print(f"Time advancement cycles (completed_rounds ÷ 3): {new_time_advancement_cycles}")
+        print(f"Expected time period: {new_expected_time_period}")
+        print(f"Expected day: {new_expected_day}")
+        print(f"Actual time period: {new_current_time_period}")
+        print(f"Actual day: {new_current_day}")
+        
+        # Check time advancement
+        time_period_correct = new_current_time_period == new_expected_time_period
+        day_correct = new_current_day == new_expected_day
+        
+        if time_period_correct and day_correct:
+            print("✅ Time advancement is correct (only advances after 3 completed rounds)")
+            time_advancement_correct = True
+        else:
+            print(f"❌ Time advancement incorrect.")
+            if not time_period_correct:
+                print(f"   Time period: Expected {new_expected_time_period}, got {new_current_time_period}")
+            if not day_correct:
+                print(f"   Day: Expected {new_expected_day}, got {new_current_day}")
+            time_advancement_correct = False
+    else:
+        print("❌ Failed to get updated simulation state")
+        time_advancement_correct = False
+    
+    # Step 5: Summary and assessment
+    print(f"\nStep 5: Comprehensive Round-Based System Assessment")
+    
+    # Count successful tests
+    tests_passed = 0
+    total_tests = 4
+    
+    test_results = {
+        "Message Generation Consistency": message_generation_correct,
+        "Agent Distribution (3 messages each)": agent_distribution_correct,
+        "Round Numbering Logic": round_numbering_correct,
+        "Time Advancement Logic": time_advancement_correct
+    }
+    
+    print(f"\nTest Results Summary:")
+    for test_name, passed in test_results.items():
+        status = "✅ PASSED" if passed else "❌ FAILED"
+        print(f"  {test_name}: {status}")
+        if passed:
+            tests_passed += 1
+    
+    print(f"\nOverall Results: {tests_passed}/{total_tests} tests passed ({(tests_passed/total_tests)*100:.1f}%)")
+    
+    # Determine if the comprehensive fix is working
+    if tests_passed == total_tests:
+        print("\n🎉 COMPREHENSIVE ROUND-BASED SYSTEM FIX IS WORKING PERFECTLY!")
+        print("✅ All 4 reported issues have been resolved:")
+        print("   1. Round numbering is based on actual message cycles")
+        print("   2. Time advancement only occurs after 3 completed rounds")
+        print("   3. Message generation is consistent (agent_count × 3)")
+        print("   4. Time periods last exactly 3 rounds as expected")
+        return True, "Comprehensive round-based system fix is working perfectly"
+    elif tests_passed >= 3:
+        print("\n⚠️ ROUND-BASED SYSTEM IS MOSTLY WORKING")
+        print(f"✅ {tests_passed}/4 components are working correctly")
+        failed_tests = [name for name, passed in test_results.items() if not passed]
+        print(f"❌ Issues remaining: {', '.join(failed_tests)}")
+        return False, f"Round-based system mostly working, issues with: {', '.join(failed_tests)}"
+    else:
+        print("\n❌ ROUND-BASED SYSTEM HAS SIGNIFICANT ISSUES")
+        print(f"❌ Only {tests_passed}/4 components are working correctly")
+        failed_tests = [name for name, passed in test_results.items() if not passed]
+        print(f"❌ Major issues with: {', '.join(failed_tests)}")
+        return False, f"Round-based system has major issues with: {', '.join(failed_tests)}"
+
 def test_time_progression_investigation():
     """Investigate the time progression issue reported by user"""
     print("\n" + "="*80)
