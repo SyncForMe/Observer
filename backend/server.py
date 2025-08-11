@@ -6324,60 +6324,51 @@ Continue building on the progress above. The team should advance the solutions a
                 )
                 messages.append(message)
     
-    print(f"✅ Generated {len(messages)} total messages ({len(messages)}/{len(agent_objects) * 3} target messages)")
-    print(f"🎯 ROUND COMPLETION: Each agent contributed {len(messages) // len(agent_objects) if agent_objects else 0} messages")
+    print(f"✅ Generated {len(messages)} total messages")
     
-    # Calculate ACTUAL round number based on total completed rounds across all conversations
+    # SIMPLIFIED SYSTEM: Remove all round calculations
+    # Just get a simple conversation count for reference
+    conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
+    conversation_number = conversation_count + 1
+    
+    # Calculate day and time period based on TOTAL MESSAGES (simplified)
     all_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", 1).to_list(None)
     total_messages_before_this = sum(len(conv.get("messages", [])) for conv in all_conversations)
-    
-    # Add messages from this conversation
     total_messages_including_this = total_messages_before_this + len(messages)
     
-    # Calculate round number based on message cycles (not conversation count)
-    messages_per_round = len(agent_objects) * 3
-    current_round_number = (total_messages_including_this - 1) // messages_per_round + 1
+    # Simple time calculation: 9 messages per agent per time period
+    agent_count = len(agent_objects)
+    messages_per_time_period = agent_count * 9  # Each agent sends 9 messages per time period
+    time_period_number = total_messages_including_this // messages_per_time_period
     
-    print(f"🎯 ROUND CALCULATION:")
+    # Determine time period
+    time_periods = ["Morning", "Afternoon", "Evening"]
+    period_index = time_period_number % 3
+    day_number = (time_period_number // 3) + 1
+    time_period = time_periods[period_index]
+    
+    time_period_display = f"Day {day_number} - {time_period}"
+    
+    print(f"🎯 SIMPLIFIED TIME CALCULATION:")
     print(f"  - Total messages (including this): {total_messages_including_this}")
-    print(f"  - Messages per round: {messages_per_round}")
-    print(f"  - Calculated round number: {current_round_number}")
+    print(f"  - Messages per time period: {messages_per_time_period}")
+    print(f"  - Time period: {time_period_display}")
     
-    # Calculate day and time period based on ACTUAL round progression (3 rounds per time period)
-    def calculate_day_and_time_period_correct(round_num):
-        if round_num <= 0:
-            return "Day 1 - Morning"
-        
-        # Each time period = 3 rounds, Each day = 9 rounds
-        day = ((round_num - 1) // 9) + 1
-        round_in_day = ((round_num - 1) % 9) + 1
-        
-        if round_in_day <= 3:
-            period = "Morning"
-        elif round_in_day <= 6:
-            period = "Afternoon"
-        else:
-            period = "Evening"
-        
-        return f"Day {day} - {period}"
-    
-    time_period = calculate_day_and_time_period_correct(current_round_number)
-    
-    # Create conversation round  
+    # Create conversation round (without complex round numbers)
     conversation_round = ConversationRound(
-        round_number=current_round_number,
-        time_period=time_period,
+        round_number=conversation_number,  # Simple conversation counter
+        time_period=time_period_display,
         scenario=scenario,
         scenario_name=scenario_name,
         messages=messages,
-        user_id=current_user.id  # Associate with current user
+        user_id=current_user.id
     )
     
     # Save conversation
     await db.conversations.insert_one(conversation_round.dict())
     
     # Sync simulation state with conversation time progression
-    await sync_simulation_state_time(current_user.id, current_round_number)
+    await sync_simulation_state_time(current_user.id, conversation_number)
     
     # Check for automatic time advancement after saving conversation
     await check_and_advance_time_automatically(current_user.id)
