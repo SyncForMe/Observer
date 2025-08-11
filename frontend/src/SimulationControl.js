@@ -1245,32 +1245,53 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
 
   // Fetch conversations only (for immediate refresh after observer messages)
   const fetchConversationsOnly = async () => {
+    // Prevent concurrent conversation updates that cause message jumping
+    if (conversationUpdateRef.current) {
+      console.log('🔒 Conversation update in progress, skipping duplicate request');
+      return;
+    }
+    
     try {
+      conversationUpdateRef.current = true;
+      
       // Store scroll position before DOM update
       const conversationContainer = document.querySelector('[data-conversation-container="true"]');
       const scrollTop = conversationContainer ? conversationContainer.scrollTop : 0;
+      const scrollLeft = conversationContainer ? conversationContainer.scrollLeft : 0;
 
       const conversationsResponse = await axios.get(`${API}/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Update via global context
+      // Update via global context - with validation to prevent corrupted data
+      const conversationsData = conversationsResponse.data || [];
+      console.log('🔄 fetchConversationsOnly: Updating conversations', conversationsData.length);
+      
       updateSimulationData({
-        conversations: conversationsResponse.data || []
+        conversations: conversationsData
       });
       
       // Restore scroll position after DOM update
-      setTimeout(() => {
+      // Use multiple attempts with increasing delays for maximum reliability
+      const restoreScrollPosition = () => {
         const conversationContainer = document.querySelector('[data-conversation-container="true"]');
-        if (conversationContainer && scrollTop > 0) {
+        if (conversationContainer && (scrollTop > 0 || scrollLeft > 0)) {
           conversationContainer.scrollTop = scrollTop;
-          console.log('🔒 Restored scroll position to:', scrollTop);
+          conversationContainer.scrollLeft = scrollLeft;
+          console.log('🔒 Polling: Restored scroll position to:', scrollTop, scrollLeft);
         }
-      }, 200); // Increased delay for better reliability
+      };
       
-      console.log('✅ Conversations refreshed - Count:', conversationsResponse.data?.length || 0);
+      // Multiple restoration attempts for maximum reliability
+      setTimeout(restoreScrollPosition, 100);
+      setTimeout(restoreScrollPosition, 300);
+      setTimeout(restoreScrollPosition, 500);
+      
+      console.log('✅ Conversations refreshed - Count:', conversationsData.length);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+    } finally {
+      conversationUpdateRef.current = false;
     }
   };
 
