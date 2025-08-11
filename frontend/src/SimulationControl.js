@@ -498,13 +498,20 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         });
         
         // Restore scroll position after DOM update to prevent reading interruption
-        setTimeout(() => {
+        // Use multiple attempts with increasing delays for maximum reliability
+        const restoreScrollPosition = () => {
           const conversationContainer = document.querySelector('[data-conversation-container="true"]');
-          if (conversationContainer && scrollTop > 0) {
+          if (conversationContainer && (scrollTop > 0 || scrollLeft > 0)) {
             conversationContainer.scrollTop = scrollTop;
-            console.log('🔒 Polling: Restored scroll position to:', scrollTop);
+            conversationContainer.scrollLeft = scrollLeft;
+            console.log('🔒 Polling: Restored scroll position to:', scrollTop, scrollLeft);
           }
-        }, 200); // Increased delay to ensure React has finished re-rendering
+        };
+        
+        // Multiple restoration attempts for maximum reliability
+        setTimeout(restoreScrollPosition, 100);
+        setTimeout(restoreScrollPosition, 300);
+        setTimeout(restoreScrollPosition, 500);
         
         console.log('✅ Optimized fetch completed - Agents:', agentsResponse.data.length, 'Conversations:', conversationsResponse.data?.length || 0);
         
