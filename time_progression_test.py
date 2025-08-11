@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Comprehensive Time Progression System Testing
+Time Progression Fix Testing Script
 
-This test focuses on the fixed automatic time progression system:
-1. Time Advancement Triggers: Test that time advances every 8 messages (improved from 12)
-2. Progression Sequence: Verify Day 1 Morning → Day 1 Afternoon → Day 1 Evening → Day 2 Morning → Day 2 Afternoon
-3. State Persistence: Ensure simulation state actually updates and persists
-4. Conversation Integration: Check that conversation metadata reflects time changes
-5. Debug Logging: Look for the detailed debug logs added to understand what's happening
+This script tests the time progression fix that was just implemented.
+It verifies that:
+1. Guest login works
+2. Conversation generation advances time correctly every 3 conversations
+3. Simulation state reflects the correct current_time_period
+4. Individual conversations have proper time_period metadata
+5. Time progresses: morning → afternoon → evening → next day morning
 """
 
 import requests
