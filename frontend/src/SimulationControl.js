@@ -631,6 +631,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       const isAtBottom = Math.abs((scrollTop + clientHeight) - scrollHeight) <= 10;
       
       scrollPositionRef.current = { top: scrollTop, isAtBottom };
+      lastScrollTimeRef.current = Date.now(); // Record when user scrolled
+      
       // Note: We track position but take NO automatic scroll actions
     };
     
