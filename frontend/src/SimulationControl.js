@@ -2151,7 +2151,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       return reportCount;
                     })()}
                   </span>
-                  <span className="text-white/50 text-xs">rpts</span>
+                  <span className="text-white/50 text-xs">rep</span>
                 </div>
                 
                 {/* Tooltip on hover */}
