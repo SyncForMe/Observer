@@ -1224,25 +1224,26 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const fetchConversationsOnly = async () => {
     try {
       // Store scroll position before DOM update
-      const conversationContainer = document.querySelector('.flex-1.overflow-y-auto');
+      const conversationContainer = document.querySelector('[data-conversation-container="true"]');
       const scrollTop = conversationContainer ? conversationContainer.scrollTop : 0;
 
       const conversationsResponse = await axios.get(`${API}/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Update only conversations in global state
+      // Update via global context
       updateSimulationData({
         conversations: conversationsResponse.data || []
       });
       
       // Restore scroll position after DOM update
       setTimeout(() => {
+        const conversationContainer = document.querySelector('[data-conversation-container="true"]');
         if (conversationContainer && scrollTop > 0) {
           conversationContainer.scrollTop = scrollTop;
           console.log('🔒 Restored scroll position to:', scrollTop);
         }
-      }, 50);
+      }, 200); // Increased delay for better reliability
       
       console.log('✅ Conversations refreshed - Count:', conversationsResponse.data?.length || 0);
     } catch (error) {
