@@ -916,7 +916,9 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       // Reset loading state immediately after receiving response
       setConversationLoading(false);
       
-      // Note: Smart refresh will pick up state changes automatically, no need for immediate fetch
+      // IMMEDIATE refresh of simulation state to update time display
+      console.log(`${logPrefix} - Refreshing simulation state to update time display...`);
+      setTimeout(() => fetchSimulationState(), 500); // Immediate refresh after conversation
     } catch (error) {
       console.error('Error generating conversation:', error);
       setConversationLoading(false);
