@@ -485,6 +485,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         // Use more specific selector for Live Conversations section only
         const conversationContainer = document.querySelector('[data-conversation-container="true"]');
         const scrollTop = conversationContainer ? conversationContainer.scrollTop : 0;
+        const scrollLeft = conversationContainer ? conversationContainer.scrollLeft : 0;
 
         // Update global simulation data
         updateSimulationData({
