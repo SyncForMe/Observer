@@ -4961,85 +4961,90 @@ async def sync_simulation_state_time(user_id: str, round_number: int):
         return False
 
 async def check_and_advance_time_automatically(user_id: str):
-    """Check if time should advance automatically based on round completion (agent message cycles)"""
+    """Check if time should advance automatically based on COMPLETED ROUNDS (not individual conversations)"""
     try:
         # Get current simulation state
         state = await db.simulation_state.find_one({"user_id": user_id})
         if not state or not state.get("is_active", False):
             return False
         
-        # Get total conversation count for this user
-        conversation_count = await db.conversations.count_documents({"user_id": user_id})
+        # Get ALL conversations for this user to calculate total completed rounds
+        all_conversations = await db.conversations.find({"user_id": user_id}).sort("created_at", 1).to_list(None)
         
-        if conversation_count == 0:
+        if not all_conversations:
             return False
         
-        # NEW ROUND SYSTEM: Each round = each agent sends 3 messages
-        # Time advances after each round (not every 3 conversations)
-        # Each time period (Morning/Afternoon/Evening) = 3 rounds
+        # Calculate total messages across all conversations
+        total_messages = 0
+        agent_count = 0
         
-        # Get the latest conversation to check if it's a completed round
-        latest_conversation = await db.conversations.find_one(
-            {"user_id": user_id}, 
-            sort=[("created_at", -1)]
-        )
+        # Get agent count from the latest conversation
+        if all_conversations:
+            latest_conversation = all_conversations[-1]
+            messages = latest_conversation.get("messages", [])
+            unique_agents = set()
+            for msg in messages:
+                if msg.get("agent_name"):
+                    unique_agents.add(msg.get("agent_name"))
+            agent_count = len(unique_agents)
         
-        if not latest_conversation:
+        # Count total messages across all conversations
+        for conv in all_conversations:
+            total_messages += len(conv.get("messages", []))
+        
+        if agent_count == 0:
+            print("🚨 No agents found in conversations")
             return False
         
-        messages = latest_conversation.get("messages", [])
+        # ROUND-BASED CALCULATION: Each round = agent_count × 3 messages
+        messages_per_round = agent_count * 3
+        completed_rounds = total_messages // messages_per_round
+        remaining_messages = total_messages % messages_per_round
         
-        # Count unique agents in the latest conversation
-        unique_agents = set()
-        for msg in messages:
-            if msg.get("agent_name"):
-                unique_agents.add(msg.get("agent_name"))
+        print(f"🎯 ROUND ANALYSIS: {total_messages} total messages, {agent_count} agents")
+        print(f"🎯 ROUNDS: {completed_rounds} completed, {remaining_messages} messages in current round")
+        print(f"🎯 MESSAGES PER ROUND: {messages_per_round}")
         
-        agent_count = len(unique_agents)
-        expected_messages_per_round = agent_count * 3  # 3 messages per agent
+        # Time should advance every 3 completed rounds
+        current_period = state["current_time_period"]
+        current_day = state.get("current_day", 1)
+        last_time_advance_completed_rounds = state.get("last_time_advance_completed_rounds", 0)
         
-        print(f"🎯 ROUND CHECK: {len(messages)} messages, {agent_count} agents, expected {expected_messages_per_round} per round")
+        # Check if we have 3 more completed rounds since last advancement
+        rounds_since_last_advance = completed_rounds - last_time_advance_completed_rounds
         
-        # Check if this conversation completes a round (each agent sent 3 messages)
-        if len(messages) >= expected_messages_per_round:
-            # Check if we haven't advanced time for this round yet
-            last_time_advance_round = state.get("last_time_advance_round", 0)
+        if rounds_since_last_advance >= 3:
+            print(f"🕐 TIME ADVANCE TRIGGER: {rounds_since_last_advance} rounds completed since last advance")
+            print(f"🕐 BEFORE: Day {current_day} {current_period}")
             
-            if conversation_count > last_time_advance_round:
-                print(f"🕐 ROUND COMPLETION DETECTED: Round {conversation_count} complete with {len(messages)} messages")
-                
-                # Advance time after each completed round
-                current_period = state["current_time_period"]
-                current_day = state.get("current_day", 1)
-                
-                print(f"🕐 BEFORE: Day {current_day} {current_period}")
-                
-                if current_period == "morning":
-                    new_period = "afternoon"
-                elif current_period == "afternoon":
-                    new_period = "evening"
-                else:  # evening
-                    new_period = "morning"
-                    # Advance day
-                    await db.simulation_state.update_one(
-                        {"user_id": user_id},
-                        {"$inc": {"current_day": 1}}
-                    )
-                    current_day += 1
-                
-                # Update simulation state with new time and track advancement
+            if current_period == "morning":
+                new_period = "afternoon"
+            elif current_period == "afternoon":
+                new_period = "evening"
+            else:  # evening
+                new_period = "morning"
+                # Advance day
                 await db.simulation_state.update_one(
                     {"user_id": user_id},
-                    {"$set": {
-                        "current_time_period": new_period,
-                        "last_time_advance_round": conversation_count
-                    }}
+                    {"$inc": {"current_day": 1}}
                 )
-                
-                print(f"🕐 AFTER: Day {current_day} {new_period}")
-                print(f"🕐 ROUND-BASED TIME ADVANCE: {user_id} - Day {current_day} {new_period.title()} (after Round {conversation_count})")
-                
-                return True
+                current_day += 1
+            
+            # Update simulation state with new time and track advancement
+            await db.simulation_state.update_one(
+                {"user_id": user_id},
+                {"$set": {
+                    "current_time_period": new_period,
+                    "last_time_advance_completed_rounds": completed_rounds  # Track by completed rounds, not conversations
+                }}
+            )
+            
+            print(f"🕐 AFTER: Day {current_day} {new_period}")
+            print(f"🕐 ROUND-BASED TIME ADVANCE: {user_id} - Day {current_day} {new_period.title()} (after {completed_rounds} total rounds)")
+            
+            return True
+        else:
+            print(f"🕐 NO TIME ADVANCE: Only {rounds_since_last_advance} rounds since last advance (need 3)")
         
         return False
         
