@@ -2060,8 +2060,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               <h3 className="text-lg font-bold text-white">🎛️ Control Desk</h3>
             </div>
             
-            {/* Statistics Counters Row - Compact Single Line Format */}
-            <div className="flex items-center justify-center space-x-2 mb-4">
+            {/* Statistics Counters Row - Aligned with search bar position */}
+            <div className="flex items-center justify-center space-x-2 mb-6 mt-4">
               {/* Message Count Display */}
               <div className="bg-white/5 rounded-lg px-3 py-1.5 border border-white/10 hover:bg-white/10 transition-colors group relative flex-1">
                 <div className="flex items-center justify-center space-x-1.5">
