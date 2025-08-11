@@ -1692,9 +1692,17 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 )}
                 <span className="text-white/60 text-sm">
                   {(() => {
-                    const currentRound = (Array.isArray(conversations) ? conversations : []).length + 1;
-                    const { day, period } = calculateDayAndTime(currentRound);
-                    return `Day ${day}, ${period}`;
+                    // Read time from simulation state instead of calculating from conversation count
+                    if (simulationData?.simulationState) {
+                      const day = simulationData.simulationState.current_day || 1;
+                      const period = simulationData.simulationState.current_time_period || 'morning';
+                      return `Day ${day}, ${period.charAt(0).toUpperCase() + period.slice(1)}`;
+                    } else {
+                      // Fallback to calculation if simulation state not available
+                      const currentRound = (Array.isArray(conversations) ? conversations : []).length + 1;
+                      const { day, period } = calculateDayAndTime(currentRound);
+                      return `Day ${day}, ${period}`;
+                    }
                   })()}
                 </span>
               </div>
