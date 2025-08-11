@@ -6210,105 +6210,69 @@ Continue building on the progress above. The team should advance the solutions a
     
     print(f"🎯 Conversation stage: {conversation_stage} (Messages: {total_messages}, Solutions: {has_solutions}, Actions: {has_action_items})")
     
-    # ===== NEW ROUND STRUCTURE: 3 MESSAGES PER AGENT =====
-    # Each round = each agent sends 3 messages for deeper conversation
+    # ===== SIMPLIFIED SYSTEM: 1 MESSAGE PER AGENT =====
+    # Each conversation = 1 message per agent for better flow and performance
     messages = []
     conversation_so_far = ""
     
-    print(f"🎯 TARGET: {len(agent_objects)} agents × 3 messages = {len(agent_objects) * 3} total messages (ROUND-BASED SYSTEM)")
+    print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages (SIMPLIFIED SYSTEM)")
     
-    # Generate 3 sequential messages per agent for deeper conversation
+    # Generate 1 message per agent for clean, simple conversations
     try:
-        for round_iteration in range(3):
-            print(f"🔄 Starting round iteration {round_iteration + 1}/3 with {len(agent_objects)} agents...")
-            
-            for i, agent in enumerate(agent_objects):
-                try:
-                    print(f"  🤖 Generating message for {agent.name} (Iteration {round_iteration + 1}, Agent {i + 1}/{len(agent_objects)})")
-                    
-                    # Choose response type based on conversation flow and iteration
-                    if round_iteration == 0:
-                        # First iteration: Set the stage, introduce expertise
-                        if i == 0:
-                            agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area."
-                        elif i == 1:
-                            agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities."
-                        else:
-                            agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention."
-                        response_type = "introduction" if len(conversation_so_far) < 100 else "analysis"
-                    elif round_iteration == 1:
-                        # Second iteration: Build on others' ideas, provide solutions
-                        agent_guidance = "Build on the ideas shared so far. Provide concrete solutions or identify key challenges that need addressing."
-                        response_type = "collaboration"
-                    else:
-                        # Third iteration: Synthesize, make decisions, plan actions
-                        agent_guidance = "Synthesize the discussion so far. Focus on decisions, action items, and concrete next steps."
-                        response_type = "synthesis"
-                    
-                    # Build comprehensive context including conversation history
-                    current_context = f"{observer_context}\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n\n{agent_guidance}\n"
-                    
-                    # Include ALL previous messages from this conversation for full context
-                    if messages:
-                        current_context += f"\nConversation so far:\n"
-                        # Group messages by agent to show conversation flow clearly
-                        agent_messages = {}
-                        for prev_msg in messages:
-                            if prev_msg.agent_name not in agent_messages:
-                                agent_messages[prev_msg.agent_name] = []
-                            agent_messages[prev_msg.agent_name].append(prev_msg.message)
-                        
-                        for agent_name, agent_msgs in agent_messages.items():
-                            if agent_name != agent.name:  # Don't show current agent's own messages
-                                for j, msg in enumerate(agent_msgs, 1):
-                                    current_context += f"• {agent_name} (Message {j}): {msg}\n"
-                        
-                        current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
-                    
-                    # Minimal delay to prevent rate limiting (optimized for speed)
-                    if len(messages) > 0:
-                        await asyncio.sleep(0.1)  # Reduced to 0.1s for faster generation
-                    
-                    response = await llm_manager.generate_agent_response(
-                        agent, scenario, agent_objects, current_context, conversation_history_msgs, language_instruction, existing_documents, state
-                    )
-                    
-                    # Determine mood based on personality and content
-                    mood = _determine_agent_mood(agent, response)
-                    
-                    message = ConversationMessage(
-                        agent_name=agent.name,
-                        agent_id=agent.id,
-                        message=response,
-                        mood=mood,
-                        timestamp=datetime.utcnow()
-                    )
-                    messages.append(message)
-                    
-                    # Update conversation_so_far for next agent
-                    conversation_so_far += f"{agent.name}: {response}\n"
-                    
-                    print(f"    ✅ Generated message for {agent.name} (Total messages: {len(messages)})")
-                    
-                except Exception as agent_error:
-                    print(f"    ❌ Error generating message for {agent.name}: {agent_error}")
-                    # Create personality-driven fallback response
-                    fallback_response = _create_personality_fallback(agent, scenario, messages)
-                    mood = _determine_agent_mood(agent, fallback_response)
-                    
-                    message = ConversationMessage(
-                        agent_name=agent.name,
-                        agent_id=agent.id,
-                        message=fallback_response,
-                        mood=mood,
-                        timestamp=datetime.utcnow()
-                    )
-                    messages.append(message)
-                    print(f"    🔄 Using personality fallback for {agent.name}")
-                    continue
+        for i, agent in enumerate(agent_objects):
+            try:
+                print(f"  🤖 Generating message for {agent.name} ({i + 1}/{len(agent_objects)})")
+                
+                # Build comprehensive context including conversation history
+                current_context = f"{observer_context}\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n"
+                
+                # Include previous messages from this conversation for context
+                if messages:
+                    current_context += f"\nConversation so far:\n"
+                    for prev_msg in messages:
+                        current_context += f"• {prev_msg.agent_name}: {prev_msg.message}\n"
+                    current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
+                
+                response = await llm_manager.generate_agent_response(
+                    agent, scenario, agent_objects, current_context, conversation_history_msgs, language_instruction, existing_documents, state
+                )
+                
+                # Determine mood based on personality and content
+                mood = _determine_agent_mood(agent, response)
+                
+                message = ConversationMessage(
+                    agent_name=agent.name,
+                    agent_id=agent.id,
+                    message=response,
+                    mood=mood,
+                    timestamp=datetime.utcnow()
+                )
+                messages.append(message)
+                
+                # Update conversation_so_far for next agent
+                conversation_so_far += f"{agent.name}: {response}\n"
+                
+                print(f"  ✅ {agent.name}: {len(response)} chars")
+                
+            except Exception as agent_error:
+                print(f"  ❌ Error generating message for {agent.name}: {str(agent_error)[:100]}...")
+                # Create personality-driven fallback response
+                fallback_response = _create_personality_fallback(agent, scenario, messages)
+                mood = _determine_agent_mood(agent, fallback_response)
+                
+                message = ConversationMessage(
+                    agent_name=agent.name,
+                    agent_id=agent.id,
+                    message=fallback_response,
+                    mood=mood,
+                    timestamp=datetime.utcnow()
+                )
+                messages.append(message)
+                print(f"  🔄 Using personality fallback for {agent.name}")
+                continue
                         
     except Exception as e:
-        print(f"❌ Error in round-based message generation: {e}")
+        print(f"❌ Error in message generation: {e}")
         # Ensure we have at least some messages
         if not messages:
             for agent in agent_objects:
@@ -6324,7 +6288,7 @@ Continue building on the progress above. The team should advance the solutions a
                 )
                 messages.append(message)
     
-    print(f"✅ Generated {len(messages)} total messages")
+    print(f"✅ Generated {len(messages)} total messages ({len(messages)}/{len(agent_objects)} target messages)")
     
     # SIMPLIFIED SYSTEM: Remove all round calculations
     # Just get a simple conversation count for reference
