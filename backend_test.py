@@ -1614,6 +1614,439 @@ def test_default_agents_removal():
     
     return True, "Default agents removal is working correctly"
 
+def test_conversation_pause_play_persistence():
+    """Test the critical conversation pause/play functionality and data persistence"""
+    print("\n" + "="*80)
+    print("TESTING CONVERSATION PAUSE/PLAY PERSISTENCE - CRITICAL DATA LOSS ISSUE")
+    print("User reports: Generated 27 messages, clicked pause, then play - ALL MESSAGES DELETED")
+    print("Also: Message counter jumping from 29 to 15, messages appearing/disappearing")
+    print("="*80)
+    
+    # Login first to get auth token
+    global auth_token, test_user_id
+    if not auth_token:
+        if not test_login():
+            print("❌ Cannot test conversation persistence without authentication")
+            return False, "Authentication failed"
+    
+    # Step 1: Create test agents for conversation generation
+    print("\nStep 1: Creating test agents for conversation generation")
+    
+    # Create 3 test agents
+    test_agents = []
+    agent_names = ["Dr. Test Scientist", "Prof. Research Expert", "Lead Engineer"]
+    
+    for i, name in enumerate(agent_names):
+        agent_data = {
+            "name": name,
+            "archetype": "scientist",
+            "personality": {
+                "extroversion": 5,
+                "optimism": 6,
+                "curiosity": 8,
+                "cooperativeness": 7,
+                "energy": 6
+            },
+            "goal": f"Test conversation generation and persistence for {name}",
+            "expertise": f"Testing and validation for conversation system",
+            "background": f"Expert in conversation testing and data persistence validation"
+        }
+        
+        create_agent_test, create_agent_response = run_test(
+            f"Create Test Agent {i+1}",
+            "/agents",
+            method="POST",
+            data=agent_data,
+            auth=True,
+            expected_keys=["id", "name"]
+        )
+        
+        if create_agent_test and create_agent_response:
+            agent_id = create_agent_response.get("id")
+            test_agents.append({"id": agent_id, "name": name})
+            print(f"✅ Created agent: {name} (ID: {agent_id})")
+        else:
+            print(f"❌ Failed to create agent: {name}")
+    
+    if len(test_agents) < 3:
+        print(f"❌ Only created {len(test_agents)} agents, need 3 for testing")
+        return False, "Failed to create required test agents"
+    
+    # Step 2: Start simulation
+    print("\nStep 2: Starting simulation")
+    
+    start_sim_test, start_sim_response = run_test(
+        "Start Simulation",
+        "/simulation/start",
+        method="POST",
+        auth=True,
+        expected_keys=["message", "state"]
+    )
+    
+    if not start_sim_test:
+        print("❌ Failed to start simulation")
+        return False, "Failed to start simulation"
+    
+    print("✅ Simulation started successfully")
+    
+    # Step 3: Generate initial conversations (simulate user generating 27 messages)
+    print("\nStep 3: Generating initial conversations to simulate user's scenario")
+    
+    initial_conversations = []
+    target_message_count = 27
+    generated_messages = 0
+    
+    # Generate conversations until we reach target message count
+    for round_num in range(1, 10):  # Generate up to 9 conversation rounds
+        if generated_messages >= target_message_count:
+            break
+            
+        print(f"Generating conversation round {round_num}...")
+        
+        gen_conv_test, gen_conv_response = run_test(
+            f"Generate Conversation Round {round_num}",
+            "/conversation/generate",
+            method="POST",
+            auth=True,
+            measure_time=True
+        )
+        
+        if gen_conv_test and gen_conv_response:
+            conversation_id = gen_conv_response.get("conversation_id")
+            messages = gen_conv_response.get("messages", [])
+            message_count = len(messages)
+            generated_messages += message_count
+            
+            initial_conversations.append({
+                "id": conversation_id,
+                "round": round_num,
+                "message_count": message_count,
+                "messages": messages
+            })
+            
+            print(f"✅ Round {round_num}: Generated {message_count} messages (Total: {generated_messages})")
+            
+            # Add small delay to avoid overwhelming the system
+            time.sleep(1)
+        else:
+            print(f"❌ Failed to generate conversation round {round_num}")
+    
+    print(f"\nGenerated {generated_messages} total messages across {len(initial_conversations)} conversation rounds")
+    
+    # Step 4: Get current conversation state before pause
+    print("\nStep 4: Getting conversation state before pause")
+    
+    before_pause_test, before_pause_response = run_test(
+        "Get Conversations Before Pause",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not before_pause_test or not before_pause_response:
+        print("❌ Failed to get conversations before pause")
+        return False, "Failed to get conversations before pause"
+    
+    conversations_before_pause = before_pause_response
+    total_conversations_before = len(conversations_before_pause)
+    total_messages_before = sum(len(conv.get('messages', [])) for conv in conversations_before_pause)
+    
+    print(f"Before pause: {total_conversations_before} conversations, {total_messages_before} messages")
+    
+    # Create detailed snapshot of conversation data
+    conversation_ids_before = [conv.get('id') for conv in conversations_before_pause]
+    message_details_before = []
+    
+    for conv in conversations_before_pause:
+        for msg in conv.get('messages', []):
+            message_details_before.append({
+                "conversation_id": conv.get('id'),
+                "agent_name": msg.get('agent_name'),
+                "message": msg.get('message', '')[:50] + "...",  # First 50 chars
+                "timestamp": msg.get('timestamp')
+            })
+    
+    print(f"Detailed snapshot: {len(message_details_before)} individual messages recorded")
+    
+    # Step 5: Pause simulation
+    print("\nStep 5: Pausing simulation")
+    
+    pause_test, pause_response = run_test(
+        "Pause Simulation",
+        "/simulation/pause",
+        method="POST",
+        auth=True,
+        expected_keys=["message", "state"]
+    )
+    
+    if not pause_test:
+        print("❌ Failed to pause simulation")
+        return False, "Failed to pause simulation"
+    
+    print("✅ Simulation paused successfully")
+    
+    # Step 6: Verify conversations still exist after pause
+    print("\nStep 6: Verifying conversations exist after pause")
+    
+    after_pause_test, after_pause_response = run_test(
+        "Get Conversations After Pause",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not after_pause_test or not after_pause_response:
+        print("❌ Failed to get conversations after pause")
+        return False, "Failed to get conversations after pause"
+    
+    conversations_after_pause = after_pause_response
+    total_conversations_after_pause = len(conversations_after_pause)
+    total_messages_after_pause = sum(len(conv.get('messages', [])) for conv in conversations_after_pause)
+    
+    print(f"After pause: {total_conversations_after_pause} conversations, {total_messages_after_pause} messages")
+    
+    # Check for data loss after pause
+    pause_data_loss = False
+    if total_conversations_after_pause < total_conversations_before:
+        print(f"❌ CONVERSATION DATA LOSS: {total_conversations_before - total_conversations_after_pause} conversations lost after pause")
+        pause_data_loss = True
+    
+    if total_messages_after_pause < total_messages_before:
+        print(f"❌ MESSAGE DATA LOSS: {total_messages_before - total_messages_after_pause} messages lost after pause")
+        pause_data_loss = True
+    
+    if not pause_data_loss:
+        print("✅ No data loss detected after pause")
+    
+    # Step 7: Resume simulation (this is where user reports ALL MESSAGES DELETED)
+    print("\nStep 7: Resuming simulation - CRITICAL TEST")
+    
+    resume_test, resume_response = run_test(
+        "Resume Simulation",
+        "/simulation/resume",
+        method="POST",
+        auth=True,
+        expected_keys=["message", "state"]
+    )
+    
+    if not resume_test:
+        print("❌ Failed to resume simulation")
+        return False, "Failed to resume simulation"
+    
+    print("✅ Simulation resumed successfully")
+    
+    # Step 8: Check for data loss after resume (CRITICAL CHECK)
+    print("\nStep 8: CRITICAL CHECK - Verifying conversations after resume")
+    
+    after_resume_test, after_resume_response = run_test(
+        "Get Conversations After Resume",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not after_resume_test or not after_resume_response:
+        print("❌ Failed to get conversations after resume")
+        return False, "Failed to get conversations after resume"
+    
+    conversations_after_resume = after_resume_response
+    total_conversations_after_resume = len(conversations_after_resume)
+    total_messages_after_resume = sum(len(conv.get('messages', [])) for conv in conversations_after_resume)
+    
+    print(f"After resume: {total_conversations_after_resume} conversations, {total_messages_after_resume} messages")
+    
+    # CRITICAL DATA LOSS CHECK
+    resume_data_loss = False
+    data_loss_details = []
+    
+    if total_conversations_after_resume < total_conversations_before:
+        conversations_lost = total_conversations_before - total_conversations_after_resume
+        print(f"🚨 CRITICAL DATA LOSS: {conversations_lost} conversations DELETED after resume")
+        data_loss_details.append(f"{conversations_lost} conversations deleted")
+        resume_data_loss = True
+    
+    if total_messages_after_resume < total_messages_before:
+        messages_lost = total_messages_before - total_messages_after_resume
+        print(f"🚨 CRITICAL DATA LOSS: {messages_lost} messages DELETED after resume")
+        data_loss_details.append(f"{messages_lost} messages deleted")
+        resume_data_loss = True
+    
+    # Check if ALL messages were deleted (user's specific issue)
+    if total_messages_after_resume == 0 and total_messages_before > 0:
+        print("🚨 CONFIRMED USER ISSUE: ALL MESSAGES DELETED after pause/resume cycle")
+        data_loss_details.append("ALL messages deleted (user's reported issue)")
+        resume_data_loss = True
+    
+    if not resume_data_loss:
+        print("✅ No data loss detected after resume")
+    
+    # Step 9: Test for message counter jumping (UI glitch investigation)
+    print("\nStep 9: Testing for message counter inconsistencies")
+    
+    # Make multiple rapid requests to check for inconsistent counts
+    message_counts = []
+    conversation_counts = []
+    
+    for i in range(5):
+        rapid_test, rapid_response = run_test(
+            f"Rapid Conversation Check {i+1}",
+            "/conversations",
+            method="GET",
+            auth=True
+        )
+        
+        if rapid_test and rapid_response:
+            conv_count = len(rapid_response)
+            msg_count = sum(len(conv.get('messages', [])) for conv in rapid_response)
+            
+            conversation_counts.append(conv_count)
+            message_counts.append(msg_count)
+            
+            print(f"Check {i+1}: {conv_count} conversations, {msg_count} messages")
+            time.sleep(0.5)  # Small delay between requests
+    
+    # Analyze consistency
+    unique_conv_counts = set(conversation_counts)
+    unique_msg_counts = set(message_counts)
+    
+    if len(unique_conv_counts) > 1:
+        print(f"⚠️ INCONSISTENT CONVERSATION COUNTS: {list(unique_conv_counts)}")
+        print("This could explain the UI glitch where counters jump between values")
+    else:
+        print("✅ Conversation counts are consistent across requests")
+    
+    if len(unique_msg_counts) > 1:
+        print(f"⚠️ INCONSISTENT MESSAGE COUNTS: {list(unique_msg_counts)}")
+        print("This could explain the UI glitch where message counts jump")
+    else:
+        print("✅ Message counts are consistent across requests")
+    
+    # Step 10: Test for concurrent conversation generation (suspected cause)
+    print("\nStep 10: Testing for concurrent conversation generation issues")
+    
+    # Generate multiple conversations simultaneously to test for race conditions
+    print("Generating multiple conversations simultaneously...")
+    
+    import threading
+    import queue
+    
+    results_queue = queue.Queue()
+    
+    def generate_concurrent_conversation(thread_id):
+        try:
+            gen_test, gen_response = run_test(
+                f"Concurrent Generation {thread_id}",
+                "/conversation/generate",
+                method="POST",
+                auth=True
+            )
+            results_queue.put({
+                "thread_id": thread_id,
+                "success": gen_test,
+                "response": gen_response
+            })
+        except Exception as e:
+            results_queue.put({
+                "thread_id": thread_id,
+                "success": False,
+                "error": str(e)
+            })
+    
+    # Start 3 concurrent conversation generation requests
+    threads = []
+    for i in range(3):
+        thread = threading.Thread(target=generate_concurrent_conversation, args=(i+1,))
+        threads.append(thread)
+        thread.start()
+    
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+    
+    # Collect results
+    concurrent_results = []
+    while not results_queue.empty():
+        concurrent_results.append(results_queue.get())
+    
+    successful_concurrent = sum(1 for r in concurrent_results if r.get('success'))
+    print(f"Concurrent generation results: {successful_concurrent}/{len(concurrent_results)} successful")
+    
+    # Check for race condition issues
+    if successful_concurrent < len(concurrent_results):
+        print("⚠️ Some concurrent conversation generations failed - possible race condition")
+    else:
+        print("✅ All concurrent conversation generations succeeded")
+    
+    # Final verification after concurrent generation
+    final_test, final_response = run_test(
+        "Final Conversation State Check",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if final_test and final_response:
+        final_conversations = len(final_response)
+        final_messages = sum(len(conv.get('messages', [])) for conv in final_response)
+        print(f"Final state: {final_conversations} conversations, {final_messages} messages")
+    
+    # Step 11: Summary and diagnosis
+    print("\nStep 11: COMPREHENSIVE DIAGNOSIS SUMMARY")
+    print("="*60)
+    
+    issues_found = []
+    
+    if pause_data_loss:
+        issues_found.append("Data loss detected after pause operation")
+    
+    if resume_data_loss:
+        issues_found.append("CRITICAL: Data loss detected after resume operation")
+        if "ALL messages deleted" in str(data_loss_details):
+            issues_found.append("CONFIRMED: User's reported issue - ALL messages deleted after pause/resume")
+    
+    if len(unique_conv_counts) > 1 or len(unique_msg_counts) > 1:
+        issues_found.append("Inconsistent message/conversation counts (explains UI glitches)")
+    
+    if successful_concurrent < len(concurrent_results):
+        issues_found.append("Race conditions in concurrent conversation generation")
+    
+    if issues_found:
+        print("🚨 CRITICAL ISSUES FOUND:")
+        for i, issue in enumerate(issues_found, 1):
+            print(f"{i}. {issue}")
+        
+        print("\nROOT CAUSE ANALYSIS:")
+        if resume_data_loss:
+            print("- The pause/resume functionality has a critical bug that deletes conversation data")
+            print("- This confirms the user's report of losing 27 messages after pause/play cycle")
+        
+        if len(unique_msg_counts) > 1:
+            print("- Message counts are inconsistent, explaining the UI glitch of counters jumping")
+            print("- This suggests database queries are returning different results")
+        
+        if successful_concurrent < len(concurrent_results):
+            print("- Concurrent conversation generation has issues, possibly causing random display")
+        
+        return False, {
+            "issues": issues_found,
+            "data_loss": resume_data_loss,
+            "messages_before": total_messages_before,
+            "messages_after": total_messages_after_resume,
+            "conversations_before": total_conversations_before,
+            "conversations_after": total_conversations_after_resume
+        }
+    else:
+        print("✅ NO CRITICAL ISSUES FOUND")
+        print("- Pause/resume functionality preserves all conversation data")
+        print("- Message counts are consistent across requests")
+        print("- No race conditions detected in concurrent generation")
+        
+        return True, {
+            "messages_preserved": total_messages_after_resume == total_messages_before,
+            "conversations_preserved": total_conversations_after_resume == total_conversations_before,
+            "counts_consistent": len(unique_msg_counts) == 1 and len(unique_conv_counts) == 1
+        }
+
 def test_time_progression_issue():
     """Test the specific time progression issue reported by user"""
     print("\n" + "="*80)
