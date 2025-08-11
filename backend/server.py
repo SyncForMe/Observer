@@ -4936,6 +4936,30 @@ async def advance_time_period(current_user: User = Depends(get_current_user)):
         "current_day": current_day
     }
 
+async def sync_simulation_state_time(user_id: str, round_number: int):
+    """Sync simulation state with conversation time progression"""
+    try:
+        # Get current simulation state
+        state = await db.simulation_state.find_one({"user_id": user_id})
+        if not state or not state.get("is_active", False):
+            return False
+        
+        # Update the simulation state to reflect the current conversation round
+        await db.simulation_state.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "last_conversation_round": round_number,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        print(f"🔄 Synced simulation state for user {user_id} at round {round_number}")
+        return True
+        
+    except Exception as e:
+        print(f"Error syncing simulation state time: {e}")
+        return False
+
 async def check_and_advance_time_automatically(user_id: str):
     """Check if time should advance automatically based on conversation activity"""
     try:
