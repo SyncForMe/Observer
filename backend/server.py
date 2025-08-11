@@ -6329,35 +6329,45 @@ Continue building on the progress above. The team should advance the solutions a
     print(f"✅ Generated {len(messages)} total messages ({len(messages)}/{len(agent_objects) * 3} target messages)")
     print(f"🎯 ROUND COMPLETION: Each agent contributed {len(messages) // len(agent_objects) if agent_objects else 0} messages")
     
-    # Get conversation count for round numbering (user-specific)
-    conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
-    round_number = conversation_count + 1
+    # Calculate ACTUAL round number based on total completed rounds across all conversations
+    all_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", 1).to_list(None)
+    total_messages_before_this = sum(len(conv.get("messages", [])) for conv in all_conversations)
     
-    # Calculate day and time period based on round number
-    def calculate_day_and_time_period(round_num):
+    # Add messages from this conversation
+    total_messages_including_this = total_messages_before_this + len(messages)
+    
+    # Calculate round number based on message cycles (not conversation count)
+    messages_per_round = len(agent_objects) * 3
+    current_round_number = (total_messages_including_this - 1) // messages_per_round + 1
+    
+    print(f"🎯 ROUND CALCULATION:")
+    print(f"  - Total messages (including this): {total_messages_including_this}")
+    print(f"  - Messages per round: {messages_per_round}")
+    print(f"  - Calculated round number: {current_round_number}")
+    
+    # Calculate day and time period based on ACTUAL round progression (3 rounds per time period)
+    def calculate_day_and_time_period_correct(round_num):
         if round_num <= 0:
             return "Day 1 - Morning"
         
+        # Each time period = 3 rounds, Each day = 9 rounds
         day = ((round_num - 1) // 9) + 1
         round_in_day = ((round_num - 1) % 9) + 1
         
         if round_in_day <= 3:
             period = "Morning"
-            round_in_period = round_in_day
         elif round_in_day <= 6:
             period = "Afternoon"
-            round_in_period = round_in_day - 3
         else:
             period = "Evening"
-            round_in_period = round_in_day - 6
         
         return f"Day {day} - {period}"
     
-    time_period = calculate_day_and_time_period(round_number)
+    time_period = calculate_day_and_time_period_correct(current_round_number)
     
     # Create conversation round  
     conversation_round = ConversationRound(
-        round_number=round_number,
+        round_number=current_round_number,
         time_period=time_period,
         scenario=scenario,
         scenario_name=scenario_name,
@@ -6369,7 +6379,7 @@ Continue building on the progress above. The team should advance the solutions a
     await db.conversations.insert_one(conversation_round.dict())
     
     # Sync simulation state with conversation time progression
-    await sync_simulation_state_time(current_user.id, round_number)
+    await sync_simulation_state_time(current_user.id, current_round_number)
     
     # Check for automatic time advancement after saving conversation
     await check_and_advance_time_automatically(current_user.id)
