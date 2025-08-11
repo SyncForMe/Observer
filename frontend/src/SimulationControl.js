@@ -2087,7 +2087,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       })()}
                     </div>
                     <div className="text-blue-400 mt-1">
-                      Time Progress: {(() => {
+                      {(() => {
                         const agentCount = Array.isArray(agents) ? agents.length : 3;
                         const totalMessages = Array.isArray(conversations) ? 
                           conversations.reduce((total, conv) => {
@@ -2096,8 +2096,20 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                             return total + agentMessages.length;
                           }, 0) : 0;
                         const messagesPerPeriod = agentCount * 9;
-                        const progress = Math.min(100, (totalMessages % messagesPerPeriod) / messagesPerPeriod * 100);
-                        return `${Math.round(progress)}%`;
+                        const currentPeriodMessages = totalMessages % messagesPerPeriod;
+                        const messagesUntilNext = messagesPerPeriod - currentPeriodMessages;
+                        
+                        // Determine what we're progressing to
+                        const currentPeriodNumber = Math.floor(totalMessages / messagesPerPeriod);
+                        const periods = ["morning", "afternoon", "evening"];
+                        const currentPeriodIndex = currentPeriodNumber % 3;
+                        const nextPeriodIndex = (currentPeriodIndex + 1) % 3;
+                        const nextPeriod = periods[nextPeriodIndex];
+                        
+                        if (messagesUntilNext === messagesPerPeriod) {
+                          return `Progress to ${nextPeriod}: 0%`;
+                        }
+                        return `Progress to ${nextPeriod}: ${Math.round((currentPeriodMessages / messagesPerPeriod) * 100)}%`;
                       })()}
                     </div>
                   </div>
