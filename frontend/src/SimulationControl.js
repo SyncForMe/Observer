@@ -438,6 +438,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const fetchingRef = useRef(false); // Performance optimization: Prevent duplicate fetches
   const conversationBuildingRef = useRef(false); // Prevent polling conflicts during message display
   const lastScrollTimeRef = useRef(0); // Track when user last scrolled
+  const conversationUpdateRef = useRef(false); // Prevent concurrent conversation updates
 
   // Check if user is actively scrolling (to prevent polling during active reading)
   const isUserScrolling = () => {
