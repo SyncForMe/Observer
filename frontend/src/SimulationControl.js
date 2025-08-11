@@ -475,7 +475,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         ]);
 
         // Store scroll position before DOM update to prevent disruption
-        const conversationContainer = document.querySelector('.flex-1.overflow-y-auto');
+        // Use more specific selector for Live Conversations section only
+        const conversationContainer = document.querySelector('[data-conversation-container="true"]');
         const scrollTop = conversationContainer ? conversationContainer.scrollTop : 0;
 
         // Update global simulation data
