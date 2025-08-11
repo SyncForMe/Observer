@@ -761,10 +761,10 @@ const AppContent = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 min-h-screen">
         {console.log('🔍 AppContent: About to render main content, activeTab:', activeTab)}
         
-        <div style={{ minHeight: '400px' }}>
+        <div style={{ minHeight: 'calc(100vh - 120px)' }}>
           {/* Simple content without AnimatePresence to test */}
           {activeTab === 'about' && (
             <div className="relative overflow-hidden">
