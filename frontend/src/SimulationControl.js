@@ -2035,7 +2035,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               
               {/* Message Count Display */}
               <div className="flex items-center space-x-2">
-                <div className="bg-white/5 rounded-lg px-3 py-1.5 border border-white/10">
+                <div className="bg-white/5 rounded-lg px-3 py-1.5 border border-white/10 hover:bg-white/10 transition-colors group relative">
                   <div className="flex items-center space-x-1.5">
                     <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -2051,9 +2051,54 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                             return total + agentMessages.length;
                           }, 0) : 0;
                         
-                        return `${totalMessages} msgs`;
+                        return `${totalMessages}`;
                       })()}
                     </span>
+                    <span className="text-white/50 text-xs">msgs</span>
+                  </div>
+                  
+                  {/* Tooltip on hover */}
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900/95 backdrop-blur-sm rounded-lg p-3 border border-white/20 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <div className="text-white/80 text-xs space-y-1">
+                      <div className="font-medium text-white mb-1">Message Breakdown:</div>
+                      <div>Total Conversations: {Array.isArray(conversations) ? conversations.length : 0}</div>
+                      <div>
+                        Agent Messages: {(() => {
+                          const totalMessages = Array.isArray(conversations) ? 
+                            conversations.reduce((total, conv) => {
+                              const messages = conv.messages || [];
+                              const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
+                              return total + agentMessages.length;
+                            }, 0) : 0;
+                          return totalMessages;
+                        })()}
+                      </div>
+                      <div>
+                        Observer Messages: {(() => {
+                          const observerMessages = Array.isArray(conversations) ? 
+                            conversations.reduce((total, conv) => {
+                              const messages = conv.messages || [];
+                              const observerMsgs = messages.filter(msg => msg.agent_id === "observer");
+                              return total + observerMsgs.length;
+                            }, 0) : 0;
+                          return observerMessages;
+                        })()}
+                      </div>
+                      <div className="text-blue-400 mt-1">
+                        Time Progress: {(() => {
+                          const agentCount = Array.isArray(agents) ? agents.length : 3;
+                          const totalMessages = Array.isArray(conversations) ? 
+                            conversations.reduce((total, conv) => {
+                              const messages = conv.messages || [];
+                              const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
+                              return total + agentMessages.length;
+                            }, 0) : 0;
+                          const messagesPerPeriod = agentCount * 9;
+                          const progress = Math.min(100, (totalMessages % messagesPerPeriod) / messagesPerPeriod * 100);
+                          return `${Math.round(progress)}%`;
+                        })()}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
