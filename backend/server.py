@@ -6324,6 +6324,9 @@ Continue building on the progress above. The team should advance the solutions a
     # Save conversation
     await db.conversations.insert_one(conversation_round.dict())
     
+    # Sync simulation state with conversation time progression
+    await sync_simulation_state_time(current_user.id, round_number)
+    
     # Check for automatic time advancement after saving conversation
     await check_and_advance_time_automatically(current_user.id)
     
