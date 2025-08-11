@@ -1428,10 +1428,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   };
 
   // Helper function to calculate day and time period from rounds
+  // NEW ROUND SYSTEM: Each round = each agent sends 3 messages
+  // Each time period (Morning/Afternoon/Evening) = 3 rounds
   const calculateDayAndTime = (roundNumber) => {
     if (roundNumber === 0) return { day: 1, period: "Morning", roundInPeriod: 1 };
     
-    // Each round now has 3 messages per agent, so we need to calculate based on total messages
+    // Each round = completed conversation where each agent sent 3 messages
+    // Each time period = 3 rounds (Morning: rounds 1-3, Afternoon: rounds 4-6, Evening: rounds 7-9)
     const day = Math.floor((roundNumber - 1) / 9) + 1;
     const roundInDay = ((roundNumber - 1) % 9) + 1;
     
