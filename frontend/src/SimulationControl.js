@@ -2032,6 +2032,31 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white">🎛️ Control Desk</h3>
+              
+              {/* Message Count Display */}
+              <div className="flex items-center space-x-2">
+                <div className="bg-white/5 rounded-lg px-3 py-1.5 border border-white/10">
+                  <div className="flex items-center space-x-1.5">
+                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span className="text-white/70 text-sm font-medium">
+                      {(() => {
+                        // Calculate total messages across all conversations
+                        const totalMessages = Array.isArray(conversations) ? 
+                          conversations.reduce((total, conv) => {
+                            const messages = conv.messages || [];
+                            // Filter out observer messages (they don't count toward progression)
+                            const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
+                            return total + agentMessages.length;
+                          }, 0) : 0;
+                        
+                        return `${totalMessages} msgs`;
+                      })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
             
             {/* Set Scenario Section with expandable functionality */}
