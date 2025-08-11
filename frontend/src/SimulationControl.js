@@ -1455,12 +1455,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   };
 
   // Helper function to calculate day and time period - SIMPLIFIED SYSTEM
-  // Each agent sends 9 messages per time period
+  // Each agent sends 9 messages per time period (1 message per conversation)
   // With 3 agents = 27 messages per time period (Morning/Afternoon/Evening)
   const calculateDayAndTime = (totalMessages, agentCount) => {
     if (totalMessages === 0 || agentCount === 0) return { day: 1, period: "Morning" };
     
     // Simple calculation: 9 messages per agent per time period
+    // Since we now have 1 message per agent per conversation, we need 9 conversations per agent
     const messagesPerTimePeriod = agentCount * 9;
     const timePeriodNumber = Math.floor(totalMessages / messagesPerTimePeriod);
     
