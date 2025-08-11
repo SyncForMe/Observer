@@ -1614,6 +1614,226 @@ def test_default_agents_removal():
     
     return True, "Default agents removal is working correctly"
 
+def test_time_progression_issue():
+    """Test the specific time progression issue reported by user"""
+    print("\n" + "="*80)
+    print("INVESTIGATING TIME PROGRESSION ISSUE")
+    print("User reports: 27 messages with 3 agents showing 'Day 1, Afternoon'")
+    print("Expected: 27 messages should be 'Day 1, Morning' (messages 1-27)")
+    print("="*80)
+    
+    # Login first to get auth token
+    global auth_token, test_user_id
+    if not auth_token:
+        if not test_login():
+            print("❌ Cannot test time progression without authentication")
+            return False, "Authentication failed"
+    
+    # Step 1: Get current simulation state
+    print("\nStep 1: Getting current simulation state")
+    
+    state_test, state_response = run_test(
+        "Get Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True
+    )
+    
+    if not state_test or not state_response:
+        print("❌ Failed to get simulation state")
+        return False, "Failed to get simulation state"
+    
+    current_day = state_response.get('current_day', 1)
+    current_time_period = state_response.get('current_time_period', 'morning')
+    print(f"Current simulation state: Day {current_day}, {current_time_period}")
+    
+    # Step 2: Get all conversations and count messages
+    print("\nStep 2: Getting all conversations and counting messages")
+    
+    conversations_test, conversations_response = run_test(
+        "Get All Conversations",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not conversations_test or not conversations_response:
+        print("❌ Failed to get conversations")
+        return False, "Failed to get conversations"
+    
+    total_conversations = len(conversations_response)
+    total_messages = 0
+    agent_message_counts = {}
+    
+    print(f"Total conversations: {total_conversations}")
+    
+    # Count messages per conversation and per agent
+    for i, conversation in enumerate(conversations_response):
+        messages = conversation.get('messages', [])
+        conversation_message_count = len(messages)
+        total_messages += conversation_message_count
+        
+        print(f"Conversation {i+1}: {conversation_message_count} messages, Time: {conversation.get('time_period', 'Unknown')}")
+        
+        # Count messages per agent
+        for message in messages:
+            agent_name = message.get('agent_name', 'Unknown')
+            if agent_name not in agent_message_counts:
+                agent_message_counts[agent_name] = 0
+            agent_message_counts[agent_name] += 1
+    
+    print(f"\nTotal messages across all conversations: {total_messages}")
+    print("Messages per agent:")
+    for agent_name, count in agent_message_counts.items():
+        print(f"  - {agent_name}: {count} messages")
+    
+    # Step 3: Get agents to determine expected behavior
+    print("\nStep 3: Getting agents to determine expected behavior")
+    
+    agents_test, agents_response = run_test(
+        "Get Agents",
+        "/agents",
+        method="GET",
+        auth=True
+    )
+    
+    if not agents_test or not agents_response:
+        print("❌ Failed to get agents")
+        return False, "Failed to get agents"
+    
+    agent_count = len(agents_response)
+    print(f"Agent count: {agent_count}")
+    
+    # Step 4: Calculate expected time period based on simplified system
+    print("\nStep 4: Calculating expected time period based on simplified system")
+    
+    if agent_count > 0:
+        messages_per_time_period = agent_count * 9  # Each agent sends 9 messages per time period
+        print(f"Messages per time period (agent_count * 9): {messages_per_time_period}")
+        
+        # Calculate which time period we should be in
+        if total_messages <= messages_per_time_period:
+            expected_time_period = "morning"
+            expected_day = 1
+        elif total_messages <= messages_per_time_period * 2:
+            expected_time_period = "afternoon"
+            expected_day = 1
+        elif total_messages <= messages_per_time_period * 3:
+            expected_time_period = "evening"
+            expected_day = 1
+        else:
+            # Calculate day and time period for higher message counts
+            total_periods_completed = (total_messages - 1) // messages_per_time_period
+            expected_day = (total_periods_completed // 3) + 1
+            period_in_day = total_periods_completed % 3
+            
+            if period_in_day == 0:
+                expected_time_period = "morning"
+            elif period_in_day == 1:
+                expected_time_period = "afternoon"
+            else:
+                expected_time_period = "evening"
+        
+        print(f"Expected time period based on {total_messages} messages: Day {expected_day}, {expected_time_period}")
+        
+        # Step 5: Compare actual vs expected
+        print("\nStep 5: Comparing actual vs expected time progression")
+        
+        actual_state = f"Day {current_day}, {current_time_period}"
+        expected_state = f"Day {expected_day}, {expected_time_period}"
+        
+        print(f"Actual state:   {actual_state}")
+        print(f"Expected state: {expected_state}")
+        
+        if actual_state == expected_state:
+            print("✅ Time progression is correct!")
+            time_progression_correct = True
+        else:
+            print("❌ Time progression is incorrect!")
+            time_progression_correct = False
+            
+            # Analyze the specific issue
+            if total_messages == 27 and agent_count == 3:
+                print("\n🔍 SPECIFIC ISSUE ANALYSIS:")
+                print("User reported: 27 messages with 3 agents showing 'Day 1, Afternoon'")
+                print("Expected: 27 messages = 3 agents × 9 messages = Day 1, Morning")
+                print("Actual: System is showing Day 1, Afternoon")
+                print("ROOT CAUSE: Time advancement logic is triggering too early")
+    else:
+        print("❌ No agents found - cannot calculate expected time progression")
+        time_progression_correct = False
+    
+    # Step 6: Test time advancement logic by examining conversation metadata
+    print("\nStep 6: Examining conversation metadata for time advancement patterns")
+    
+    time_periods_found = []
+    for conversation in conversations_response:
+        time_period = conversation.get('time_period', 'Unknown')
+        round_number = conversation.get('round_number', 'Unknown')
+        message_count = len(conversation.get('messages', []))
+        
+        time_periods_found.append({
+            'time_period': time_period,
+            'round_number': round_number,
+            'message_count': message_count
+        })
+    
+    print("Time progression pattern in conversations:")
+    for i, conv_info in enumerate(time_periods_found):
+        print(f"  Conversation {i+1}: {conv_info['time_period']}, Round {conv_info['round_number']}, {conv_info['message_count']} messages")
+    
+    # Step 7: Check if there's a pattern in time advancement
+    print("\nStep 7: Analyzing time advancement pattern")
+    
+    unique_time_periods = list(set(conv['time_period'] for conv in time_periods_found))
+    print(f"Unique time periods found: {unique_time_periods}")
+    
+    # Count conversations per time period
+    time_period_counts = {}
+    for conv in time_periods_found:
+        period = conv['time_period']
+        if period not in time_period_counts:
+            time_period_counts[period] = 0
+        time_period_counts[period] += 1
+    
+    print("Conversations per time period:")
+    for period, count in time_period_counts.items():
+        print(f"  - {period}: {count} conversations")
+    
+    # Step 8: Summary and recommendations
+    print("\nStep 8: Summary and recommendations")
+    
+    if time_progression_correct:
+        print("✅ Time progression system is working correctly")
+        return True, "Time progression system is working correctly"
+    else:
+        print("❌ Time progression system has issues")
+        
+        recommendations = []
+        
+        if total_messages == 27 and current_time_period == "afternoon":
+            recommendations.append("Fix time advancement logic - 27 messages should be Day 1, Morning")
+            recommendations.append("Check if time advancement is triggering after each conversation instead of after completing full time periods")
+        
+        if agent_count == 3 and total_messages < 27:
+            recommendations.append("Generate more conversations to reach the expected 27 messages for 3 agents")
+        
+        if len(unique_time_periods) > 1 and total_messages <= 27:
+            recommendations.append("Time should not advance beyond Morning until 27+ messages are reached")
+        
+        print("Recommendations:")
+        for rec in recommendations:
+            print(f"  - {rec}")
+        
+        return False, {
+            "issue": "Time progression incorrect",
+            "actual": actual_state,
+            "expected": expected_state,
+            "total_messages": total_messages,
+            "agent_count": agent_count,
+            "recommendations": recommendations
+        }
+
 def test_comprehensive_round_based_system():
     """Test the comprehensive round-based system fix as requested in review"""
     print("\n" + "="*80)
