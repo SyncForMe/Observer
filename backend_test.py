@@ -1607,6 +1607,262 @@ def test_default_agents_removal():
     
     return True, "Default agents removal is working correctly"
 
+def test_time_progression_investigation():
+    """Investigate the time progression issue reported by user"""
+    print("\n" + "="*80)
+    print("TIME PROGRESSION INVESTIGATION - USER REPORTED ISSUE")
+    print("User reports having 15 messages but still seeing 'Day 1, Morning'")
+    print("Expected: With 3 agents and 15 messages, should see 'Day 1, Afternoon' after 1 round (9 messages)")
+    print("="*80)
+    
+    # Login first to get auth token
+    global auth_token, test_user_id
+    if not auth_token:
+        if not test_login():
+            print("❌ Cannot investigate time progression without authentication")
+            return False, "Authentication failed"
+    
+    # Step 1: Get all conversations and analyze message counts
+    print("\nStep 1: Getting all conversations and analyzing message distribution")
+    
+    conversations_test, conversations_response = run_test(
+        "Get All Conversations",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not conversations_test or not conversations_response:
+        print("❌ Failed to get conversations")
+        return False, "Failed to get conversations"
+    
+    # Analyze conversations
+    total_conversations = len(conversations_response)
+    total_messages = 0
+    message_distribution = {}
+    conversation_details = []
+    
+    print(f"\nFound {total_conversations} conversations")
+    
+    for i, conv in enumerate(conversations_response):
+        conv_id = conv.get('id', f'conv_{i}')
+        messages = conv.get('messages', [])
+        message_count = len(messages)
+        total_messages += message_count
+        
+        # Get time period and round info
+        time_period = conv.get('time_period', 'Unknown')
+        round_number = conv.get('round_number', 'Unknown')
+        
+        conversation_details.append({
+            'id': conv_id,
+            'round': round_number,
+            'time_period': time_period,
+            'message_count': message_count,
+            'created_at': conv.get('created_at', 'Unknown')
+        })
+        
+        message_distribution[conv_id] = message_count
+        
+        print(f"Conversation {i+1}: Round {round_number}, {time_period}, {message_count} messages")
+    
+    print(f"\nTotal messages across all conversations: {total_messages}")
+    
+    # Step 2: Get simulation state
+    print("\nStep 2: Getting simulation state")
+    
+    sim_state_test, sim_state_response = run_test(
+        "Get Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True,
+        expected_keys=["current_day", "current_time_period"]
+    )
+    
+    if not sim_state_test or not sim_state_response:
+        print("❌ Failed to get simulation state")
+        return False, "Failed to get simulation state"
+    
+    current_day = sim_state_response.get('current_day', 'Unknown')
+    current_time_period = sim_state_response.get('current_time_period', 'Unknown')
+    last_time_advance_round = sim_state_response.get('last_time_advance_round', 'Unknown')
+    is_active = sim_state_response.get('is_active', False)
+    
+    print(f"Current simulation state:")
+    print(f"  - Day: {current_day}")
+    print(f"  - Time Period: {current_time_period}")
+    print(f"  - Last Time Advance Round: {last_time_advance_round}")
+    print(f"  - Is Active: {is_active}")
+    
+    # Step 3: Get agents to understand round structure
+    print("\nStep 3: Getting agents to understand round structure")
+    
+    agents_test, agents_response = run_test(
+        "Get All Agents",
+        "/agents",
+        method="GET",
+        auth=True
+    )
+    
+    agent_count = 0
+    if agents_test and agents_response:
+        agent_count = len(agents_response)
+        print(f"Found {agent_count} agents")
+        for i, agent in enumerate(agents_response):
+            print(f"  Agent {i+1}: {agent.get('name', 'Unknown')} ({agent.get('archetype', 'Unknown')})")
+    else:
+        print("❌ Failed to get agents")
+    
+    # Step 4: Calculate expected time progression
+    print("\nStep 4: Analyzing time progression logic")
+    
+    if agent_count > 0:
+        messages_per_round = agent_count * 3  # Each agent sends 3 messages per round
+        completed_rounds = total_messages // messages_per_round
+        remaining_messages = total_messages % messages_per_round
+        
+        print(f"Time progression analysis:")
+        print(f"  - Agents: {agent_count}")
+        print(f"  - Messages per round: {messages_per_round} (3 messages × {agent_count} agents)")
+        print(f"  - Total messages: {total_messages}")
+        print(f"  - Completed rounds: {completed_rounds}")
+        print(f"  - Remaining messages in current round: {remaining_messages}")
+        
+        # Calculate expected time period
+        time_periods = ['morning', 'afternoon', 'evening']
+        if completed_rounds == 0:
+            expected_time = 'morning'
+            expected_day = 1
+        else:
+            period_index = (completed_rounds - 1) % 3
+            expected_time = time_periods[period_index]
+            expected_day = 1 + ((completed_rounds - 1) // 3)
+        
+        print(f"  - Expected time period: Day {expected_day}, {expected_time}")
+        print(f"  - Actual time period: Day {current_day}, {current_time_period}")
+        
+        # Check if there's a mismatch
+        time_mismatch = (expected_time != current_time_period) or (expected_day != current_day)
+        
+        if time_mismatch:
+            print(f"❌ TIME PROGRESSION MISMATCH DETECTED!")
+            print(f"   Expected: Day {expected_day}, {expected_time}")
+            print(f"   Actual: Day {current_day}, {current_time_period}")
+        else:
+            print(f"✅ Time progression matches expected values")
+    
+    # Step 5: Check individual conversation time periods
+    print("\nStep 5: Checking individual conversation time periods")
+    
+    conversation_time_periods = {}
+    for detail in conversation_details:
+        time_period = detail['time_period']
+        if time_period not in conversation_time_periods:
+            conversation_time_periods[time_period] = 0
+        conversation_time_periods[time_period] += 1
+    
+    print("Conversation distribution by time period:")
+    for period, count in conversation_time_periods.items():
+        print(f"  - {period}: {count} conversations")
+    
+    # Step 6: Identify the root cause
+    print("\nStep 6: Root cause analysis")
+    
+    issues_found = []
+    
+    # Check if round completion detection is working
+    if total_messages >= 9 and current_time_period == 'morning':
+        issues_found.append("Round completion detection not working - should have advanced from morning")
+    
+    # Check if time advancement function is being called
+    if last_time_advance_round == 'Unknown' or last_time_advance_round is None:
+        issues_found.append("Time advancement function may not be called - no last_time_advance_round data")
+    
+    # Check if simulation state is updating
+    if len(set(conversation_time_periods.keys())) > 1 and current_time_period == 'morning':
+        issues_found.append("Simulation state not updating - conversations show different time periods but state shows morning")
+    
+    # Check for frontend display issue
+    if current_time_period != 'morning':
+        issues_found.append("May be a frontend display issue - backend state shows correct time period")
+    
+    if issues_found:
+        print("Issues identified:")
+        for i, issue in enumerate(issues_found, 1):
+            print(f"  {i}. {issue}")
+    else:
+        print("No obvious issues found in time progression system")
+    
+    # Step 7: Test conversation generation to trigger time advancement
+    print("\nStep 7: Testing conversation generation to trigger time advancement")
+    
+    if agent_count >= 3:
+        print("Attempting to generate a conversation to test time advancement...")
+        
+        conv_gen_test, conv_gen_response = run_test(
+            "Generate Conversation to Test Time Advancement",
+            "/conversation/generate",
+            method="POST",
+            auth=True,
+            expected_keys=["success"]
+        )
+        
+        if conv_gen_test and conv_gen_response:
+            print("✅ Successfully generated conversation")
+            
+            # Check simulation state again
+            print("Checking simulation state after conversation generation...")
+            
+            sim_state_after_test, sim_state_after_response = run_test(
+                "Get Simulation State After Conversation",
+                "/simulation/state",
+                method="GET",
+                auth=True
+            )
+            
+            if sim_state_after_test and sim_state_after_response:
+                new_day = sim_state_after_response.get('current_day', current_day)
+                new_time_period = sim_state_after_response.get('current_time_period', current_time_period)
+                
+                if new_day != current_day or new_time_period != current_time_period:
+                    print(f"✅ Time progression occurred: Day {current_day}, {current_time_period} → Day {new_day}, {new_time_period}")
+                else:
+                    print(f"⚠️ No time progression after conversation generation")
+        else:
+            print("❌ Failed to generate conversation for testing")
+    
+    # Summary
+    print("\nTIME PROGRESSION INVESTIGATION SUMMARY:")
+    print(f"Total conversations: {total_conversations}")
+    print(f"Total messages: {total_messages}")
+    print(f"Agent count: {agent_count}")
+    print(f"Current state: Day {current_day}, {current_time_period}")
+    
+    if agent_count > 0:
+        print(f"Expected state: Day {expected_day}, {expected_time}")
+        
+        if time_mismatch:
+            print("❌ TIME PROGRESSION ISSUE CONFIRMED")
+            return False, {
+                "issue": "Time progression mismatch",
+                "expected": f"Day {expected_day}, {expected_time}",
+                "actual": f"Day {current_day}, {current_time_period}",
+                "total_messages": total_messages,
+                "agent_count": agent_count,
+                "issues": issues_found
+            }
+        else:
+            print("✅ Time progression working correctly")
+            return True, {
+                "status": "Working correctly",
+                "current_state": f"Day {current_day}, {current_time_period}",
+                "total_messages": total_messages,
+                "agent_count": agent_count
+            }
+    else:
+        print("⚠️ Cannot fully test time progression without agents")
+        return False, "No agents found for testing"
+
 def test_enhanced_document_generation():
     """Test the enhanced document generation system"""
     print("\n" + "="*80)
