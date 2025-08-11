@@ -1429,31 +1429,21 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     });
   };
 
-  // Helper function to calculate day and time period from rounds
-  // NEW ROUND SYSTEM: Each round = each agent sends 3 messages
-  // Each time period (Morning/Afternoon/Evening) = 3 rounds
-  // Time advances after 3 completed rounds
+  // Helper function to calculate day and time period - SIMPLIFIED SYSTEM
+  // Each agent sends 9 messages per time period
+  // With 3 agents = 27 messages per time period (Morning/Afternoon/Evening)
   const calculateDayAndTime = (totalMessages, agentCount) => {
-    if (totalMessages === 0 || agentCount === 0) return { day: 1, period: "Morning", round: 1 };
+    if (totalMessages === 0 || agentCount === 0) return { day: 1, period: "Morning" };
     
-    // Calculate actual round number based on message cycles
-    const messagesPerRound = agentCount * 3;
-    const currentRound = Math.floor((totalMessages - 1) / messagesPerRound) + 1;
+    // Simple calculation: 9 messages per agent per time period
+    const messagesPerTimePeriod = agentCount * 9;
+    const timePeriodNumber = Math.floor(totalMessages / messagesPerTimePeriod);
     
-    // Each time period = 3 rounds, Each day = 9 rounds  
-    const day = Math.floor((currentRound - 1) / 9) + 1;
-    const roundInDay = ((currentRound - 1) % 9) + 1;
+    const day = Math.floor(timePeriodNumber / 3) + 1;
+    const periods = ["Morning", "Afternoon", "Evening"];
+    const period = periods[timePeriodNumber % 3];
     
-    let period;
-    if (roundInDay <= 3) {
-      period = "Morning";
-    } else if (roundInDay <= 6) {
-      period = "Afternoon";
-    } else {
-      period = "Evening";
-    }
-    
-    return { day, period, round: currentRound };
+    return { day, period };
   };
 
   // Helper function to render markdown bold text with search highlighting
