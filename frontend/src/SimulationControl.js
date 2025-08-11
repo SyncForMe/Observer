@@ -2141,9 +2141,25 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       })()}
                     </div>
                     <div className="text-green-400 mt-1">
-                      Messages per Period: {(() => {
+                      {(() => {
                         const agentCount = Array.isArray(agents) ? agents.length : 0;
-                        return agentCount * 9;
+                        const totalMessages = Array.isArray(conversations) ? 
+                          conversations.reduce((total, conv) => {
+                            const messages = conv.messages || [];
+                            const agentMessages = messages.filter(msg => msg.agent_id !== "observer");
+                            return total + agentMessages.length;
+                          }, 0) : 0;
+                        
+                        // Calculate messages until next day
+                        // Each day = 3 time periods × (agentCount × 9) messages per period
+                        const messagesPerDay = agentCount * 9 * 3; // 3 time periods per day
+                        const currentDayMessages = totalMessages % messagesPerDay;
+                        const messagesUntilNextDay = messagesPerDay - currentDayMessages;
+                        
+                        if (messagesUntilNextDay === messagesPerDay) {
+                          return `Next day in ${messagesPerDay} messages`;
+                        }
+                        return `Next day in ${messagesUntilNextDay} messages`;
                       })()}
                     </div>
                   </div>
