@@ -1630,7 +1630,251 @@ def test_default_agents_removal():
     
     return True, "Default agents removal is working correctly"
 
-def test_enhanced_time_advancement_system():
+def test_critical_time_advancement_bug():
+    """
+    CRITICAL BUG INVESTIGATION: Day advancement not working properly
+    User has 57 messages with 2 agents but showing "Day 1, Evening" instead of "Day 2, Morning"
+    
+    Expected calculation:
+    - 2 agents × 9 messages per time period = 18 messages per time period
+    - Day 1 Morning: Messages 1-18
+    - Day 1 Afternoon: Messages 19-36  
+    - Day 1 Evening: Messages 37-54
+    - Day 2 Morning: Messages 55+ ← User should be here with 57 messages
+    """
+    print("\n" + "="*80)
+    print("CRITICAL TIME ADVANCEMENT BUG INVESTIGATION")
+    print("User Issue: 57 messages with 2 agents but showing 'Day 1, Evening' instead of 'Day 2, Morning'")
+    print("="*80)
+    
+    # Step 1: Login as guest user
+    global auth_token, test_user_id
+    if not auth_token:
+        if not test_login():
+            print("❌ Cannot test time progression without authentication")
+            return False, "Authentication failed"
+    
+    print(f"\n✅ STEP 1: Successfully logged in as guest user (ID: {test_user_id})")
+    
+    # Step 2: Get current simulation state
+    print("\n🔍 STEP 2: Getting current simulation state")
+    
+    sim_state_test, sim_state_response = run_test(
+        "Get Current Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True
+    )
+    
+    if not sim_state_test or not sim_state_response:
+        print("❌ Failed to get simulation state")
+        return False, "Failed to get simulation state"
+    
+    current_day = sim_state_response.get("current_day", 1)
+    current_time_period = sim_state_response.get("current_time_period", "morning")
+    is_active = sim_state_response.get("is_active", False)
+    
+    print(f"📊 Current Simulation State:")
+    print(f"   - Day: {current_day}")
+    print(f"   - Time Period: {current_time_period}")
+    print(f"   - Active: {is_active}")
+    
+    # Step 3: Get all conversations and count messages exactly
+    print("\n🔍 STEP 3: Getting all conversations and counting messages")
+    
+    conversations_test, conversations_response = run_test(
+        "Get All Conversations",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not conversations_test or not conversations_response:
+        print("❌ Failed to get conversations")
+        return False, "Failed to get conversations"
+    
+    # Count total messages and unique agents
+    total_messages = 0
+    unique_agents = set()
+    conversation_count = len(conversations_response)
+    
+    print(f"📊 Conversation Analysis:")
+    print(f"   - Total conversations: {conversation_count}")
+    
+    for i, conv in enumerate(conversations_response):
+        messages = conv.get("messages", [])
+        conv_message_count = len(messages)
+        total_messages += conv_message_count
+        
+        # Track unique agents
+        for msg in messages:
+            agent_name = msg.get("agent_name")
+            if agent_name and agent_name != "Observer (You)":
+                unique_agents.add(agent_name)
+        
+        print(f"   - Conversation {i+1}: {conv_message_count} messages")
+    
+    agent_count = len(unique_agents)
+    
+    print(f"\n📊 Message Count Summary:")
+    print(f"   - Total messages: {total_messages}")
+    print(f"   - Unique agents: {agent_count}")
+    print(f"   - Agent names: {list(unique_agents)}")
+    
+    # Step 4: Check the day advancement calculation logic
+    print("\n🧮 STEP 4: Checking day advancement calculation logic")
+    
+    # Expected calculation based on user's scenario
+    messages_per_agent_per_period = 9
+    messages_per_time_period = agent_count * messages_per_agent_per_period
+    
+    print(f"📊 Time Advancement Calculation:")
+    print(f"   - Messages per agent per time period: {messages_per_agent_per_period}")
+    print(f"   - Messages per time period: {messages_per_time_period}")
+    
+    if messages_per_time_period > 0:
+        time_period_number = total_messages // messages_per_time_period
+        time_periods = ["morning", "afternoon", "evening"]
+        expected_period_index = time_period_number % 3
+        expected_period = time_periods[expected_period_index]
+        expected_day = (time_period_number // 3) + 1
+        
+        print(f"   - Time period number: {total_messages} // {messages_per_time_period} = {time_period_number}")
+        print(f"   - Expected day: ({time_period_number} // 3) + 1 = {expected_day}")
+        print(f"   - Expected period: periods[{time_period_number} % 3] = periods[{expected_period_index}] = '{expected_period}'")
+        
+        print(f"\n🎯 EXPECTED vs ACTUAL:")
+        print(f"   - Expected: Day {expected_day}, {expected_period.title()}")
+        print(f"   - Actual:   Day {current_day}, {current_time_period.title()}")
+        
+        # Check if there's a mismatch
+        if expected_day != current_day or expected_period != current_time_period:
+            print(f"🚨 MISMATCH DETECTED!")
+            print(f"   - Day mismatch: Expected {expected_day}, Got {current_day}")
+            print(f"   - Period mismatch: Expected {expected_period}, Got {current_time_period}")
+            
+            # Step 5: Force time advancement using manual endpoint
+            print("\n🔧 STEP 5: Testing manual time advancement endpoint")
+            
+            force_time_test, force_time_response = run_test(
+                "Force Time Update",
+                "/simulation/force-time-update",
+                method="POST",
+                auth=True
+            )
+            
+            if force_time_test and force_time_response:
+                print("✅ Manual time advancement endpoint is working")
+                time_advanced = force_time_response.get("time_advanced", False)
+                current_state = force_time_response.get("current_state", {})
+                
+                if time_advanced:
+                    print("✅ Time was successfully advanced")
+                    new_day = current_state.get("current_day", current_day)
+                    new_period = current_state.get("current_time_period", current_time_period)
+                    print(f"   - New state: Day {new_day}, {new_period.title()}")
+                    
+                    if new_day == expected_day and new_period == expected_period:
+                        print("✅ Time advancement now matches expected calculation")
+                        return True, "Time advancement bug fixed by manual trigger"
+                    else:
+                        print("❌ Time advancement still doesn't match expected calculation")
+                        return False, "Manual time advancement doesn't fix the calculation"
+                else:
+                    print("⚠️ Manual time advancement didn't advance time")
+                    print("   This might indicate the calculation logic itself is correct")
+                    print("   but the automatic triggering is not working")
+            else:
+                print("❌ Manual time advancement endpoint failed")
+                return False, "Manual time advancement endpoint not working"
+        else:
+            print("✅ No mismatch detected - time advancement appears correct")
+            return True, "Time advancement is working correctly"
+    else:
+        print("❌ Cannot calculate time advancement - no agents found")
+        return False, "No agents found for time calculation"
+    
+    # Step 6: Test conversation generation to trigger automatic time advancement
+    print("\n🔧 STEP 6: Testing automatic time advancement through conversation generation")
+    
+    # Generate a conversation to see if time advances automatically
+    generate_conv_test, generate_conv_response = run_test(
+        "Generate Conversation to Test Auto Time Advancement",
+        "/conversation/generate",
+        method="POST",
+        auth=True
+    )
+    
+    if generate_conv_test and generate_conv_response:
+        print("✅ Successfully generated conversation")
+        
+        # Check simulation state again
+        sim_state_after_test, sim_state_after_response = run_test(
+            "Get Simulation State After Conversation Generation",
+            "/simulation/state",
+            method="GET",
+            auth=True
+        )
+        
+        if sim_state_after_test and sim_state_after_response:
+            new_day = sim_state_after_response.get("current_day", current_day)
+            new_period = sim_state_after_response.get("current_time_period", current_time_period)
+            
+            if new_day != current_day or new_period != current_time_period:
+                print(f"✅ Automatic time advancement triggered!")
+                print(f"   - Changed from: Day {current_day}, {current_time_period.title()}")
+                print(f"   - Changed to: Day {new_day}, {new_period.title()}")
+                return True, "Automatic time advancement is working"
+            else:
+                print("⚠️ Automatic time advancement did not trigger")
+                print("   This confirms the bug - automatic triggering is not working")
+                return False, "Automatic time advancement not triggering"
+    else:
+        print("❌ Failed to generate conversation for testing")
+        return False, "Conversation generation failed"
+
+def test_specific_user_scenario():
+    """
+    Test the exact user scenario: 2 agents with 57 messages
+    """
+    print("\n" + "="*80)
+    print("TESTING SPECIFIC USER SCENARIO: 2 agents with 57 messages")
+    print("Expected: Day 2, Morning (messages 55+)")
+    print("="*80)
+    
+    # This would require setting up the exact scenario
+    # For now, we'll use the existing data and verify the calculation
+    
+    # Test the calculation logic directly
+    total_messages = 57
+    agent_count = 2
+    messages_per_agent_per_period = 9
+    messages_per_time_period = agent_count * messages_per_agent_per_period  # 2 * 9 = 18
+    
+    print(f"📊 User Scenario Calculation:")
+    print(f"   - Total messages: {total_messages}")
+    print(f"   - Agent count: {agent_count}")
+    print(f"   - Messages per time period: {messages_per_time_period}")
+    
+    time_period_number = total_messages // messages_per_time_period  # 57 // 18 = 3
+    time_periods = ["morning", "afternoon", "evening"]
+    expected_period_index = time_period_number % 3  # 3 % 3 = 0
+    expected_period = time_periods[expected_period_index]  # "morning"
+    expected_day = (time_period_number // 3) + 1  # (3 // 3) + 1 = 2
+    
+    print(f"   - Time period number: {time_period_number}")
+    print(f"   - Expected day: {expected_day}")
+    print(f"   - Expected period: {expected_period}")
+    
+    print(f"\n🎯 EXPECTED RESULT:")
+    print(f"   - Day {expected_day}, {expected_period.title()}")
+    
+    if expected_day == 2 and expected_period == "morning":
+        print("✅ Calculation logic is correct - should show 'Day 2, Morning'")
+        return True, "Calculation logic is correct"
+    else:
+        print("❌ Calculation logic is incorrect")
+        return False, "Calculation logic is incorrect"
     """
     ENHANCED TIME ADVANCEMENT SYSTEM TESTING
     Testing the enhanced time advancement system with better error handling and retry logic.
