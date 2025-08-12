@@ -1828,12 +1828,31 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 <>
                   {/* Display Regular Conversations */}
                   {(Array.isArray(conversations) ? conversations : []).map((conversation, conversationIndex) => {
-                    // Use the time_period from the conversation data instead of calculating
-                    const timePeriodDisplay = conversation.time_period || "Day 1 - Morning";
+                    // Calculate the time period this conversation should display based on total messages up to this point
+                    let messagesUpToThisConversation = 0;
+                    for (let i = 0; i <= conversationIndex; i++) {
+                      if (conversations[i] && conversations[i].messages) {
+                        messagesUpToThisConversation += conversations[i].messages.length;
+                      }
+                    }
+                    
+                    // Use the conversation's stored time_period if available, otherwise calculate it
+                    let timePeriodDisplay = conversation.time_period;
+                    
+                    // If no stored time_period, calculate it based on position in conversation flow
+                    if (!timePeriodDisplay) {
+                      const agentCount = Array.isArray(agents) ? agents.length : 3;
+                      const messagesPerPeriod = agentCount * 9;
+                      const timePeriodNumber = Math.floor((messagesUpToThisConversation - 1) / messagesPerPeriod);
+                      const day = Math.floor(timePeriodNumber / 3) + 1;
+                      const periods = ["Morning", "Afternoon", "Evening"];
+                      const period = periods[timePeriodNumber % 3];
+                      timePeriodDisplay = `Day ${day} - ${period}`;
+                    }
                     
                     return (
                       <div key={conversation.id || conversationIndex} className="space-y-2">
-                        {/* Time Period Header - Simplified */}
+                        {/* Time Period Header - Shows progression through time */}
                         <div className="flex justify-center mb-2">
                           <div className="bg-white/5 rounded-full px-3 py-1 border border-white/10">
                             <span className="text-white/70 text-xs font-medium">
