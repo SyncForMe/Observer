@@ -1614,20 +1614,29 @@ def test_default_agents_removal():
     
     return True, "Default agents removal is working correctly"
 
-def test_time_progression_investigation():
+def test_enhanced_time_advancement_system():
     """
-    CRITICAL TIME PROGRESSION INVESTIGATION
-    User reports: 28 messages with 3 agents but still showing "Day 1, Morning" instead of "Day 1, Afternoon"
+    ENHANCED TIME ADVANCEMENT SYSTEM TESTING
+    Testing the enhanced time advancement system with better error handling and retry logic.
     
-    According to simplified system:
+    User Issue: 3 agents and 28 messages but shows "Day 1, Morning" instead of "Day 1, Afternoon"
+    
+    Enhanced Features to Test:
+    1. Enhanced logging - More detailed debug output
+    2. Retry logic - 3 attempts to update simulation state
+    3. Database verification - Confirms update worked
+    4. Manual force endpoint - `/simulation/force-time-update` for manual testing
+    
+    Expected Behavior:
     - Each agent sends 9 messages per time period  
     - With 3 agents = 27 messages per time period
     - Messages 1-27 should be "Day 1, Morning"
     - Messages 28+ should be "Day 1, Afternoon"
     """
     print("\n" + "="*80)
-    print("CRITICAL TIME PROGRESSION INVESTIGATION")
-    print("User Issue: 28 messages with 3 agents but still showing 'Day 1, Morning' instead of 'Day 1, Afternoon'")
+    print("ENHANCED TIME ADVANCEMENT SYSTEM TESTING")
+    print("Testing enhanced time advancement with retry logic and better error handling")
+    print("User Issue: 3 agents and 28 messages but shows 'Day 1, Morning' instead of 'Day 1, Afternoon'")
     print("Expected: Messages 1-27 = 'Day 1, Morning', Messages 28+ = 'Day 1, Afternoon'")
     print("="*80)
     
