@@ -5590,6 +5590,9 @@ def test_time_advancement_debugging_scenario():
     # Step 6: Get updated conversation data
     print("\n📋 Step 6: Get updated conversation data")
     
+    threshold_crossed = False  # Initialize the variable
+    new_messages = 0  # Initialize the variable
+    
     updated_conversations_test, updated_conversations_response = run_test(
         "Get Updated Conversations",
         "/conversations",
