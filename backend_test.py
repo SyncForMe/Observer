@@ -5988,23 +5988,36 @@ def test_time_advancement_debugging_scenario():
     }
 
 if __name__ == "__main__":
-    # Run the specific time advancement debugging scenario
-    print("🔍 RUNNING TIME ADVANCEMENT DEBUGGING SCENARIO")
+    # Run the critical time advancement bug investigation
+    print("🚨 RUNNING CRITICAL TIME ADVANCEMENT BUG INVESTIGATION")
     print("="*80)
     
-    test_success, test_result = test_time_advancement_debugging_scenario()
+    # Test 1: Critical bug investigation
+    print("\n🔍 TEST 1: Critical Time Advancement Bug Investigation")
+    bug_test_success, bug_test_result = test_critical_time_advancement_bug()
     
+    # Test 2: Specific user scenario calculation verification
+    print("\n🔍 TEST 2: User Scenario Calculation Verification")
+    calc_test_success, calc_test_result = test_specific_user_scenario()
+    
+    # Print final results
     print("\n" + "="*80)
-    print("🎯 TIME ADVANCEMENT DEBUGGING RESULTS")
+    print("🎯 CRITICAL BUG INVESTIGATION RESULTS")
     print("="*80)
     
-    if test_success:
+    if bug_test_success and calc_test_success:
         print("✅ TIME ADVANCEMENT SYSTEM IS WORKING CORRECTLY")
         print("✅ Backend time progression logic is functional")
-        print("✅ Issue is likely frontend caching - frontend should refresh simulation state")
+        print("✅ User's issue may be frontend caching or data synchronization")
+        print(f"✅ Bug investigation result: {bug_test_result}")
+        print(f"✅ Calculation verification: {calc_test_result}")
     else:
-        print("❌ TIME ADVANCEMENT SYSTEM HAS ISSUES")
-        print(f"❌ Issue type: {test_result.get('issue_type', 'unknown')}")
-        print("❌ Backend time advancement needs attention")
+        print("❌ TIME ADVANCEMENT SYSTEM HAS CRITICAL ISSUES")
+        if not bug_test_success:
+            print(f"❌ Bug investigation failed: {bug_test_result}")
+        if not calc_test_success:
+            print(f"❌ Calculation verification failed: {calc_test_result}")
+        print("❌ Backend time advancement needs immediate attention")
     
     print("="*80)
+    print_summary()
