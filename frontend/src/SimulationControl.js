@@ -2406,7 +2406,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               <div className="flex justify-between items-center mb-2">
                 <h4 className="text-white/80 text-sm font-medium">Generate Report</h4>
                 <button
-                  onClick={() => setShowReport(!showReport)}
+                  onClick={() => {
+                    // Accordion behavior: Close Set Scenario section when expanding Generate Report
+                    if (!showReport && scenarioExpanded) {
+                      setScenarioExpanded(false);
+                    }
+                    setShowReport(!showReport);
+                  }}
                   className="text-white/60 hover:text-white transition-all duration-200"
                   style={{ transform: showReport ? 'rotate(180deg)' : 'rotate(0deg)' }}
                 >
