@@ -2138,7 +2138,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                         if (messagesUntilNext === messagesPerPeriod) {
                           return `Progress to ${nextPeriod}: 0%`;
                         }
-                        return `Progress to ${nextPeriod}: ${Math.round((currentPeriodMessages / messagesPerPeriod) * 100)}%`;
+                        return `Progress to ${nextPeriod}: ${Math.round((currentPeriodMessages / messagesPerPeriod) * 100)}% (${messagesUntilNext} msgs left)`;
                       })()}
                     </div>
                   </div>
