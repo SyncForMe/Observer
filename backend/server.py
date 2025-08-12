@@ -4073,6 +4073,32 @@ async def get_random_scenario():
         "scenario_name": selected_scenario["name"]
     }
 
+@api_router.post("/simulation/force-time-update")
+async def force_time_update(current_user: User = Depends(get_current_user)):
+    """Force time advancement check - useful for debugging time progression issues"""
+    try:
+        print(f"🔧 Manual time advancement check triggered by user {current_user.id}")
+        
+        # Force check time advancement
+        time_advanced = await check_and_advance_time_automatically(current_user.id)
+        
+        # Get updated state
+        state = await db.simulation_state.find_one({"user_id": current_user.id})
+        
+        return {
+            "message": "Time advancement check completed",
+            "time_advanced": time_advanced,
+            "current_state": {
+                "current_day": state.get("current_day", 1) if state else 1,
+                "current_time_period": state.get("current_time_period", "morning") if state else "morning",
+                "is_active": state.get("is_active", False) if state else False
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error in force time update: {e}")
+        raise HTTPException(status_code=500, detail=f"Force time update failed: {str(e)}")
+
 @api_router.post("/simulation/pause")
 async def pause_simulation(current_user: User = Depends(get_current_user)):
     """Pause the simulation (stops auto-generation)"""
