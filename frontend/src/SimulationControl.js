@@ -1379,12 +1379,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
+  // Enhanced auto report toggle handlers for both daily and weekly reports
   const handleAutoReportToggle = async () => {
     try {
       const newStatus = !autoReportEnabled;
       setAutoReportEnabled(newStatus);
       
-      // Call backend to enable/disable auto reports
+      // Call backend to enable/disable auto weekly reports
       await axios.post(`${API}/simulation/auto-weekly-report`, {
         enabled: newStatus
       }, {
@@ -1393,9 +1394,29 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       console.log(`Auto weekly reports ${newStatus ? 'enabled' : 'disabled'}`);
     } catch (error) {
-      console.error('Error toggling auto report:', error);
+      console.error('Error toggling auto weekly report:', error);
       // Revert on error
       setAutoReportEnabled(!autoReportEnabled);
+    }
+  };
+
+  const handleAutoDailyReportToggle = async () => {
+    try {
+      const newStatus = !autoDailyReportEnabled;
+      setAutoDailyReportEnabled(newStatus);
+      
+      // Call backend to enable/disable auto daily reports
+      await axios.post(`${API}/simulation/auto-daily-report`, {
+        enabled: newStatus
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log(`Auto daily reports ${newStatus ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Error toggling auto daily report:', error);
+      // Revert on error
+      setAutoDailyReportEnabled(!autoDailyReportEnabled);
     }
   };
 
