@@ -1552,11 +1552,15 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 <span>📋 {scenarioName}</span>
                 <button
                   onClick={() => {
-                    // Accordion behavior: Close Generate Report section when expanding Set Scenario
-                    if (!scenarioExpanded && showReport) {
+                    // Accordion behavior: Always close Generate Report when expanding Set Scenario
+                    if (scenarioExpanded) {
+                      // If already expanded, just collapse it
+                      setScenarioExpanded(false);
+                    } else {
+                      // If collapsed, expand it and ensure Generate Report is closed
                       setShowReport(false);
+                      setScenarioExpanded(true);
                     }
-                    setScenarioExpanded(!scenarioExpanded);
                   }}
                   className="text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
                   title={scenarioExpanded ? "Collapse scenario details" : "Expand scenario details"}
