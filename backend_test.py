@@ -1,14 +1,30 @@
 #!/usr/bin/env python3
 """
-Time Progression Investigation Test
-Investigating why user reports "Day 1, Afternoon" with 27 messages when they should be in "Day 1, Morning"
-According to simplified system:
-- Each agent sends 9 messages per time period
-- With 3 agents = 27 total messages per time period
-- Time progression should be:
-  - Day 1 Morning: Messages 1-27
-  - Day 1 Afternoon: Messages 28-54
-  - Day 1 Evening: Messages 55-81
+CRITICAL TIME ADVANCEMENT BUG INVESTIGATION
+User Issue: 57 messages with 2 agents but showing "Day 1, Evening" instead of "Day 2, Morning"
+
+EXPECTED CALCULATION:
+- 2 agents × 9 messages per time period = 18 messages per time period
+- Day 1 Morning: Messages 1-18
+- Day 1 Afternoon: Messages 19-36  
+- Day 1 Evening: Messages 37-54
+- Day 2 Morning: Messages 55+ ← User should be here with 57 messages
+
+ACTUAL BEHAVIOR:
+- User sees "Day 1, Evening" with 57 messages
+- Day advancement is not triggering
+
+DEBUG INVESTIGATION:
+1. Log in as guest user
+2. Get current simulation state and verify current_day and current_time_period
+3. Get all conversations and count messages exactly (should be 57)
+4. Check the day advancement calculation logic:
+   - time_period_number = 57 // 18 = 3
+   - expected_day = (3 // 3) + 1 = 2
+   - expected_period = periods[3 % 3] = periods[0] = "morning"
+   - Should result in "Day 2, Morning"
+5. Force time advancement using the manual endpoint
+6. Check if the issue is in the calculation logic or database update
 """
 
 import requests
