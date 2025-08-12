@@ -5368,57 +5368,371 @@ def test_agent_database():
         "has_teams": teams_test if 'teams_test' in locals() else False
     }
 
-if __name__ == "__main__":
-    print("Starting TIME PROGRESSION INVESTIGATION...")
-    print(f"Backend URL: {BACKEND_URL}")
-    print(f"API URL: {API_URL}")
+def test_time_advancement_debugging_scenario():
+    """
+    SPECIFIC TIME ADVANCEMENT DEBUGGING SCENARIO
     
-    # Test authentication first
+    User reports: 28 messages with 3 agents but still showing "Day 1, Morning" in frontend,
+    even though backend shows "Day 1, Afternoon".
+    
+    Test Plan:
+    1. Log in as guest user
+    2. Generate exactly 1 more conversation (to push from 28 to ~31 messages) 
+    3. Immediately check the simulation state before and after
+    4. Verify that check_and_advance_time_automatically() is being called
+    5. Check if the issue is timing - maybe the frontend is caching old simulation state
+    6. Test the exact calculation logic:
+       - With 3 agents, messages per period = 27
+       - Messages 1-27 = Day 1, Morning  
+       - Messages 28+ = Day 1, Afternoon
+    """
     print("\n" + "="*80)
-    print("AUTHENTICATION TESTING")
+    print("🔍 TIME ADVANCEMENT DEBUGGING SCENARIO")
+    print("User Issue: 28 messages with 3 agents showing 'Day 1, Morning' instead of 'Day 1, Afternoon'")
+    print("Backend shows 'Day 1, Afternoon' but frontend shows 'Day 1, Morning'")
     print("="*80)
     
-    # Test login functionality
-    login_success = test_login()
+    # Step 1: Login as guest user
+    print("\n📋 Step 1: Login as guest user")
     
-    if not login_success:
-        print("❌ Authentication failed. Cannot proceed with time progression testing.")
-        sys.exit(1)
+    global auth_token, test_user_id
+    guest_test, guest_response = run_test(
+        "Guest Login",
+        "/auth/test-login",
+        method="POST",
+        expected_keys=["access_token", "token_type", "user"]
+    )
     
-    # Run the specific time progression investigation
-    print("\n" + "="*80)
-    print("TIME PROGRESSION INVESTIGATION")
-    print("="*80)
+    if not guest_test or not guest_response:
+        print("❌ Failed to login as guest user")
+        return False, "Failed to login as guest user"
     
-    time_progression_success, time_progression_result = test_time_progression_investigation()
+    auth_token = guest_response.get("access_token")
+    user_data = guest_response.get("user", {})
+    test_user_id = user_data.get("id")
+    print(f"✅ Successfully logged in as guest user (ID: {test_user_id})")
     
-    # Print final summary
-    print_summary()
+    # Step 2: Get initial simulation state and conversation data
+    print("\n📋 Step 2: Get initial simulation state and conversation data")
     
-    # Print specific findings for the main agent
-    print("\n" + "="*80)
-    print("INVESTIGATION RESULTS FOR MAIN AGENT")
-    print("="*80)
+    # Get simulation state
+    sim_state_test, sim_state_response = run_test(
+        "Get Initial Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True
+    )
     
-    if time_progression_success:
-        print("✅ TIME PROGRESSION SYSTEM IS WORKING CORRECTLY")
-        print("   The user's issue may be resolved or was a temporary glitch.")
-    else:
-        print("❌ TIME PROGRESSION ISSUES CONFIRMED")
-        print("   The user's reported issue is reproducible.")
+    if not sim_state_test or not sim_state_response:
+        print("❌ Failed to get simulation state")
+        return False, "Failed to get simulation state"
+    
+    initial_day = sim_state_response.get("current_day", 1)
+    initial_time_period = sim_state_response.get("current_time_period", "morning")
+    is_active = sim_state_response.get("is_active", False)
+    
+    print(f"Initial simulation state:")
+    print(f"  - Day: {initial_day}")
+    print(f"  - Time Period: {initial_time_period}")
+    print(f"  - Active: {is_active}")
+    
+    # Get conversations and count messages
+    conversations_test, conversations_response = run_test(
+        "Get Initial Conversations",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if not conversations_test or not conversations_response:
+        print("❌ Failed to get conversations")
+        return False, "Failed to get conversations"
+    
+    # Count total messages
+    initial_total_messages = 0
+    conversation_details = []
+    
+    for conversation in conversations_response:
+        messages = conversation.get("messages", [])
+        message_count = len(messages)
+        initial_total_messages += message_count
         
-        if isinstance(time_progression_result, dict) and "issues" in time_progression_result:
-            print("\n🔧 SPECIFIC ISSUES FOUND:")
-            for i, issue in enumerate(time_progression_result["issues"], 1):
-                print(f"   {i}. {issue}")
+        conversation_details.append({
+            "id": conversation.get("id"),
+            "round_number": conversation.get("round_number"),
+            "time_period": conversation.get("time_period"),
+            "message_count": message_count,
+            "created_at": conversation.get("created_at")
+        })
+    
+    print(f"Initial conversation data:")
+    print(f"  - Total conversations: {len(conversations_response)}")
+    print(f"  - Total messages: {initial_total_messages}")
+    
+    # Get agents
+    agents_test, agents_response = run_test(
+        "Get Agents",
+        "/agents",
+        method="GET",
+        auth=True
+    )
+    
+    if not agents_test or not agents_response:
+        print("❌ Failed to get agents")
+        return False, "Failed to get agents"
+    
+    agent_count = len(agents_response)
+    print(f"  - Number of agents: {agent_count}")
+    
+    # Step 3: Calculate expected time progression
+    print("\n📋 Step 3: Calculate expected time progression")
+    
+    if agent_count == 3:
+        messages_per_period = 27  # 3 agents × 9 messages per agent per time period
+        print(f"With 3 agents: 27 messages per time period")
+        print(f"Time progression logic:")
+        print(f"  - Messages 1-27: Day 1, Morning")
+        print(f"  - Messages 28-54: Day 1, Afternoon")
+        print(f"  - Messages 55-81: Day 1, Evening")
+        
+        # Determine expected time period for current message count
+        if initial_total_messages <= 27:
+            expected_time_period = "morning"
+            expected_day = 1
+        elif initial_total_messages <= 54:
+            expected_time_period = "afternoon"
+            expected_day = 1
+        elif initial_total_messages <= 81:
+            expected_time_period = "evening"
+            expected_day = 1
+        else:
+            # Calculate for higher counts
+            period_index = (initial_total_messages - 1) // 27
+            expected_day = (period_index // 3) + 1
+            time_periods = ["morning", "afternoon", "evening"]
+            expected_time_period = time_periods[period_index % 3]
+        
+        print(f"With {initial_total_messages} messages, expected: Day {expected_day}, {expected_time_period}")
+        
+        # Check if backend state matches expected
+        if initial_day == expected_day and initial_time_period == expected_time_period:
+            print("✅ Backend simulation state matches expected calculation")
+            backend_correct = True
+        else:
+            print(f"❌ Backend simulation state mismatch!")
+            print(f"   Expected: Day {expected_day}, {expected_time_period}")
+            print(f"   Backend shows: Day {initial_day}, {initial_time_period}")
+            backend_correct = False
+    else:
+        print(f"⚠️ Expected 3 agents but found {agent_count}")
+        backend_correct = False
+    
+    # Step 4: Generate exactly 1 more conversation
+    print("\n📋 Step 4: Generate exactly 1 more conversation to trigger time advancement")
+    
+    print(f"Current message count: {initial_total_messages}")
+    print("Generating 1 more conversation...")
+    
+    generate_start_time = time.time()
+    
+    generate_conv_test, generate_conv_response = run_test(
+        "Generate One More Conversation",
+        "/conversation/generate",
+        method="POST",
+        auth=True,
+        measure_time=True
+    )
+    
+    generate_end_time = time.time()
+    generation_time = generate_end_time - generate_start_time
+    
+    if not generate_conv_test or not generate_conv_response:
+        print("❌ Failed to generate conversation")
+        return False, "Failed to generate conversation"
+    
+    print(f"✅ Successfully generated conversation in {generation_time:.2f} seconds")
+    
+    # Step 5: Immediately check simulation state after generation
+    print("\n📋 Step 5: Immediately check simulation state after generation")
+    
+    # Wait a brief moment for any async processing
+    time.sleep(1)
+    
+    updated_sim_state_test, updated_sim_state_response = run_test(
+        "Get Updated Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True
+    )
+    
+    if not updated_sim_state_test or not updated_sim_state_response:
+        print("❌ Failed to get updated simulation state")
+        return False, "Failed to get updated simulation state"
+    
+    updated_day = updated_sim_state_response.get("current_day", 1)
+    updated_time_period = updated_sim_state_response.get("current_time_period", "morning")
+    
+    print(f"Updated simulation state:")
+    print(f"  - Day: {updated_day}")
+    print(f"  - Time Period: {updated_time_period}")
+    
+    # Check if time advanced
+    time_advanced = (updated_day != initial_day) or (updated_time_period != initial_time_period)
+    
+    if time_advanced:
+        print("✅ Time progression occurred after generating conversation")
+        print(f"   Changed from: Day {initial_day}, {initial_time_period}")
+        print(f"   Changed to: Day {updated_day}, {updated_time_period}")
+    else:
+        print("❌ Time progression did NOT occur after generating conversation")
+        print(f"   Still shows: Day {updated_day}, {updated_time_period}")
+    
+    # Step 6: Get updated conversation data
+    print("\n📋 Step 6: Get updated conversation data")
+    
+    updated_conversations_test, updated_conversations_response = run_test(
+        "Get Updated Conversations",
+        "/conversations",
+        method="GET",
+        auth=True
+    )
+    
+    if updated_conversations_test and updated_conversations_response:
+        updated_total_messages = sum(len(conv.get("messages", [])) for conv in updated_conversations_response)
+        new_messages = updated_total_messages - initial_total_messages
+        
+        print(f"Updated conversation data:")
+        print(f"  - Total conversations: {len(updated_conversations_response)}")
+        print(f"  - Total messages: {updated_total_messages} (was {initial_total_messages})")
+        print(f"  - New messages added: {new_messages}")
+        
+        if new_messages > 0:
+            print("✅ New messages were successfully added")
             
-            print("\n📊 CURRENT STATE:")
-            current_state = time_progression_result.get("current_state", {})
-            print(f"   - Day: {current_state.get('current_day', 'Unknown')}")
-            print(f"   - Time Period: {current_state.get('current_time_period', 'Unknown')}")
-            print(f"   - Message Count: {time_progression_result.get('message_count', 'Unknown')}")
-            print(f"   - Agent Count: {time_progression_result.get('agent_count', 'Unknown')}")
+            # Check if the new message count should trigger time advancement
+            if agent_count == 3:
+                if initial_total_messages <= 27 and updated_total_messages > 27:
+                    print("🎯 CRITICAL: Message count crossed the 27-message threshold!")
+                    print("   This should trigger advancement from 'Day 1, Morning' to 'Day 1, Afternoon'")
+                    threshold_crossed = True
+                else:
+                    threshold_crossed = False
+                    print(f"   Message count went from {initial_total_messages} to {updated_total_messages}")
+                    if updated_total_messages <= 27:
+                        print("   Still within Day 1, Morning range (1-27)")
+                    elif updated_total_messages <= 54:
+                        print("   Now in Day 1, Afternoon range (28-54)")
+                    elif updated_total_messages <= 81:
+                        print("   Now in Day 1, Evening range (55-81)")
+        else:
+            print("❌ No new messages were added")
+            threshold_crossed = False
+    else:
+        print("❌ Failed to get updated conversations")
+        threshold_crossed = False
+    
+    # Step 7: Test check_and_advance_time_automatically() function call
+    print("\n📋 Step 7: Verify time advancement function is being called")
+    
+    # Look for evidence that time advancement was called
+    if time_advanced and new_messages > 0:
+        print("✅ Evidence suggests check_and_advance_time_automatically() was called:")
+        print("   - New messages were added")
+        print("   - Time progression occurred")
+        time_function_called = True
+    elif new_messages > 0 and not time_advanced:
+        print("⚠️ New messages added but no time progression:")
+        print("   - This suggests check_and_advance_time_automatically() may NOT be called")
+        print("   - Or the function is called but not updating simulation state correctly")
+        time_function_called = False
+    else:
+        print("❌ Cannot determine if time advancement function was called")
+        time_function_called = False
+    
+    # Step 8: Frontend caching analysis
+    print("\n📋 Step 8: Frontend caching analysis")
+    
+    print("Potential frontend caching issues:")
+    if backend_correct and not time_advanced:
+        print("❌ Backend state was correct initially but didn't advance")
+        print("   - This suggests backend time advancement logic has issues")
+        caching_issue = False
+    elif time_advanced:
+        print("✅ Backend state advanced correctly")
+        print("   - If frontend still shows old state, it's likely a caching issue")
+        print("   - Frontend should refresh simulation state after conversation generation")
+        caching_issue = True
+    else:
+        print("⚠️ Backend state issues detected")
+        print("   - Need to fix backend before addressing frontend caching")
+        caching_issue = False
+    
+    # Step 9: Summary and recommendations
+    print("\n📋 Step 9: Summary and recommendations")
+    
+    print("\n🔍 DEBUGGING RESULTS:")
+    print(f"✅ Initial message count: {initial_total_messages}")
+    print(f"✅ Agent count: {agent_count}")
+    print(f"✅ New messages added: {new_messages}")
+    print(f"✅ Final message count: {updated_total_messages if 'updated_total_messages' in locals() else 'Unknown'}")
+    print(f"{'✅' if time_advanced else '❌'} Time progression occurred: {time_advanced}")
+    print(f"{'✅' if threshold_crossed else '❌'} 27-message threshold crossed: {threshold_crossed}")
+    
+    # Determine root cause
+    if agent_count == 3 and threshold_crossed and time_advanced:
+        print("\n✅ TIME ADVANCEMENT SYSTEM IS WORKING CORRECTLY!")
+        print("Root cause of user's issue is likely frontend caching")
+        print("Recommendation: Frontend should refresh simulation state after conversation generation")
+        result = True
+        issue_type = "frontend_caching"
+    elif agent_count == 3 and threshold_crossed and not time_advanced:
+        print("\n❌ TIME ADVANCEMENT FUNCTION NOT BEING CALLED OR NOT WORKING")
+        print("Root cause: check_and_advance_time_automatically() is not being called or has bugs")
+        print("Recommendation: Add time advancement call to conversation generation endpoint")
+        result = False
+        issue_type = "backend_time_advancement"
+    elif agent_count != 3:
+        print(f"\n⚠️ UNEXPECTED AGENT COUNT: {agent_count} (expected 3)")
+        print("Root cause: Test scenario doesn't match user's reported setup")
+        print("Recommendation: Ensure test has exactly 3 agents")
+        result = False
+        issue_type = "test_setup"
+    else:
+        print("\n❌ COMPLEX ISSUE DETECTED")
+        print("Multiple factors may be contributing to the problem")
+        print("Recommendation: Debug each component individually")
+        result = False
+        issue_type = "complex"
+    
+    return result, {
+        "issue_type": issue_type,
+        "initial_messages": initial_total_messages,
+        "final_messages": updated_total_messages if 'updated_total_messages' in locals() else initial_total_messages,
+        "agent_count": agent_count,
+        "time_advanced": time_advanced,
+        "threshold_crossed": threshold_crossed,
+        "backend_correct": backend_correct,
+        "caching_issue": caching_issue
+    }
+
+if __name__ == "__main__":
+    # Run the specific time advancement debugging scenario
+    print("🔍 RUNNING TIME ADVANCEMENT DEBUGGING SCENARIO")
+    print("="*80)
+    
+    test_success, test_result = test_time_advancement_debugging_scenario()
     
     print("\n" + "="*80)
-    print("TESTING COMPLETE")
+    print("🎯 TIME ADVANCEMENT DEBUGGING RESULTS")
+    print("="*80)
+    
+    if test_success:
+        print("✅ TIME ADVANCEMENT SYSTEM IS WORKING CORRECTLY")
+        print("✅ Backend time progression logic is functional")
+        print("✅ Issue is likely frontend caching - frontend should refresh simulation state")
+    else:
+        print("❌ TIME ADVANCEMENT SYSTEM HAS ISSUES")
+        print(f"❌ Issue type: {test_result.get('issue_type', 'unknown')}")
+        print("❌ Backend time advancement needs attention")
+    
     print("="*80)
