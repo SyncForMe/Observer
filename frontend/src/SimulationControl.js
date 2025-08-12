@@ -2425,11 +2425,36 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       </button>
                     </div>
                     
-                    {/* Auto Report Toggle */}
+                    {/* Auto Report Toggles - Daily and Weekly */}
+                    
+                    {/* Auto Daily Report Toggle */}
+                    <div className="p-3 bg-white/5 rounded-lg mb-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-white/80 text-sm font-medium">Auto Daily Reports</span>
+                          <p className="text-white/50 text-xs mt-1">Generate reports when each day completes</p>
+                        </div>
+                        <button
+                          onClick={handleAutoDailyReportToggle}
+                          className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
+                            autoDailyReportEnabled ? 'bg-green-600' : 'bg-gray-600'
+                          }`}
+                        >
+                          <div
+                            className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
+                              autoDailyReportEnabled ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Auto Weekly Report Toggle */}
                     <div className="p-3 bg-white/5 rounded-lg">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="text-white/80 text-sm font-medium">Auto Weekly Reports</span>
+                          <p className="text-white/50 text-xs mt-1">Generate summaries every 7 days</p>
                         </div>
                         <button
                           onClick={handleAutoReportToggle}
@@ -2443,9 +2468,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                             }`}
                           />
                         </button>
-                      </div>
-                      <div className="mt-1">
-                        <span className="text-white/50 text-xs">Automatic report generation</span>
                       </div>
                     </div>
                     
