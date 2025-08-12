@@ -426,7 +426,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const [reportLoading, setReportLoading] = useState(false);
   const [reportCardVisible, setReportCardVisible] = useState(false);
   const [reportCardExpanded, setReportCardExpanded] = useState(true);
-  const [autoReportEnabled, setAutoReportEnabled] = useState(false);
+  const [autoReportEnabled, setAutoReportEnabled] = useState(true); // Weekly reports - default ON
+  const [autoDailyReportEnabled, setAutoDailyReportEnabled] = useState(true); // Daily reports - default ON
   const [autoGenerateInterval, setAutoGenerateInterval] = useState(null);
   const [observerMessage, setObserverMessage] = useState('');
   const [isObserverLoading, setIsObserverLoading] = useState(false);
