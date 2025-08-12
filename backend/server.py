@@ -7266,6 +7266,36 @@ async def toggle_auto_mode(request: dict):
         "time_interval": time_interval
     }
 
+@api_router.post("/simulation/auto-daily-report")
+async def toggle_auto_daily_report(request: dict, current_user: User = Depends(get_current_user)):
+    """Enable/disable automatic daily report generation"""
+    try:
+        enabled = request.get("enabled", True)
+        
+        # Update simulation state
+        result = await db.simulation_state.update_one(
+            {"user_id": current_user.id},
+            {"$set": {"daily_reports_enabled": enabled}}
+        )
+        
+        if result.matched_count == 0:
+            # Create simulation state if it doesn't exist
+            state = SimulationState(
+                user_id=current_user.id,
+                daily_reports_enabled=enabled
+            )
+            await db.simulation_state.insert_one(state.dict())
+        
+        print(f"Auto daily reports {'enabled' if enabled else 'disabled'} for user {current_user.id}")
+        
+        return {
+            "message": f"Auto daily reports {'enabled' if enabled else 'disabled'}",
+            "daily_reports_enabled": enabled
+        }
+    except Exception as e:
+        print(f"Error toggling auto daily reports: {e}")
+        raise HTTPException(status_code=500, detail="Failed to toggle auto daily reports")
+
 @api_router.post("/simulation/auto-weekly-report")
 async def setup_auto_weekly_report(request: dict):
     """Setup automatic weekly report generation"""
