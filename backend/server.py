@@ -4966,12 +4966,14 @@ async def check_and_advance_time_automatically(user_id: str):
         # Get current simulation state
         state = await db.simulation_state.find_one({"user_id": user_id})
         if not state or not state.get("is_active", False):
+            print(f"⚠️ Time advancement skipped - simulation not active for user {user_id}")
             return False
         
         # Get ALL conversations for this user to calculate total messages
         all_conversations = await db.conversations.find({"user_id": user_id}).sort("created_at", 1).to_list(None)
         
         if not all_conversations:
+            print(f"⚠️ Time advancement skipped - no conversations found for user {user_id}")
             return False
         
         # Calculate total messages across all conversations
@@ -4993,7 +4995,7 @@ async def check_and_advance_time_automatically(user_id: str):
             total_messages += len(conv.get("messages", []))
         
         if agent_count == 0:
-            print("🚨 No agents found in conversations")
+            print(f"🚨 Time advancement failed - No agents found in conversations for user {user_id}")
             return False
         
         # SIMPLIFIED CALCULATION: Each agent sends 9 messages per time period (since 1 message per conversation)
@@ -5001,7 +5003,7 @@ async def check_and_advance_time_automatically(user_id: str):
         messages_per_agent_per_period = 9
         messages_per_time_period = agent_count * messages_per_agent_per_period
         
-        print(f"🎯 SIMPLIFIED TIME SYSTEM:")
+        print(f"🎯 TIME ADVANCEMENT CHECK for user {user_id}:")
         print(f"  - Total messages: {total_messages}")
         print(f"  - Agent count: {agent_count}")
         print(f"  - Messages per agent per time period: {messages_per_agent_per_period}")
@@ -5020,6 +5022,7 @@ async def check_and_advance_time_automatically(user_id: str):
         
         print(f"  - Current: Day {current_day}, {current_period}")
         print(f"  - Expected: Day {expected_day}, {expected_period}")
+        print(f"  - Time period calculation: {total_messages} // {messages_per_time_period} = {time_period_number}")
         
         # Check if time should advance
         if expected_day != current_day or expected_period != current_period:
@@ -5027,18 +5030,45 @@ async def check_and_advance_time_automatically(user_id: str):
             print(f"  - FROM: Day {current_day}, {current_period}")
             print(f"  - TO: Day {expected_day}, {expected_period}")
             
-            # Update simulation state
-            await db.simulation_state.update_one(
-                {"user_id": user_id},
-                {"$set": {
-                    "current_time_period": expected_period,
-                    "current_day": expected_day,
-                    "last_total_messages": total_messages
-                }}
-            )
+            # RETRY LOGIC: Attempt database update with retries for reliability
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    # Update simulation state
+                    update_result = await db.simulation_state.update_one(
+                        {"user_id": user_id},
+                        {"$set": {
+                            "current_time_period": expected_period,
+                            "current_day": expected_day,
+                            "last_total_messages": total_messages,
+                            "last_time_advance": datetime.utcnow()
+                        }}
+                    )
+                    
+                    if update_result.modified_count > 0:
+                        print(f"✅ TIME ADVANCED SUCCESSFULLY (attempt {attempt + 1}): Day {expected_day}, {expected_period.title()}")
+                        
+                        # Verify the update worked
+                        verification = await db.simulation_state.find_one({"user_id": user_id})
+                        if verification and verification.get("current_time_period") == expected_period:
+                            print(f"✅ Update verified in database")
+                            return True
+                        else:
+                            print(f"⚠️ Update not verified, retrying...")
+                            continue
+                    else:
+                        print(f"⚠️ Database update returned modified_count=0, retrying...")
+                        continue
+                        
+                except Exception as e:
+                    print(f"❌ Database update attempt {attempt + 1} failed: {e}")
+                    if attempt == max_retries - 1:
+                        print(f"❌ All retry attempts exhausted for user {user_id}")
+                        return False
+                    continue
             
-            print(f"✅ TIME ADVANCED: Day {expected_day}, {expected_period.title()}")
-            return True
+            print(f"❌ Failed to advance time after {max_retries} attempts")
+            return False
         else:
             messages_until_next = messages_per_time_period - (total_messages % messages_per_time_period)
             print(f"  - No time advance needed")
@@ -5047,7 +5077,7 @@ async def check_and_advance_time_automatically(user_id: str):
         return False
         
     except Exception as e:
-        print(f"Error in simplified time advancement: {e}")
+        print(f"❌ Critical error in time advancement for user {user_id}: {e}")
         import traceback
         traceback.print_exc()
         return False
