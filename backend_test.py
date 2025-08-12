@@ -5369,25 +5369,56 @@ def test_agent_database():
     }
 
 if __name__ == "__main__":
-    print("Starting comprehensive backend testing for conversation system issues...")
+    print("Starting TIME PROGRESSION INVESTIGATION...")
+    print(f"Backend URL: {BACKEND_URL}")
+    print(f"API URL: {API_URL}")
     
-    # Test 1: Authentication
+    # Test authentication first
     print("\n" + "="*80)
-    print("PHASE 1: AUTHENTICATION TESTING")
+    print("AUTHENTICATION TESTING")
     print("="*80)
-    test_login()
     
-    # Test 2: CRITICAL - Conversation Pause/Play Persistence Testing
-    print("\n" + "="*80)
-    print("PHASE 2: CRITICAL CONVERSATION PAUSE/PLAY PERSISTENCE TESTING")
-    print("="*80)
-    test_conversation_pause_play_persistence()
+    # Test login functionality
+    login_success = test_login()
     
-    # Test 3: Time Progression Investigation
+    if not login_success:
+        print("❌ Authentication failed. Cannot proceed with time progression testing.")
+        sys.exit(1)
+    
+    # Run the specific time progression investigation
     print("\n" + "="*80)
-    print("PHASE 3: TIME PROGRESSION INVESTIGATION")
+    print("TIME PROGRESSION INVESTIGATION")
     print("="*80)
-    test_time_progression_investigation()
+    
+    time_progression_success, time_progression_result = test_time_progression_investigation()
     
     # Print final summary
     print_summary()
+    
+    # Print specific findings for the main agent
+    print("\n" + "="*80)
+    print("INVESTIGATION RESULTS FOR MAIN AGENT")
+    print("="*80)
+    
+    if time_progression_success:
+        print("✅ TIME PROGRESSION SYSTEM IS WORKING CORRECTLY")
+        print("   The user's issue may be resolved or was a temporary glitch.")
+    else:
+        print("❌ TIME PROGRESSION ISSUES CONFIRMED")
+        print("   The user's reported issue is reproducible.")
+        
+        if isinstance(time_progression_result, dict) and "issues" in time_progression_result:
+            print("\n🔧 SPECIFIC ISSUES FOUND:")
+            for i, issue in enumerate(time_progression_result["issues"], 1):
+                print(f"   {i}. {issue}")
+            
+            print("\n📊 CURRENT STATE:")
+            current_state = time_progression_result.get("current_state", {})
+            print(f"   - Day: {current_state.get('current_day', 'Unknown')}")
+            print(f"   - Time Period: {current_state.get('current_time_period', 'Unknown')}")
+            print(f"   - Message Count: {time_progression_result.get('message_count', 'Unknown')}")
+            print(f"   - Agent Count: {time_progression_result.get('agent_count', 'Unknown')}")
+    
+    print("\n" + "="*80)
+    print("TESTING COMPLETE")
+    print("="*80)
