@@ -5190,6 +5190,19 @@ async def check_and_advance_time_automatically(user_id: str):
             print(f"  - FROM: Day {current_day}, {current_period}")
             print(f"  - TO: Day {expected_day}, {expected_period}")
             
+            # Check if we're advancing to a new day - trigger daily report
+            day_changed = expected_day != current_day
+            if day_changed:
+                print(f"📅 DAY CHANGE DETECTED: Day {current_day} → Day {expected_day}")
+                # Trigger daily report generation for the completed day
+                await generate_daily_report_automatically(user_id, current_day)
+                
+                # Check if we need to generate a weekly report (every 7 days)
+                if expected_day > 1 and (expected_day - 1) % 7 == 0:
+                    week_number = (expected_day - 1) // 7
+                    print(f"📅 WEEK COMPLETION DETECTED: Generating weekly report for week {week_number}")
+                    await generate_weekly_report_automatically(user_id, week_number)
+            
             # RETRY LOGIC: Attempt database update with retries for reliability
             max_retries = 3
             for attempt in range(max_retries):
@@ -5201,7 +5214,9 @@ async def check_and_advance_time_automatically(user_id: str):
                             "current_time_period": expected_period,
                             "current_day": expected_day,
                             "last_total_messages": total_messages,
-                            "last_time_advance": datetime.utcnow()
+                            "last_time_advance": datetime.utcnow(),
+                            "daily_reports_enabled": state.get("daily_reports_enabled", True),  # Default to True
+                            "weekly_reports_enabled": state.get("weekly_reports_enabled", True)
                         }}
                     )
                     
