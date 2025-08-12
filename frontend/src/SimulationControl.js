@@ -920,12 +920,29 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       // Reset loading state immediately after receiving response
       setConversationLoading(false);
       
-      // IMMEDIATE refresh of simulation state to update time display
+      // ENHANCED refresh of simulation state to update time display
       console.log(`${logPrefix} - Refreshing simulation state to update time display...`);
-      // Multiple attempts to ensure time progression is captured
-      setTimeout(() => fetchSimulationState(), 500); // First attempt
-      setTimeout(() => fetchSimulationState(), 1500); // Second attempt after backend processing
-      setTimeout(() => fetchSimulationState(), 3000); // Third attempt for reliability
+      // Multiple attempts with different delays to ensure time progression is captured
+      setTimeout(() => {
+        console.log('🔄 First simulation state refresh attempt...');
+        fetchSimulationState();
+      }, 500);
+      
+      setTimeout(() => {
+        console.log('🔄 Second simulation state refresh attempt...');
+        fetchSimulationState();
+      }, 1500);
+      
+      setTimeout(() => {
+        console.log('🔄 Third simulation state refresh attempt (final)...');
+        fetchSimulationState();
+      }, 3000);
+      
+      // Also refresh conversations to ensure message count is accurate
+      setTimeout(() => {
+        console.log('🔄 Refreshing conversations for accurate message count...');
+        fetchConversationsOnly();
+      }, 2000);
     } catch (error) {
       console.error('Error generating conversation:', error);
       setConversationLoading(false);
