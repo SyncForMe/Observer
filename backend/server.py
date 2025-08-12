@@ -600,6 +600,11 @@ class SimulationState(BaseModel):
     current_time_period: str = "morning"
     daily_api_requests: int = 0
     last_reset_date: str = Field(default_factory=lambda: str(date.today()))
+    # DAILY REPORTING SYSTEM (Default: ON)
+    daily_reports_enabled: bool = True  # Changed from weekly focus to daily focus
+    weekly_reports_enabled: bool = True  # Weekly reports summarize daily reports  
+    last_daily_report_day: int = 0
+    last_weekly_report_week: int = 0
     scenario: str = "The Research Station"
     scenario_name: str = ""  # Name/title of the scenario
     is_active: bool = False
