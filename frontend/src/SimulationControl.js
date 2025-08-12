@@ -922,7 +922,10 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       // IMMEDIATE refresh of simulation state to update time display
       console.log(`${logPrefix} - Refreshing simulation state to update time display...`);
-      setTimeout(() => fetchSimulationState(), 500); // Immediate refresh after conversation
+      // Multiple attempts to ensure time progression is captured
+      setTimeout(() => fetchSimulationState(), 500); // First attempt
+      setTimeout(() => fetchSimulationState(), 1500); // Second attempt after backend processing
+      setTimeout(() => fetchSimulationState(), 3000); // Third attempt for reliability
     } catch (error) {
       console.error('Error generating conversation:', error);
       setConversationLoading(false);
