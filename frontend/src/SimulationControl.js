@@ -2411,11 +2411,15 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 <h4 className="text-white/80 text-sm font-medium">Generate Report</h4>
                 <button
                   onClick={() => {
-                    // Accordion behavior: Close Set Scenario section when expanding Generate Report
-                    if (!showReport && scenarioExpanded) {
+                    // Accordion behavior: Always close Set Scenario when expanding Generate Report
+                    if (showReport) {
+                      // If already expanded, just collapse it
+                      setShowReport(false);
+                    } else {
+                      // If collapsed, expand it and ensure Set Scenario is closed
                       setScenarioExpanded(false);
+                      setShowReport(true);
                     }
-                    setShowReport(!showReport);
                   }}
                   className="text-white/60 hover:text-white transition-all duration-200"
                   style={{ transform: showReport ? 'rotate(180deg)' : 'rotate(0deg)' }}
