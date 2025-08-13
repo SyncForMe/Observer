@@ -506,12 +506,24 @@ const ConversationViewer = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Conversation List */}        
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4">
-            {searchQuery 
-              ? `Search Results (${filteredConversations.length})`
-              : `My Conversations (${conversations.length})`
-            }
-          </h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-white">
+              {searchQuery 
+                ? `Search Results (${filteredConversations.length})`
+                : `Conversation List (${conversations.length})`
+              }
+            </h3>
+            <button
+              onClick={() => setBulkDeleteMode(!bulkDeleteMode)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                bulkDeleteMode 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'bg-gray-600 hover:bg-gray-700 text-white'
+              }`}
+            >
+              {bulkDeleteMode ? 'Cancel' : 'Delete'}
+            </button>
+          </div>
           
           {filteredConversations.length === 0 ? (
             <div className="text-center text-white/60 py-8">
