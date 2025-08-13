@@ -400,11 +400,11 @@ def test_fresh_start_and_active_conversations():
             method="POST",
             data=new_agent_data,
             auth=True,
-            expected_keys=["message", "agent_id"]
+            expected_keys=["id", "name", "archetype"]
         )
         
         if new_agent_test:
-            new_agent_id = new_agent_response.get("agent_id")
+            new_agent_id = new_agent_response.get("id")
             test_agent_ids.append(new_agent_id)
         
         # Generate conversation with new scenario
