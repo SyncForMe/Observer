@@ -769,7 +769,7 @@ const ConversationViewer = () => {
                   onClick={() => setShowConversationModal(true)}
                   className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
                 >
-                  💬 View Full Conversation
+                  View Full Conversation
                 </button>
               </div>
 
