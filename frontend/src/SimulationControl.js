@@ -1046,6 +1046,20 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       setScenarioName('');
       setShowSetScenario(false);
       
+      // Clear reports and documents from Observatory
+      updateSimulationData({
+        agents: [],
+        conversations: [],
+        observerMessages: [],
+        reports: [],  // Clear reports
+        documents: [],  // Clear documents  
+        isRunning: false,
+        isPaused: false,
+        scenario: '',
+        customScenario: '',
+        scenarioName: ''
+      });
+      
       // Show immediate feedback
       showNotification('🧹 Starting fresh cleanup...');
       
