@@ -572,7 +572,7 @@ const ConversationViewer = () => {
           )}
         </div>
 
-        {/* Selected Conversation Details */}
+        {/* Enhanced Conversation Details Panel */}
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-white">Conversation Details</h3>
@@ -610,39 +610,82 @@ const ConversationViewer = () => {
                 </div>
               </div>
 
-              {/* Messages */}
-              <div className="bg-white/5 rounded-lg p-4 h-64 overflow-y-auto">
-                {selectedConversation.messages?.length === 0 ? (
-                  <div className="text-center text-white/60 mt-8">
-                    <p>No messages in this conversation yet</p>
-                  </div>
+              {/* Expandable Scenario Details */}
+              {selectedConversation.scenario && (
+                <div className="bg-white/5 rounded-lg p-4">
+                  <button
+                    onClick={() => setExpandedScenario(expandedScenario ? null : selectedConversation.id)}
+                    className="flex items-center space-x-2 text-white hover:text-white/80 mb-2"
+                  >
+                    <span>{expandedScenario ? '🔽' : '▶️'}</span>
+                    <span className="font-medium">View Full Scenario Story</span>
+                  </button>
+                  {expandedScenario && (
+                    <div className="mt-2 p-3 bg-white/5 rounded text-white/90 text-sm leading-relaxed">
+                      {selectedConversation.scenario}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* View Conversation Button */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <button
+                  onClick={() => setShowConversationModal(true)}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200"
+                >
+                  💬 View Full Conversation
+                </button>
+              </div>
+
+              {/* Reports Section */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h4 className="text-white font-medium mb-3">📊 Generated Reports ({conversationReports.length})</h4>
+                {conversationReports.length === 0 ? (
+                  <p className="text-white/60 text-sm">No reports generated for this conversation</p>
                 ) : (
-                  <div className="space-y-3">
-                    {selectedConversation.messages?.map((message, index) => {
-                      return (
-                        <div key={index} className="space-y-2">
-                          <div className="flex space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-sm text-white">
-                              {message.agent_name?.[0] || '?'}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="text-white font-medium">
-                                  {message.agent_name || 'Unknown'}
-                                </span>
-                                <span className="text-white/40 text-xs">
-                                  {formatTimestamp(message.timestamp)}
-                                </span>
-                              </div>
-                              <div className="text-white/80 text-sm">
-                                {message.message}
-                              </div>
-                            </div>
+                  <div className="space-y-2">
+                    {conversationReports.map((report, index) => (
+                      <div
+                        key={index}
+                        onClick={() => openDocumentModal(report, 'report')}
+                        className="flex items-center justify-between p-2 bg-white/5 rounded cursor-pointer hover:bg-white/10 transition-colors"
+                      >
+                        <div>
+                          <div className="text-white text-sm font-medium">{report.title}</div>
+                          <div className="text-white/60 text-xs">
+                            {new Date(report.created_at).toLocaleDateString()} • {report.type}
                           </div>
                         </div>
-                      );
-                    })}
-                    <div ref={messagesEndRef} />
+                        <div className="text-white/40 text-xs">Click to view</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Documents Section */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h4 className="text-white font-medium mb-3">📄 Agent Documents ({conversationDocuments.length})</h4>
+                {conversationDocuments.length === 0 ? (
+                  <p className="text-white/60 text-sm">No documents created by agents for this conversation</p>
+                ) : (
+                  <div className="space-y-2">
+                    {conversationDocuments.map((document, index) => (
+                      <div
+                        key={index}
+                        onClick={() => openDocumentModal(document, 'document')}
+                        className="flex items-center justify-between p-2 bg-white/5 rounded cursor-pointer hover:bg-white/10 transition-colors"
+                      >
+                        <div>
+                          <div className="text-white text-sm font-medium">{document.title}</div>
+                          <div className="text-white/60 text-xs">
+                            Created by {document.creator_agent} • {new Date(document.created_at).toLocaleDateString()} • {document.document_type}
+                          </div>
+                        </div>
+                        <div className="text-white/40 text-xs">Click to view</div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -677,6 +720,20 @@ const ConversationViewer = () => {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <ConversationViewModal
+        isOpen={showConversationModal}
+        onClose={() => setShowConversationModal(false)}
+        conversation={selectedConversation}
+      />
+
+      <DocumentModal
+        isOpen={showDocumentModal}
+        onClose={() => setShowDocumentModal(false)}
+        document={selectedDocument}
+        type={documentType}
+      />
     </div>
   );
 };
