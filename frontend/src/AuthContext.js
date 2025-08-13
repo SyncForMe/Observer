@@ -40,9 +40,11 @@ export const AuthProvider = ({ children }) => {
                 // Clean URL after successful auth
                 window.history.replaceState({}, document.title, window.location.pathname);
                 console.log('✅ AuthContext: Emergent auth completed successfully');
+                setLoading(false); // Ensure loading is cleared
                 return; // Exit early, don't check localStorage
               } else {
                 console.error('❌ AuthContext: Emergent auth failed:', result.error);
+                setLoading(false); // Clear loading on failure too
               }
             } catch (error) {
               console.error('❌ AuthContext: Error processing Emergent auth:', error);
