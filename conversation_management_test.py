@@ -374,7 +374,7 @@ def generate_test_conversations():
         
         scenario_test, scenario_response = run_test(
             f"Set Scenario {i}",
-            "/simulation/scenario",
+            "/simulation/set-scenario",
             method="POST",
             data=scenario_data,
             auth=True
