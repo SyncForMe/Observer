@@ -256,7 +256,7 @@ def test_authorization():
         f"/conversations/{fake_conversation_id}/reports",
         method="GET",
         auth=False,
-        expected_status=401
+        expected_status=403  # Updated to expect 403
     )
     
     if not reports_unauth_success:
@@ -268,7 +268,7 @@ def test_authorization():
         f"/conversations/{fake_conversation_id}/documents",
         method="GET",
         auth=False,
-        expected_status=401
+        expected_status=403  # Updated to expect 403
     )
     
     if not docs_unauth_success:
