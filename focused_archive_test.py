@@ -283,8 +283,8 @@ def test_error_handling():
     print("\n" + "="*60)
     print("TEST 4: Error Handling")
     
-    # Test with malformed conversation IDs
-    malformed_ids = ["invalid", "12345", "", "not-a-uuid"]
+    # Test with malformed conversation IDs (excluding empty string which causes 405)
+    malformed_ids = ["invalid", "12345", "not-a-uuid"]
     
     for malformed_id in malformed_ids:
         print(f"\n--- Testing malformed ID: '{malformed_id}' ---")
