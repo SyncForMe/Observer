@@ -453,7 +453,7 @@ const ConversationViewer = () => {
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">💬 My Conversation Archive</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Conversation Archive</h2>
           </div>
         </div>
 
