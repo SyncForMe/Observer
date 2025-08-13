@@ -522,10 +522,16 @@ def test_profile_data_merging():
     print("Testing that login response includes complete profile data...")
     
     # Perform another login to test data merging
+    test_credentials = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    
     merge_test, merge_response = run_test(
         "Test Profile Data Merging on Login",
-        "/auth/test-login",
+        "/auth/login",
         method="POST",
+        data=test_credentials,
         expected_keys=["access_token", "token_type", "user"],
         measure_time=True
     )
@@ -538,20 +544,32 @@ def test_profile_data_merging():
     login_user_data = merge_response.get("user", {})
     login_name = login_user_data.get("name")
     login_picture = login_user_data.get("picture", "")
+    login_email = login_user_data.get("email")
     
     print(f"Login response profile data:")
     print(f"   Name in login response: '{login_name}'")
+    print(f"   Email in login response: '{login_email}'")
     print(f"   Picture in login response: '{login_picture}'")
     print(f"   Expected name: '{updated_profile_data['name']}'")
+    print(f"   Expected email: '{test_user_email}'")
     print(f"   Expected picture: '{updated_profile_data['picture']}'")
     
     # Verify profile data is merged correctly in login response
-    if (login_name == updated_profile_data['name'] and 
-        login_picture == updated_profile_data['picture']):
+    name_match = login_name == updated_profile_data['name']
+    email_match = login_email == test_user_email  # Email should be preserved from users collection
+    picture_match = login_picture == updated_profile_data['picture']
+    
+    if name_match and email_match and picture_match:
         print("✅ Profile data correctly merged in login response")
         return True
     else:
         print("❌ Profile data not properly merged in login response")
+        if not name_match:
+            print(f"   ❌ Name mismatch in login response")
+        if not email_match:
+            print(f"   ❌ Email mismatch in login response")
+        if not picture_match:
+            print(f"   ❌ Picture mismatch in login response")
         print("   This indicates the login response contains fresh auth data instead of saved profile data")
         return False
 
