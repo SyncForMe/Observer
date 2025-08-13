@@ -3482,6 +3482,7 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
             email=email,
             name=response_name,  # Use merged name
             picture=response_picture,  # Use merged picture
+            bio=response_bio,  # Include merged bio
             created_at=user_doc["created_at"],
             last_login=datetime.utcnow()
         )
