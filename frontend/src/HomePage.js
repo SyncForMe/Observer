@@ -79,8 +79,9 @@ const HomePage = ({ onAuthenticated }) => {
   };
 
   const handleGoogleSignIn = () => {
-    // Redirect to Google OAuth flow
-    window.location.href = `${API}/auth/google`;
+    // Use Emergent authentication flow
+    console.log('🔍 HomePage: Starting Google OAuth with Emergent...');
+    googleLogin();
   };
 
   return (
