@@ -633,7 +633,7 @@ const ConversationViewer = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-hidden hover:overflow-y-auto p-1" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+            <div className="space-y-4 max-h-96 overflow-y-hidden hover:overflow-y-auto p-1 mt-1" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
               <style jsx>{`
                 div::-webkit-scrollbar {
                   display: none;
