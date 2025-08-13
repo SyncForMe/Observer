@@ -7646,21 +7646,19 @@ async def get_active_conversations(current_user: User = Depends(get_current_user
         current_scenario = simulation_state.get("scenario", "")
         current_scenario_name = simulation_state.get("scenario_name", "")
         
-        # If no scenario is set, return conversations from today (current session)
+        # If no scenario is set or fresh start was called, return empty list
         if not current_scenario and not current_scenario_name:
-            # Get conversations from today only (active session)
-            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-            conversation_filter = {
-                "user_id": {"$eq": user_id},
-                "created_at": {"$gte": today_start}
-            }
+            # After fresh start, there should be no active conversations until a new simulation starts
+            logging.info(f"No active scenario found for user {user_id}, returning empty active conversations")
+            return []
         else:
-            # Filter by current scenario to get only conversations from current simulation
+            # Filter by EXACT scenario match to get only conversations from current simulation
+            # Use both scenario and scenario_name for strict matching
             conversation_filter = {
                 "user_id": {"$eq": user_id},
-                "$or": [
-                    {"scenario": current_scenario} if current_scenario else {},
-                    {"scenario_name": current_scenario_name} if current_scenario_name else {}
+                "$and": [
+                    {"scenario": current_scenario} if current_scenario else {"scenario": {"$exists": False}},
+                    {"scenario_name": current_scenario_name} if current_scenario_name else {"scenario_name": {"$exists": False}}
                 ]
             }
         
