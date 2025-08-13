@@ -183,14 +183,14 @@ def test_fresh_start_and_active_conversations():
             method="POST",
             data=agent_data,
             auth=True,
-            expected_keys=["message", "agent_id"]
+            expected_keys=["id", "name", "archetype"]
         )
         
         if not create_agent_test:
             print("❌ Failed to create test agent")
             return False
             
-        test_agent_id = create_agent_response.get("agent_id")
+        test_agent_id = create_agent_response.get("id")
         test_agent_ids.append(test_agent_id)
         
         # Test 1: Set up scenario and create conversations
