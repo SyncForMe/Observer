@@ -168,26 +168,32 @@ def print_summary():
     print("="*80)
 
 def test_authentication_flow():
-    """Test authentication flow including guest login and JWT token validation"""
+    """Test authentication flow using email/password login"""
     global auth_token, test_user_id
     
     print("\n" + "="*80)
     print("1. AUTHENTICATION FLOW TESTING")
     print("="*80)
     
-    # Test guest login
-    guest_test, guest_response = run_test(
-        "Guest Login",
-        "/auth/test-login",
+    # Test email/password login with known test user
+    login_data = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    
+    login_test, login_response = run_test(
+        "Email/Password Login",
+        "/auth/login",
         method="POST",
+        data=login_data,
         expected_keys=["access_token", "token_type", "user"]
     )
     
-    if guest_test and guest_response:
-        auth_token = guest_response.get("access_token")
-        user_data = guest_response.get("user", {})
+    if login_test and login_response:
+        auth_token = login_response.get("access_token")
+        user_data = login_response.get("user", {})
         test_user_id = user_data.get("id")
-        print(f"✅ Guest login successful. User ID: {test_user_id}")
+        print(f"✅ Email/password login successful. User ID: {test_user_id}")
         
         # Verify JWT token structure
         try:
@@ -200,7 +206,7 @@ def test_authentication_flow():
         except Exception as e:
             print(f"❌ JWT token validation failed: {e}")
     else:
-        print("❌ Guest login failed")
+        print("❌ Email/password login failed")
         return False
     
     # Test JWT token validation with protected endpoint
