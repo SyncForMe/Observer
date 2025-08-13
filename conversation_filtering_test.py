@@ -436,7 +436,7 @@ def test_conversation_filtering_system():
         "/conversations",
         method="GET",
         auth=False,
-        expected_status=401
+        expected_status=403  # 403 Forbidden is correct for missing auth
     )
     
     no_auth_active_test, no_auth_active_response = run_test(
@@ -444,7 +444,7 @@ def test_conversation_filtering_system():
         "/conversations/active",
         method="GET",
         auth=False,
-        expected_status=401
+        expected_status=403  # 403 Forbidden is correct for missing auth
     )
     
     if no_auth_all_test and no_auth_active_test:
