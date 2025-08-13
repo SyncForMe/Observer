@@ -93,7 +93,7 @@ const ConversationViewModal = ({ isOpen, onClose, conversation }) => {
           </div>
         </div>
         
-        <div className="p-4 overflow-y-auto" style={{maxHeight: 'calc(90vh - 140px)'}}>
+        <div className="p-4 overflow-y-auto" style={{maxHeight: 'calc(85vh - 140px)'}}>
           {filteredMessages.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               {searchQuery ? (
