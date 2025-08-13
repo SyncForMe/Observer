@@ -7628,6 +7628,44 @@ async def get_conversations(current_user: User = Depends(get_current_user)):
     
     return conversation_rounds
 
+@api_router.delete("/conversations/{conversation_id}")
+async def delete_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
+    """Delete a specific conversation for the current user"""
+    try:
+        user_id = current_user.id
+        
+        # Check if conversation exists and belongs to the user
+        conversation = await db.conversations.find_one({
+            "id": conversation_id,
+            "user_id": user_id
+        })
+        
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found or you don't have permission to delete it")
+        
+        # Delete the conversation
+        result = await db.conversations.delete_one({
+            "id": conversation_id,
+            "user_id": user_id
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        logging.info(f"Conversation {conversation_id} deleted by user {user_id}")
+        
+        return {
+            "success": True,
+            "message": "Conversation deleted successfully",
+            "conversation_id": conversation_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error deleting conversation {conversation_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete conversation")
+
 @api_router.get("/relationships")
 async def get_relationships():
     """Get all agent relationships"""
