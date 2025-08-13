@@ -736,25 +736,28 @@ const ConversationViewer = () => {
               {/* Conversation Info */}
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="space-y-3">
-                  <div>
-                    <span className="text-white/60 text-sm">Scenario:</span>
-                    <div className="text-white font-medium">{selectedConversation.scenario_name || 'General'}</div>
-                  </div>
-                  
-                  {/* Compact Metrics Row */}
-                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
-                    <div className="flex items-center space-x-6">
-                      <div className="text-center">
-                        <div className="text-white font-bold text-lg">{selectedConversation.round_number || 1}</div>
-                        <div className="text-white/60 text-xs">Days</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-white font-bold text-lg">{selectedConversation.messages?.length || 0}</div>
-                        <div className="text-white/60 text-xs">Messages</div>
-                      </div>
+                  {/* Scenario and Metrics Row */}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-white/60 text-sm">Scenario:</span>
+                      <div className="text-white font-medium">{selectedConversation.scenario_name || 'General'}</div>
                     </div>
-                    <div className="text-white/40 text-xs">
-                      {new Date(selectedConversation.created_at).toLocaleDateString()}
+                    
+                    {/* Right Side Metrics */}
+                    <div className="text-right">
+                      <div className="text-white/40 text-xs mb-1">
+                        {new Date(selectedConversation.created_at).toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-center">
+                          <div className="text-white font-bold text-lg">{selectedConversation.round_number || 1}</div>
+                          <div className="text-white/60 text-xs">Days</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-white font-bold text-lg">{selectedConversation.messages?.length || 0}</div>
+                          <div className="text-white/60 text-xs">Messages</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
