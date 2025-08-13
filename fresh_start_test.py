@@ -204,7 +204,7 @@ def test_fresh_start_and_active_conversations():
         
         scenario_test, scenario_response = run_test(
             "Set Test Scenario",
-            "/simulation/scenario",
+            "/simulation/set-scenario",
             method="POST",
             data=scenario_data,
             auth=True,
