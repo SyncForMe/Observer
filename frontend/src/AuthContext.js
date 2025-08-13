@@ -24,6 +24,24 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Check if we're returning from Emergent auth with session_id in URL fragment
+        const hash = window.location.hash;
+        if (hash && hash.includes('session_id=')) {
+          console.log('🔍 AuthContext: Found session_id in URL fragment, processing...');
+          const sessionId = hash.split('session_id=')[1]?.split('&')[0];
+          if (sessionId) {
+            try {
+              await handleEmergentAuth(sessionId);
+              // Clean URL after successful auth
+              window.history.replaceState({}, document.title, window.location.pathname);
+              return; // Exit early, don't check localStorage
+            } catch (error) {
+              console.error('Error processing Emergent auth:', error);
+              // Continue to check localStorage if auth fails
+            }
+          }
+        }
+        
         // Initialize token from localStorage
         const savedToken = localStorage.getItem('auth_token');
         const savedUser = localStorage.getItem('auth_user');
