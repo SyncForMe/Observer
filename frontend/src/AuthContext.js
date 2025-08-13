@@ -184,22 +184,34 @@ export const AuthProvider = ({ children }) => {
   const handleEmergentAuth = async (sessionId) => {
     try {
       console.log('🔍 AuthContext: Processing Emergent session:', sessionId);
+      setLoading(true); // Set loading state
+      
       const response = await axios.post(`${API}/auth/emergent-session`, { 
         session_id: sessionId 
       });
       
+      console.log('🔍 AuthContext: Emergent auth response:', response.data);
+      
       if (response.data && response.data.access_token) {
         const newToken = response.data.access_token;
+        const userData = response.data.user;
+        
         localStorage.setItem('auth_token', newToken);
-        localStorage.setItem('auth_user', JSON.stringify(response.data.user));
+        localStorage.setItem('auth_user', JSON.stringify(userData));
+        
         setToken(newToken);
-        setUser(response.data.user);
-        console.log('✅ AuthContext: Emergent auth successful');
+        setUser(userData);
+        setLoading(false); // Clear loading state
+        
+        console.log('✅ AuthContext: Emergent auth successful, user data:', userData);
         return { success: true };
       }
+      
+      setLoading(false);
       return { success: false, error: 'Invalid response from server' };
     } catch (error) {
-      console.error('Emergent auth failed:', error);
+      console.error('❌ AuthContext: Emergent auth failed:', error);
+      setLoading(false);
       return { success: false, error: error.response?.data?.detail || 'Authentication failed' };
     }
   };
