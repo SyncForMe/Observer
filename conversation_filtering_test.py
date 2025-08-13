@@ -500,18 +500,17 @@ def cleanup_test_data():
     print("CLEANUP: Removing test data")
     print("="*80)
     
-    # Note: Fresh Start may have already deleted agents, so failures are expected
+    # Note: Fresh Start may have already deleted agents, so we don't count failures
     for agent_id in created_agent_ids:
-        delete_test, delete_response = run_test(
-            f"Delete Agent {agent_id}",
-            f"/agents/{agent_id}",
-            method="DELETE",
-            auth=True
-        )
-        if delete_test:
-            print(f"✅ Deleted agent {agent_id}")
-        else:
-            print(f"⚠️ Agent {agent_id} already deleted (likely by Fresh Start)")
+        try:
+            response = requests.delete(f"{API_URL}/agents/{agent_id}", 
+                                     headers={"Authorization": f"Bearer {auth_token}"})
+            if response.status_code == 200:
+                print(f"✅ Deleted agent {agent_id}")
+            else:
+                print(f"⚠️ Agent {agent_id} already deleted (likely by Fresh Start)")
+        except Exception as e:
+            print(f"⚠️ Agent {agent_id} cleanup skipped: {e}")
     
     print("✅ Cleanup completed")
 
