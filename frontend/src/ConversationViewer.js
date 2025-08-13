@@ -623,7 +623,7 @@ const ConversationViewer = () => {
         {/* Enhanced Conversation Details Panel */}
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold text-white">Conversation Details</h3>
+            <h3 className="text-xl font-bold text-white">Details</h3>
           </div>
           
           {!selectedConversation ? (
@@ -638,22 +638,27 @@ const ConversationViewer = () => {
             <div className="space-y-4">
               {/* Conversation Info */}
               <div className="bg-white/5 rounded-lg p-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-3">
                   <div>
-                    <span className="text-white/60">Scenario:</span>
-                    <div className="text-white">{selectedConversation.scenario_name || 'General'}</div>
+                    <span className="text-white/60 text-sm">Scenario:</span>
+                    <div className="text-white font-medium">{selectedConversation.scenario_name || 'General'}</div>
                   </div>
-                  <div>
-                    <span className="text-white/60">Time Period:</span>
-                    <div className="text-white">{selectedConversation.time_period || 'Unknown'}</div>
-                  </div>
-                  <div>
-                    <span className="text-white/60">Round:</span>
-                    <div className="text-white">#{selectedConversation.round_number || 1}</div>
-                  </div>
-                  <div>
-                    <span className="text-white/60">Messages:</span>
-                    <div className="text-white">{selectedConversation.messages?.length || 0}</div>
+                  
+                  {/* Compact Metrics Row */}
+                  <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                    <div className="flex items-center space-x-6">
+                      <div className="text-center">
+                        <div className="text-white font-bold text-lg">{selectedConversation.round_number || 1}</div>
+                        <div className="text-white/60 text-xs">Days</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white font-bold text-lg">{selectedConversation.messages?.length || 0}</div>
+                        <div className="text-white/60 text-xs">Messages</div>
+                      </div>
+                    </div>
+                    <div className="text-white/40 text-xs">
+                      {new Date(selectedConversation.created_at).toLocaleDateString()}
+                    </div>
                   </div>
                 </div>
               </div>
