@@ -3383,6 +3383,95 @@ async def login_user(user_credentials: UserLogin):
         logging.error(f"Error logging in user: {e}")
         raise HTTPException(status_code=500, detail="Login failed")
 
+@api_router.post("/auth/emergent-session", response_model=TokenResponse)
+async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
+    """Authenticate user using Emergent session ID"""
+    try:
+        session_id = session_request.session_id.strip()
+        if not session_id:
+            raise HTTPException(status_code=400, detail="Session ID is required")
+        
+        print(f"🔍 Processing Emergent session: {session_id}")
+        
+        # Call Emergent auth API
+        emergent_auth_url = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+        headers = {"X-Session-ID": session_id}
+        
+        response = requests.get(emergent_auth_url, headers=headers, timeout=10)
+        
+        if response.status_code != 200:
+            print(f"❌ Emergent auth failed: {response.status_code} - {response.text}")
+            raise HTTPException(status_code=401, detail="Invalid session ID")
+        
+        session_data = response.json()
+        print(f"✅ Emergent auth successful: {session_data}")
+        
+        # Extract user data from response
+        user_id = session_data.get("id")
+        email = session_data.get("email")
+        name = session_data.get("name", "")
+        picture = session_data.get("picture", "")
+        session_token = session_data.get("session_token", "")
+        
+        if not user_id or not email:
+            raise HTTPException(status_code=401, detail="Invalid session data")
+        
+        # Check if user exists
+        existing_user = await db.users.find_one({"email": email})
+        
+        if existing_user:
+            # Update last login
+            await db.users.update_one(
+                {"_id": existing_user["_id"]},
+                {"$set": {"last_login": datetime.utcnow()}}
+            )
+            user_doc = existing_user
+        else:
+            # Create new user
+            new_user = UserWithPassword(
+                id=str(uuid.uuid4()),
+                email=email,
+                name=name,
+                picture=picture,
+                google_id=user_id,  # Store emergent user ID as google_id
+                auth_type="emergent",
+                created_at=datetime.utcnow(),
+                last_login=datetime.utcnow()
+            )
+            
+            await db.users.insert_one(new_user.dict())
+            user_doc = new_user.dict()
+        
+        # Create JWT access token
+        access_token = create_access_token(
+            data={"sub": email, "user_id": user_doc["id"]}
+        )
+        
+        # Prepare user response
+        user_response = UserResponse(
+            id=user_doc["id"],
+            email=email,
+            name=name,
+            picture=picture,
+            created_at=user_doc["created_at"],
+            last_login=datetime.utcnow()
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            token_type="bearer",
+            user=user_response
+        )
+        
+    except HTTPException:
+        raise
+    except requests.RequestException as e:
+        print(f"❌ Network error calling Emergent API: {e}")
+        raise HTTPException(status_code=503, detail="Authentication service unavailable")
+    except Exception as e:
+        logging.error(f"Error in emergent session auth: {e}")
+        raise HTTPException(status_code=500, detail="Authentication failed")
+
 # Admin Dashboard Endpoints
 @api_router.get("/admin/dashboard/stats")
 async def get_admin_dashboard_stats(current_user: User = Depends(get_admin_user)):
