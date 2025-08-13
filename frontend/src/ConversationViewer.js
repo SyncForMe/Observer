@@ -394,7 +394,6 @@ const ConversationViewer = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white mb-2">💬 My Conversation Archive</h2>
-            <p className="text-white/80">Permanent archive of all your conversations - preserved across Fresh Start</p>
           </div>
           <div className="flex items-center space-x-4">
             <button
@@ -407,23 +406,12 @@ const ConversationViewer = () => {
             >
               {bulkDeleteMode ? '📝 Select Mode' : '🗑️ Delete Mode'}
             </button>
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                autoRefresh 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-gray-600 hover:bg-gray-700 text-white'
-              }`}
-            >
-              {autoRefresh ? '🔄 Auto Refresh' : '⏸️ Paused'}
-            </button>
           </div>
         </div>
 
         {/* Search and Bulk Actions */}
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex-1 min-w-64">
-            <label className="block text-white text-sm font-medium mb-2">🔍 Search Conversations</label>
             <input
               type="text"
               value={searchQuery}
