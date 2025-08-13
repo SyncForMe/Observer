@@ -182,17 +182,23 @@ def setup_authentication():
     print("AUTHENTICATION SETUP")
     print("="*80)
     
-    # Test guest login
-    guest_test, guest_response = run_test(
-        "Guest Login",
-        "/auth/test-login",
+    # Test email/password login with dino@cytonic.com
+    login_data = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    
+    login_test, login_response = run_test(
+        "Email/Password Login (dino@cytonic.com)",
+        "/auth/login",
         method="POST",
+        data=login_data,
         expected_keys=["access_token", "token_type", "user"]
     )
     
-    if guest_test and guest_response:
-        auth_token = guest_response.get("access_token")
-        user_data = guest_response.get("user", {})
+    if login_test and login_response:
+        auth_token = login_response.get("access_token")
+        user_data = login_response.get("user", {})
         test_user_id = user_data.get("id")
         print(f"✅ Authentication setup successful. User ID: {test_user_id}")
         return True
