@@ -311,7 +311,7 @@ def test_conversation_filtering_system():
         method="POST",
         auth=True,
         measure_time=True,
-        expected_keys=["message", "conversation"]
+        expected_keys=["id", "messages", "scenario"]
     )
     
     if not conversation_test_1:
