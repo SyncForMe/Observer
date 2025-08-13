@@ -3287,6 +3287,7 @@ async def register_user(user_data: UserRegister):
             email=new_user.email,
             name=new_user.name,
             picture=new_user.picture,
+            bio="",  # New users start with empty bio
             created_at=new_user.created_at,
             last_login=new_user.last_login
         )
