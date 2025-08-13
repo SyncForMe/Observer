@@ -1084,6 +1084,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           agents: [],
           conversations: [],
           observerMessages: [],
+          reports: [],  // Clear reports from Observatory
+          documents: [],  // Clear documents from Observatory
           isRunning: false,
           isPaused: false,
           scenario: '',
