@@ -222,7 +222,7 @@ def test_fresh_start_and_active_conversations():
             method="POST",
             auth=True,
             measure_time=True,
-            expected_keys=["message", "conversation"]
+            expected_keys=["id", "scenario", "scenario_name", "messages"]
         )
         
         if not conversation_test:
