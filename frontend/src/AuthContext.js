@@ -205,6 +205,7 @@ export const AuthProvider = ({ children }) => {
       token, 
       login, 
       logout, 
+      googleLogin,
       // testLogin removed - using Google OAuth only
       updateUser,
       loading,
