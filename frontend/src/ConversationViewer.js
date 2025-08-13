@@ -721,6 +721,7 @@ const ConversationViewer = () => {
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-white">Details</h3>
+            <div className="w-16"></div> {/* Empty spacer to match Delete button width */}
           </div>
           
           {!selectedConversation ? (
