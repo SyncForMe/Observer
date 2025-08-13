@@ -119,6 +119,10 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+# Emergent Authentication Models
+class EmergentAuthSessionRequest(BaseModel):
+    session_id: str
+
 # Enhanced User model for email/password auth
 class UserWithPassword(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
