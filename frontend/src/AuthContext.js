@@ -26,20 +26,33 @@ export const AuthProvider = ({ children }) => {
       try {
         // Check if we're returning from Emergent auth with session_id in URL fragment
         const hash = window.location.hash;
+        console.log('🔍 AuthContext: Checking URL hash:', hash);
         if (hash && hash.includes('session_id=')) {
           console.log('🔍 AuthContext: Found session_id in URL fragment, processing...');
           const sessionId = hash.split('session_id=')[1]?.split('&')[0];
+          console.log('🔍 AuthContext: Extracted session ID:', sessionId);
           if (sessionId) {
             try {
-              await handleEmergentAuth(sessionId);
-              // Clean URL after successful auth
-              window.history.replaceState({}, document.title, window.location.pathname);
-              return; // Exit early, don't check localStorage
+              console.log('🔍 AuthContext: Calling handleEmergentAuth with session ID:', sessionId);
+              const result = await handleEmergentAuth(sessionId);
+              console.log('🔍 AuthContext: handleEmergentAuth result:', result);
+              if (result.success) {
+                // Clean URL after successful auth
+                window.history.replaceState({}, document.title, window.location.pathname);
+                console.log('✅ AuthContext: Emergent auth completed successfully');
+                return; // Exit early, don't check localStorage
+              } else {
+                console.error('❌ AuthContext: Emergent auth failed:', result.error);
+              }
             } catch (error) {
-              console.error('Error processing Emergent auth:', error);
+              console.error('❌ AuthContext: Error processing Emergent auth:', error);
               // Continue to check localStorage if auth fails
             }
+          } else {
+            console.log('❌ AuthContext: No session ID found in hash fragment');
           }
+        } else {
+          console.log('🔍 AuthContext: No session_id found in URL hash');
         }
         
         // Initialize token from localStorage
