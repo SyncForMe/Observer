@@ -681,9 +681,9 @@ const ConversationViewer = () => {
                     }
                   }}
                   disabled={deleteLoading}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-all duration-200 disabled:opacity-50"
+                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 hover:text-red-100 rounded-lg text-sm transition-all duration-200 disabled:opacity-50"
                 >
-                  {deleteLoading ? '⏳ Deleting...' : '🗑️ Delete This Conversation'}
+                  {deleteLoading ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
