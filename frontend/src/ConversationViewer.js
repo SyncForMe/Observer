@@ -9,6 +9,47 @@ const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND
 const ConversationViewModal = ({ isOpen, onClose, conversation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightedMessage, setHighlightedMessage] = useState(null);
+  const { token } = useAuth();
+  const [agentAvatars, setAgentAvatars] = useState({});
+  
+  // Fetch agent avatars when modal opens
+  useEffect(() => {
+    if (isOpen && conversation?.messages) {
+      fetchAgentAvatars();
+    }
+  }, [isOpen, conversation]);
+
+  const fetchAgentAvatars = async () => {
+    try {
+      // Get unique agent names from conversation
+      const agentNames = [...new Set(conversation.messages.map(msg => msg.agent_name).filter(Boolean))];
+      
+      // Fetch all agents to get their avatars
+      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/agents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const agents = response.data || [];
+      const avatarMap = {};
+      
+      // Create a map of agent names to their avatars
+      agentNames.forEach(agentName => {
+        const agent = agents.find(a => a.name === agentName);
+        if (agent && agent.avatar_url) {
+          avatarMap[agentName] = agent.avatar_url;
+        }
+      });
+      
+      setAgentAvatars(avatarMap);
+    } catch (error) {
+      console.error('Failed to fetch agent avatars:', error);
+      setAgentAvatars({});
+    }
+  };
+
+  const getAgentAvatar = (agentName) => {
+    return agentAvatars[agentName] || null;
+  };
   
   if (!isOpen || !conversation) return null;
 
@@ -69,35 +110,54 @@ const ConversationViewModal = ({ isOpen, onClose, conversation }) => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredMessages.map((message, index) => (
-                <div key={index} className="flex space-x-3 p-3 rounded-lg bg-gray-50">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium">
-                    {message.agent_name?.[0] || '?'}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-semibold text-gray-900">
-                        {message.agent_name || 'Unknown Agent'}
-                      </span>
-                      <span className="text-gray-500 text-sm">
-                        {new Date(message.timestamp).toLocaleString()}
-                      </span>
+              {filteredMessages.map((message, index) => {
+                const avatarUrl = getAgentAvatar(message.agent_name);
+                return (
+                  <div key={index} className="flex space-x-3 p-3 rounded-lg bg-gray-50">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium overflow-hidden">
+                      {avatarUrl ? (
+                        <img 
+                          src={avatarUrl} 
+                          alt={message.agent_name || 'Agent'} 
+                          className="w-full h-full object-cover rounded-full"
+                          onError={(e) => {
+                            // Fallback to gradient background if image fails to load
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className={`w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center ${avatarUrl ? 'hidden' : 'flex'}`}
+                      >
+                        {message.agent_name?.[0] || '?'}
+                      </div>
                     </div>
-                    <div className="text-gray-700 leading-relaxed">
-                      {searchQuery ? (
-                        <span dangerouslySetInnerHTML={{
-                          __html: message.message.replace(
-                            new RegExp(`(${searchQuery})`, 'gi'),
-                            '<mark class="bg-yellow-200 px-1 rounded">$1</mark>'
-                          )
-                        }} />
-                      ) : (
-                        message.message
-                      )}
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className="font-semibold text-gray-900">
+                          {message.agent_name || 'Unknown Agent'}
+                        </span>
+                        <span className="text-gray-500 text-sm">
+                          {new Date(message.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="text-gray-700 leading-relaxed">
+                        {searchQuery ? (
+                          <span dangerouslySetInnerHTML={{
+                            __html: message.message.replace(
+                              new RegExp(`(${searchQuery})`, 'gi'),
+                              '<mark class="bg-yellow-200 px-1 rounded">$1</mark>'
+                            )
+                          }} />
+                        ) : (
+                          message.message
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
