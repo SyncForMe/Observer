@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
     if (!authChecked) {
       initializeAuth();
     }
-  }, [authChecked]); // Only run once when authChecked is false
+  }, [authChecked, API, PREVIEW_URL]); // Only run once when authChecked is false
 
   const checkAuthStatus = async (authToken) => {
     try {
