@@ -372,6 +372,85 @@ def generate_document_pdf(document_data: dict) -> bytes:
         created_at=document_data.get('created_at')
     )
 
+def generate_pdf_from_html(html_content: str) -> bytes:
+    """
+    Generate PDF directly from HTML content
+    
+    This function is used by the report PDF download endpoint
+    to convert HTML reports to PDF format.
+    """
+    try:
+        from weasyprint import HTML, CSS
+        from weasyprint.text.fonts import FontConfiguration
+        from io import BytesIO
+        
+        # Create font configuration
+        font_config = FontConfiguration()
+        
+        # Basic CSS for HTML to PDF conversion
+        basic_css = """
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 20px;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .meta {
+            color: #666;
+            font-size: 14px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-left: 4px solid #3b82f6;
+            background: #f8fafc;
+        }
+        .section-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+        .section-content {
+            line-height: 1.6;
+        }
+        strong {
+            color: #1f2937;
+        }
+        """
+        
+        # Create PDF
+        pdf_buffer = BytesIO()
+        html_doc = HTML(string=html_content)
+        css_doc = CSS(string=basic_css, font_config=font_config)
+        
+        html_doc.write_pdf(pdf_buffer, stylesheets=[css_doc], font_config=font_config)
+        
+        pdf_buffer.seek(0)
+        pdf_bytes = pdf_buffer.getvalue()
+        
+        logging.info(f"✅ Generated PDF from HTML: {len(pdf_bytes)} bytes")
+        return pdf_bytes
+        
+    except Exception as e:
+        logging.error(f"❌ PDF generation from HTML failed: {e}")
+        raise Exception(f"PDF generation from HTML failed: {str(e)}")
+
 # Test function
 if __name__ == "__main__":
     # Test PDF generation

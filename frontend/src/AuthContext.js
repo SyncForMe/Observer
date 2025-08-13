@@ -134,32 +134,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const testLogin = async () => {
-    try {
-      console.log('🔍 AuthContext: Starting testLogin');
-      const response = await axios.post(`${API}/auth/test-login`);
-      console.log('🔍 AuthContext: testLogin response:', response.data);
-      
-      if (response.data && response.data.access_token) {
-        const newToken = response.data.access_token;
-        const userData = response.data.user;
-        
-        localStorage.setItem('auth_token', newToken);
-        localStorage.setItem('auth_user', JSON.stringify(userData));
-        
-        setToken(newToken);
-        setUser(userData);
-        
-        console.log('🔍 AuthContext: testLogin successful, user set and cached:', userData);
-        return { success: true };
-      }
-      console.log('🔍 AuthContext: testLogin failed - no access_token');
-      return { success: false, error: 'Test login failed' };
-    } catch (error) {
-      console.error('🔍 AuthContext: testLogin error:', error);
-      return { success: false, error: error.response?.data?.error || 'Test login failed' };
-    }
-  };
+  // Test login function removed - using Google OAuth only
 
   const updateUser = (updatedUserData) => {
     console.log('🔍 AuthContext: Updating user data:', updatedUserData);
@@ -180,7 +155,7 @@ export const AuthProvider = ({ children }) => {
       token, 
       login, 
       logout, 
-      testLogin,
+      // testLogin removed - using Google OAuth only
       updateUser,
       loading,
       isAuthenticated: !!token && !!user 

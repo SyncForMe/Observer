@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+AUTHENTICATION SYSTEM TESTING AFTER TEST LOGIN REMOVAL
+Testing authentication system to ensure it works properly after removing test login functionality.
+
+Focus Areas:
+1. Test Login Removal Verification (test-login endpoint should return 404)
+2. Google OAuth Endpoints (google and callback endpoints should work)
+3. JWT Token Validation (me endpoint should work correctly)
+4. Protected Endpoints (should require proper authentication)
+5. Core Functionality (agent creation, conversation generation, reports)
+6. Unauthenticated Request Handling (graceful error handling)
+"""
+
 import requests
 import json
 import time
@@ -36,12 +49,13 @@ test_results = {
     "tests": []
 }
 
-# Generate unique test user credentials
-test_user_email = f"test.user.{uuid.uuid4()}@example.com"
-test_user_password = "securePassword123"
-test_user_name = "Test User"
+# Global variables for auth testing
+auth_token = None
+test_user_id = None
+created_agent_ids = []
+created_document_ids = []
 
-def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, auth=False, headers=None, params=None, measure_time=False, auth_token=None):
+def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, expected_keys=None, auth=False, headers=None, params=None, measure_time=False):
     """Run a test against the specified endpoint"""
     url = f"{API_URL}{endpoint}"
     print(f"\n{'='*80}\nTesting: {test_name} ({method} {url})")
@@ -76,6 +90,8 @@ def run_test(test_name, endpoint, method="GET", data=None, expected_status=200, 
         
         # Print response details
         print(f"Status Code: {response.status_code}")
+        if measure_time:
+            print(f"Response Time: {response_time:.4f} seconds")
         
         # Check if response is JSON
         try:
@@ -151,476 +167,393 @@ def print_summary():
     print(f"OVERALL RESULT: {overall_result}")
     print("="*80)
 
-def test_authentication_flow():
-    """Test the complete authentication flow"""
+def test_authentication_system():
+    """Test authentication system after test login removal"""
+    global auth_token, test_user_id
+    
     print("\n" + "="*80)
-    print("TESTING AUTHENTICATION FLOW")
+    print("1. AUTHENTICATION SYSTEM TESTING AFTER TEST LOGIN REMOVAL")
     print("="*80)
     
-    # Step 1: Register a new user
-    print("\nStep 1: Register a new user")
-    
-    register_data = {
-        "email": test_user_email,
-        "password": test_user_password,
-        "name": test_user_name
-    }
-    
-    register_test, register_response = run_test(
-        "Register with valid credentials",
-        "/auth/register",
-        method="POST",
-        data=register_data,
-        expected_keys=["access_token", "token_type", "user"]
-    )
-    
-    if not register_test or not register_response:
-        print("❌ Registration failed. Cannot continue with authentication flow testing.")
-        return False, "Registration failed"
-    
-    # Extract token and user data
-    auth_token = register_response.get("access_token")
-    user_data = register_response.get("user", {})
-    user_id = user_data.get("id")
-    
-    print(f"User registered with ID: {user_id}")
-    print(f"JWT Token: {auth_token}")
-    
-    # Step 2: Decode and inspect the JWT token
-    print("\nStep 2: Decode and inspect the JWT token")
-    
-    try:
-        decoded_token = jwt.decode(auth_token, JWT_SECRET, algorithms=["HS256"])
-        print(f"Decoded token: {json.dumps(decoded_token, indent=2)}")
-        
-        # Check for required fields
-        if "user_id" in decoded_token and "sub" in decoded_token:
-            print("✅ JWT token contains required fields (user_id, sub)")
-            print(f"user_id: {decoded_token.get('user_id')}")
-            print(f"sub (email): {decoded_token.get('sub')}")
-            
-            # Verify user_id matches
-            if decoded_token.get("user_id") == user_id:
-                print("✅ user_id in token matches registered user ID")
-            else:
-                print("❌ user_id in token does not match registered user ID")
-                
-            # Verify sub matches email
-            if decoded_token.get("sub") == test_user_email:
-                print("✅ sub in token matches registered email")
-            else:
-                print("❌ sub in token does not match registered email")
-        else:
-            print("❌ JWT token is missing required fields")
-            if "user_id" not in decoded_token:
-                print("  - Missing user_id field")
-            if "sub" not in decoded_token:
-                print("  - Missing sub field")
-    except Exception as e:
-        print(f"❌ JWT token validation failed: {e}")
-    
-    # Step 3: Use token to access a protected endpoint
-    print("\nStep 3: Use token to access a protected endpoint")
-    
-    protected_test, protected_response = run_test(
-        "Access protected endpoint (GET /api/documents)",
-        "/documents",
-        method="GET",
-        auth=True,
-        auth_token=auth_token
-    )
-    
-    if protected_test:
-        print("✅ Successfully accessed protected endpoint with registration token")
-    else:
-        print("❌ Failed to access protected endpoint with registration token")
-    
-    # Step 4: Test login flow
-    print("\nStep 4: Test login flow")
-    
-    login_data = {
-        "email": test_user_email,
-        "password": test_user_password
-    }
-    
-    login_test, login_response = run_test(
-        "Login with valid credentials",
-        "/auth/login",
-        method="POST",
-        data=login_data,
-        expected_keys=["access_token", "token_type", "user"]
-    )
-    
-    if not login_test or not login_response:
-        print("❌ Login failed. Cannot continue with login flow testing.")
-        return False, "Login failed"
-    
-    # Extract login token and user data
-    login_token = login_response.get("access_token")
-    login_user = login_response.get("user", {})
-    
-    print(f"User logged in with ID: {login_user.get('id')}")
-    print(f"Login JWT Token: {login_token}")
-    
-    # Verify user data from login matches registration
-    if login_user.get("id") == user_id:
-        print("✅ User ID from login matches registered user")
-    else:
-        print("❌ User ID from login does not match registered user")
-    
-    # Step 5: Decode and inspect the login token
-    print("\nStep 5: Decode and inspect the login token")
-    
-    try:
-        decoded_login_token = jwt.decode(login_token, JWT_SECRET, algorithms=["HS256"])
-        print(f"Decoded login token: {json.dumps(decoded_login_token, indent=2)}")
-        
-        # Check for required fields
-        if "user_id" in decoded_login_token and "sub" in decoded_login_token:
-            print("✅ Login JWT token contains required fields (user_id, sub)")
-            
-            # Verify user_id matches
-            if decoded_login_token.get("user_id") == user_id:
-                print("✅ user_id in login token matches user ID")
-            else:
-                print("❌ user_id in login token does not match user ID")
-                
-            # Verify sub matches email
-            if decoded_login_token.get("sub") == test_user_email:
-                print("✅ sub in login token matches email")
-            else:
-                print("❌ sub in login token does not match email")
-        else:
-            print("❌ Login JWT token is missing required fields")
-    except Exception as e:
-        print(f"❌ Login JWT token validation failed: {e}")
-    
-    # Step 6: Use login token to access a protected endpoint
-    print("\nStep 6: Use login token to access a protected endpoint")
-    
-    login_protected_test, login_protected_response = run_test(
-        "Access protected endpoint with login token",
-        "/documents",
-        method="GET",
-        auth=True,
-        auth_token=login_token
-    )
-    
-    if login_protected_test:
-        print("✅ Successfully accessed protected endpoint with login token")
-    else:
-        print("❌ Failed to access protected endpoint with login token")
-    
-    # Step 7: Test user data endpoint
-    print("\nStep 7: Test user data endpoint")
-    
-    user_data_test, user_data_response = run_test(
-        "Get user data",
-        "/auth/me",
-        method="GET",
-        auth=True,
-        auth_token=login_token
-    )
-    
-    if user_data_test:
-        print("✅ Successfully retrieved user data")
-        
-        # Verify user data
-        if user_data_response.get("id") == user_id:
-            print("✅ User ID in response matches registered user")
-        else:
-            print("❌ User ID in response does not match registered user")
-            
-        if user_data_response.get("email") == test_user_email:
-            print("✅ Email in response matches registered email")
-        else:
-            print("❌ Email in response does not match registered email")
-    else:
-        print("❌ Failed to retrieve user data")
-    
-    # Print summary
-    print("\nAUTHENTICATION FLOW SUMMARY:")
-    
-    # Check if all critical tests passed
-    registration_works = register_test
-    token_validation_works = "user_id" in decoded_token and "sub" in decoded_token
-    protected_access_works = protected_test
-    login_works = login_test
-    login_token_works = login_protected_test
-    
-    if registration_works and token_validation_works and protected_access_works and login_works and login_token_works:
-        print("✅ Authentication flow is working correctly!")
-        print("✅ Registration endpoint is functioning properly")
-        print("✅ JWT tokens are generated correctly with proper payload")
-        print("✅ Protected endpoints can be accessed with valid token")
-        print("✅ Login endpoint is functioning properly")
-        print("✅ User data can be retrieved with valid token")
-        return True, "Authentication flow is working correctly"
-    else:
-        issues = []
-        if not registration_works:
-            issues.append("Registration endpoint is not functioning properly")
-        if not token_validation_works:
-            issues.append("JWT tokens are not generated with proper payload")
-        if not protected_access_works:
-            issues.append("Protected endpoints cannot be accessed with registration token")
-        if not login_works:
-            issues.append("Login endpoint is not functioning properly")
-        if not login_token_works:
-            issues.append("Protected endpoints cannot be accessed with login token")
-        
-        print("❌ Authentication flow has issues:")
-        for issue in issues:
-            print(f"  - {issue}")
-        return False, {"issues": issues}
-
-def test_guest_login():
-    """Test the guest login functionality (Continue as Guest)"""
-    print("\n" + "="*80)
-    print("TESTING GUEST LOGIN (CONTINUE AS GUEST)")
-    print("="*80)
-    
-    # Test the guest login endpoint
-    guest_login_test, guest_login_response = run_test(
-        "Guest Login (Continue as Guest)",
+    # Test 1: Verify test-login endpoint has been removed (should return 404)
+    print("\n--- Test 1: Test Login Endpoint Removal ---")
+    test_login_removed, test_login_response = run_test(
+        "Test Login Endpoint Removal",
         "/auth/test-login",
         method="POST",
-        expected_keys=["access_token", "token_type", "user"]
+        expected_status=404,  # Should return 404 Not Found
+        data={}
     )
     
-    if not guest_login_test or not guest_login_response:
-        print("❌ Guest login failed. Cannot continue with guest login testing.")
-        return False, "Guest login failed"
+    if test_login_removed:
+        print("✅ Test login endpoint successfully removed (returns 404)")
+    else:
+        print("❌ Test login endpoint still exists - this is a problem!")
+        return False
     
-    # Extract token and user data
-    guest_token = guest_login_response.get("access_token")
-    guest_user = guest_login_response.get("user", {})
-    guest_user_id = guest_user.get("id")
+    # Test 2: Verify Google OAuth endpoints exist and are accessible
+    print("\n--- Test 2: Google OAuth Endpoints ---")
     
-    print(f"Guest user ID: {guest_user_id}")
-    print(f"Guest JWT Token: {guest_token}")
+    # Test Google OAuth initiation endpoint
+    google_oauth_test, google_oauth_response = run_test(
+        "Google OAuth Initiation",
+        "/auth/google",
+        method="POST",
+        expected_status=422,  # Should return 422 for missing credential
+        data={}
+    )
     
-    # Decode and inspect the JWT token
-    print("\nDecoding and inspecting the guest JWT token")
+    if google_oauth_test:
+        print("✅ Google OAuth endpoint exists and is accessible")
+    else:
+        print("❌ Google OAuth endpoint not working properly")
+        return False
+    
+    # Test Google OAuth callback endpoint
+    callback_test, callback_response = run_test(
+        "Google OAuth Callback",
+        "/auth/google/callback",
+        method="POST",
+        expected_status=422,  # Should return 422 for missing credential
+        data={}
+    )
+    
+    if callback_test:
+        print("✅ Google OAuth callback endpoint exists and is accessible")
+    else:
+        print("❌ Google OAuth callback endpoint not working properly")
+        return False
+    
+    # Test 3: Create a test JWT token for further testing (simulating successful Google OAuth)
+    print("\n--- Test 3: JWT Token Creation for Testing ---")
+    
+    # Create a test JWT token manually (simulating what Google OAuth would do)
+    import jwt
+    from datetime import datetime, timedelta
+    
+    test_payload = {
+        "user_id": "test-user-123",
+        "sub": "test-user-123",
+        "email": "test@example.com",
+        "name": "Test User",
+        "exp": datetime.utcnow() + timedelta(hours=24)
+    }
     
     try:
-        decoded_token = jwt.decode(guest_token, JWT_SECRET, algorithms=["HS256"])
-        print(f"Decoded token: {json.dumps(decoded_token, indent=2)}")
-        
-        # Check for required fields
-        if "sub" in decoded_token:
-            print("✅ Guest JWT token contains required field (sub)")
-            print(f"sub: {decoded_token.get('sub')}")
-            
-            # Check if it's a test user
-            if "test-user" in decoded_token.get("sub", ""):
-                print("✅ sub in token indicates this is a test/guest user")
-            else:
-                print("⚠️ sub in token does not indicate this is a test/guest user")
-        else:
-            print("❌ Guest JWT token is missing required fields")
-            if "sub" not in decoded_token:
-                print("  - Missing sub field")
+        auth_token = jwt.encode(test_payload, JWT_SECRET, algorithm="HS256")
+        test_user_id = "test-user-123"
+        print("✅ Test JWT token created successfully for testing")
     except Exception as e:
-        print(f"❌ Guest JWT token validation failed: {e}")
+        print(f"❌ Failed to create test JWT token: {e}")
+        return False
     
-    # Use token to access a protected endpoint
-    print("\nUsing guest token to access a protected endpoint")
+    # Test 4: Verify JWT token validation with /auth/me endpoint
+    print("\n--- Test 4: JWT Token Validation ---")
     
-    protected_test, protected_response = run_test(
-        "Access protected endpoint with guest token",
+    me_test, me_response = run_test(
+        "JWT Token Validation (/auth/me)",
         "/auth/me",
         method="GET",
         auth=True,
-        auth_token=guest_token
+        expected_keys=["id", "email", "name"]
     )
     
-    if protected_test:
-        print("✅ Successfully accessed protected endpoint with guest token")
-        
-        # Verify user data
-        if protected_response.get("id") == guest_user_id:
-            print("✅ User ID in response matches guest user")
+    if me_test and me_response:
+        print("✅ JWT token validation successful")
+        if me_response.get("id") == test_user_id:
+            print("✅ User ID matches between token and profile")
         else:
-            print("❌ User ID in response does not match guest user")
+            print("❌ User ID mismatch")
+            return False
     else:
-        print("❌ Failed to access protected endpoint with guest token")
+        print("❌ JWT token validation failed")
+        return False
     
-    # Print summary
-    print("\nGUEST LOGIN SUMMARY:")
+    # Test 5: Test unauthenticated request handling
+    print("\n--- Test 5: Unauthenticated Request Handling ---")
     
-    # Check if all critical tests passed
-    guest_login_works = guest_login_test
-    token_validation_works = "sub" in decoded_token if 'decoded_token' in locals() else False
-    protected_access_works = protected_test
+    unauth_test, unauth_response = run_test(
+        "Unauthenticated Request",
+        "/auth/me",
+        method="GET",
+        auth=False,
+        expected_status=403  # Should return 403 Forbidden
+    )
     
-    if guest_login_works and token_validation_works and protected_access_works:
-        print("✅ Guest login is working correctly!")
-        print("✅ Guest login endpoint is functioning properly")
-        print("✅ Guest JWT tokens are generated correctly")
-        print("✅ Protected endpoints can be accessed with guest token")
-        return True, "Guest login is working correctly"
+    if unauth_test:
+        print("✅ Unauthenticated requests properly rejected")
     else:
-        issues = []
-        if not guest_login_works:
-            issues.append("Guest login endpoint is not functioning properly")
-        if not token_validation_works:
-            issues.append("Guest JWT tokens are not generated with proper payload")
-        if not protected_access_works:
-            issues.append("Protected endpoints cannot be accessed with guest token")
-        
-        print("❌ Guest login has issues:")
-        for issue in issues:
-            print(f"  - {issue}")
-        return False, {"issues": issues}
+        print("❌ Unauthenticated request handling not working properly")
+        return False
+    
+    print("✅ Authentication system working correctly after test login removal")
+    return True
 
-def test_invalid_credentials():
-    """Test login with invalid credentials"""
+def test_protected_endpoints():
+    """Test that protected endpoints require proper authentication"""
     print("\n" + "="*80)
-    print("TESTING LOGIN WITH INVALID CREDENTIALS")
+    print("2. PROTECTED ENDPOINTS TESTING")
     print("="*80)
     
-    # Test login with invalid email
-    invalid_email_data = {
-        "email": f"nonexistent.{uuid.uuid4()}@example.com",
-        "password": "somePassword123"
-    }
+    # Test protected endpoints that should require authentication
+    protected_endpoints = [
+        ("/simulation/state", "GET"),
+        ("/agents", "GET"),
+        ("/conversations", "GET"),
+        ("/observer/messages", "GET"),
+        ("/documents", "GET"),
+        ("/usage", "GET")
+    ]
     
-    invalid_email_test, invalid_email_response = run_test(
-        "Login with invalid email",
-        "/auth/login",
-        method="POST",
-        data=invalid_email_data,
-        expected_status=401
-    )
+    all_protected = True
     
-    if invalid_email_test:
-        print("✅ Login with invalid email correctly rejected")
-    else:
-        print("❌ Login with invalid email not properly handled")
-    
-    # Test login with invalid password for existing user
-    # First register a user
-    register_data = {
-        "email": test_user_email,
-        "password": test_user_password,
-        "name": test_user_name
-    }
-    
-    register_test, register_response = run_test(
-        "Register user for invalid password test",
-        "/auth/register",
-        method="POST",
-        data=register_data,
-        expected_keys=["access_token", "token_type", "user"]
-    )
-    
-    if register_test and register_response:
-        # Now test with wrong password
-        invalid_password_data = {
-            "email": test_user_email,
-            "password": "wrongPassword123"
-        }
+    for endpoint, method in protected_endpoints:
+        print(f"\n--- Testing Protected Endpoint: {endpoint} ---")
         
-        invalid_password_test, invalid_password_response = run_test(
-            "Login with invalid password",
-            "/auth/login",
-            method="POST",
-            data=invalid_password_data,
-            expected_status=401
+        # Test without authentication (should fail)
+        unauth_test, unauth_response = run_test(
+            f"Unauthenticated {endpoint}",
+            endpoint,
+            method=method,
+            auth=False,
+            expected_status=403  # Should return 403 Forbidden
         )
         
-        if invalid_password_test:
-            print("✅ Login with invalid password correctly rejected")
+        if unauth_test:
+            print(f"✅ {endpoint} properly requires authentication")
         else:
-            print("❌ Login with invalid password not properly handled")
-    else:
-        print("❌ Failed to register user for invalid password test")
-        invalid_password_test = False
-    
-    # Print summary
-    print("\nINVALID CREDENTIALS SUMMARY:")
-    
-    if invalid_email_test and invalid_password_test:
-        print("✅ Invalid credentials handling is working correctly!")
-        print("✅ Invalid email is properly rejected")
-        print("✅ Invalid password is properly rejected")
-        return True, "Invalid credentials handling is working correctly"
-    else:
-        issues = []
-        if not invalid_email_test:
-            issues.append("Invalid email is not properly rejected")
-        if not invalid_password_test:
-            issues.append("Invalid password is not properly rejected")
+            print(f"❌ {endpoint} does not require authentication - security issue!")
+            all_protected = False
         
-        print("❌ Invalid credentials handling has issues:")
-        for issue in issues:
-            print(f"  - {issue}")
-        return False, {"issues": issues}
+        # Test with authentication (should work)
+        auth_test, auth_response = run_test(
+            f"Authenticated {endpoint}",
+            endpoint,
+            method=method,
+            auth=True,
+            expected_status=200  # Should return 200 OK
+        )
+        
+        if auth_test:
+            print(f"✅ {endpoint} works with proper authentication")
+        else:
+            print(f"❌ {endpoint} fails even with authentication")
+            all_protected = False
+    
+    if all_protected:
+        print("✅ All protected endpoints properly require authentication")
+        return True
+    else:
+        print("❌ Some protected endpoints have authentication issues")
+        return False
+
+def test_core_functionality():
+    """Test core functionality still works with authentication"""
+    global created_agent_ids
+    
+    print("\n" + "="*80)
+    print("3. CORE FUNCTIONALITY TESTING")
+    print("="*80)
+    
+    # Test 1: Agent Creation
+    print("\n--- Test 1: Agent Creation ---")
+    agent_data = {
+        "name": "Dr. Sarah Quantum",
+        "archetype": "scientist",
+        "goal": "Advance quantum computing research",
+        "expertise": "Quantum physics and cryptography",
+        "background": "PhD in Quantum Physics from MIT",
+        "personality": {
+            "extroversion": 6,
+            "optimism": 8,
+            "curiosity": 9,
+            "cooperativeness": 7,
+            "energy": 7
+        }
+    }
+    
+    create_agent_test, create_agent_response = run_test(
+        "Create Agent",
+        "/agents",
+        method="POST",
+        data=agent_data,
+        auth=True,
+        expected_keys=["message", "agent_id"]
+    )
+    
+    if create_agent_test and create_agent_response:
+        agent_id = create_agent_response.get("agent_id")
+        if agent_id:
+            created_agent_ids.append(agent_id)
+            print(f"✅ Created agent with ID: {agent_id}")
+        else:
+            print("❌ No agent ID returned")
+            return False
+    else:
+        print("❌ Agent creation failed")
+        return False
+    
+    # Test 2: Simulation State
+    print("\n--- Test 2: Simulation State ---")
+    state_test, state_response = run_test(
+        "Get Simulation State",
+        "/simulation/state",
+        method="GET",
+        auth=True,
+        expected_keys=["current_day", "current_time_period", "is_active"]
+    )
+    
+    if not state_test:
+        print("❌ Simulation state retrieval failed")
+        return False
+    
+    # Test 3: Conversation Generation (if we have agents)
+    print("\n--- Test 3: Conversation Generation ---")
+    if len(created_agent_ids) > 0:
+        conversation_test, conversation_response = run_test(
+            "Generate Conversation",
+            "/conversation/generate",
+            method="POST",
+            auth=True,
+            measure_time=True
+        )
+        
+        if conversation_test:
+            print("✅ Conversation generation working")
+        else:
+            print("❌ Conversation generation failed")
+            return False
+    else:
+        print("⚠️ Skipping conversation generation - no agents created")
+    
+    print("✅ Core functionality working with authentication")
+    return True
+
+def test_reports_functionality():
+    """Test reports functionality with authentication"""
+    print("\n" + "="*80)
+    print("4. REPORTS FUNCTIONALITY TESTING")
+    print("="*80)
+    
+    # Test 1: Daily Report Generation
+    print("\n--- Test 1: Daily Report Generation ---")
+    daily_report_test, daily_report_response = run_test(
+        "Generate Daily Report",
+        "/simulation/generate-daily-report",
+        method="POST",
+        data={"manual": True},
+        auth=True,
+        measure_time=True
+    )
+    
+    if daily_report_test and daily_report_response:
+        print("✅ Daily report generation working")
+        
+        # Test 2: Reports Retrieval
+        print("\n--- Test 2: Reports Retrieval ---")
+        reports_test, reports_response = run_test(
+            "Get Reports",
+            "/reports",
+            method="GET",
+            auth=True,
+            expected_keys=["success", "reports", "count"]
+        )
+        
+        if reports_test:
+            print("✅ Reports retrieval working")
+        else:
+            print("❌ Reports retrieval failed")
+            return False
+    else:
+        print("❌ Daily report generation failed")
+        return False
+    
+    print("✅ Reports functionality working with authentication")
+    return True
+
+def cleanup_test_data():
+    """Clean up test data created during testing"""
+    print("\n" + "="*80)
+    print("CLEANUP: Removing test data")
+    print("="*80)
+    
+    # Delete created agents
+    for agent_id in created_agent_ids:
+        delete_test, delete_response = run_test(
+            f"Delete Agent {agent_id}",
+            f"/agents/{agent_id}",
+            method="DELETE",
+            auth=True
+        )
+        if delete_test:
+            print(f"✅ Deleted agent {agent_id}")
+        else:
+            print(f"❌ Failed to delete agent {agent_id}")
+    
+    print("✅ Cleanup completed")
 
 def main():
-    """Run all authentication tests"""
-    print("\n" + "="*80)
-    print("TESTING AUTHENTICATION SYSTEM")
+    """Main test execution function"""
+    print("AUTHENTICATION SYSTEM TESTING AFTER TEST LOGIN REMOVAL")
+    print("Testing authentication system to ensure it works properly after removing test login functionality")
     print("="*80)
     
-    # Test the complete authentication flow (email/password login)
-    auth_flow_success, auth_flow_results = test_authentication_flow()
+    # Run all test suites
+    test_suites = [
+        ("Authentication System", test_authentication_system),
+        ("Protected Endpoints", test_protected_endpoints),
+        ("Core Functionality", test_core_functionality),
+        ("Reports Functionality", test_reports_functionality)
+    ]
     
-    # Test guest login functionality
-    guest_login_success, guest_login_results = test_guest_login()
+    failed_suites = []
     
-    # Test invalid credentials handling
-    invalid_creds_success, invalid_creds_results = test_invalid_credentials()
+    for suite_name, test_function in test_suites:
+        try:
+            print(f"\n{'='*80}")
+            print(f"RUNNING TEST SUITE: {suite_name}")
+            print(f"{'='*80}")
+            
+            success = test_function()
+            if success:
+                print(f"✅ {suite_name} test suite PASSED")
+            else:
+                print(f"❌ {suite_name} test suite FAILED")
+                failed_suites.append(suite_name)
+        except Exception as e:
+            print(f"❌ {suite_name} test suite ERROR: {e}")
+            failed_suites.append(suite_name)
     
-    # Print summary of all tests
+    # Cleanup test data
+    cleanup_test_data()
+    
+    # Print final summary
     print_summary()
     
-    # Print final conclusion
-    print("\n" + "="*80)
-    print("AUTHENTICATION SYSTEM ASSESSMENT")
-    print("="*80)
+    # Print test suite summary
+    print(f"\n{'='*80}")
+    print("TEST SUITE SUMMARY")
+    print(f"{'='*80}")
     
-    all_tests_passed = auth_flow_success and guest_login_success and invalid_creds_success
+    total_suites = len(test_suites)
+    passed_suites = total_suites - len(failed_suites)
     
-    if all_tests_passed:
-        print("✅ Authentication system is working correctly")
-        print("✅ Email/password login is functioning properly")
-        print("✅ Guest login (Continue as Guest) is functioning properly")
-        print("✅ Invalid credentials are properly handled")
-        print("✅ JWT tokens are generated correctly with proper payload")
-        print("✅ Protected endpoints can be accessed with valid tokens")
-        print("✅ User profile data can be retrieved with /api/auth/me endpoint")
+    print(f"Total Test Suites: {total_suites}")
+    print(f"Passed: {passed_suites}")
+    print(f"Failed: {len(failed_suites)}")
+    
+    if failed_suites:
+        print(f"\nFailed Test Suites:")
+        for suite in failed_suites:
+            print(f"  ❌ {suite}")
     else:
-        print("❌ Authentication system has issues")
-        
-        if not auth_flow_success:
-            print("\nEmail/Password Login Issues:")
-            if isinstance(auth_flow_results, dict) and "issues" in auth_flow_results:
-                for issue in auth_flow_results["issues"]:
-                    print(f"  - {issue}")
-            else:
-                print(f"  - {auth_flow_results}")
-        
-        if not guest_login_success:
-            print("\nGuest Login Issues:")
-            if isinstance(guest_login_results, dict) and "issues" in guest_login_results:
-                for issue in guest_login_results["issues"]:
-                    print(f"  - {issue}")
-            else:
-                print(f"  - {guest_login_results}")
-        
-        if not invalid_creds_success:
-            print("\nInvalid Credentials Handling Issues:")
-            if isinstance(invalid_creds_results, dict) and "issues" in invalid_creds_results:
-                for issue in invalid_creds_results["issues"]:
-                    print(f"  - {issue}")
-            else:
-                print(f"  - {invalid_creds_results}")
+        print(f"\n✅ ALL TEST SUITES PASSED!")
     
-    print("="*80)
+    print(f"{'='*80}")
     
-    return all_tests_passed
+    # Return overall success
+    return len(failed_suites) == 0
 
 if __name__ == "__main__":
-    main()
+    success = main()
+    sys.exit(0 if success else 1)

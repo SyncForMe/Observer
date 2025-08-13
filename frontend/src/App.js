@@ -368,13 +368,6 @@ console.log('Environment variables loaded:', {
   NODE_ENV: process.env.NODE_ENV
 });
 
-// Authentication Context
-const AuthContext = createContext();
-
-// useAuth hook is imported from AuthContext
-
-// AuthProvider is imported from AuthContext
-
 // Animated Observer Logo Component
 const ObserverLogo = () => {
   const pupilControls = useAnimationControls();
@@ -531,6 +524,45 @@ const AppContent = () => {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  // Helper functions to ensure only one account modal is open at a time
+  const closeAllAccountModals = () => {
+    setShowProfileModal(false);
+    setShowPreferencesModal(false);
+    setShowHelpModal(false);
+    setShowAnalyticsModal(false);
+    setShowFeedbackModal(false);
+  };
+
+  const openProfileModal = () => {
+    closeAllAccountModals();
+    setShowProfileModal(true);
+    setShowAccountDropdown(false);
+  };
+
+  const openPreferencesModal = () => {
+    closeAllAccountModals();
+    setShowPreferencesModal(true);
+    setShowAccountDropdown(false);
+  };
+
+  const openHelpModal = () => {
+    closeAllAccountModals();
+    setShowHelpModal(true);
+    setShowAccountDropdown(false);
+  };
+
+  const openAnalyticsModal = () => {
+    closeAllAccountModals();
+    setShowAnalyticsModal(true);
+    setShowAccountDropdown(false);
+  };
+
+  const openFeedbackModal = () => {
+    closeAllAccountModals();
+    setShowFeedbackModal(true);
+    setShowAccountDropdown(false);
+  };
   
   // Observatory refresh trigger for Agent Library synchronization
   const [observatoryRefreshTrigger, setObservatoryRefreshTrigger] = useState(0);
@@ -566,55 +598,57 @@ const AppContent = () => {
       {/* Sticky Header */}
       <header className="sticky top-0 bg-white/10 backdrop-blur-lg border-b border-white/20 z-[9998] shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex items-center h-16">
             <ObserverLogo />
             
-            <nav className="hidden md:flex space-x-8">
-              <button
-                onClick={() => {
-                  console.log('🔍 AppContent: About tab clicked');
-                  setActiveTab('about');
-                }}
-                className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
-                  activeTab === 'about' 
-                    ? 'text-white bg-white/20' 
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                🏠 About
-              </button>
-              <button
-                onClick={() => {
-                  console.log('🔍 AppContent: Observatory tab clicked');
-                  setActiveTab('simulation');
-                }}
-                className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
-                  activeTab === 'simulation' 
-                    ? 'text-white bg-white/20' 
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                🔭 Observatory
-              </button>
-              
-              {/* Library Dropdown */}
-              <div className="relative library-dropdown">
+            {/* Centered Navigation */}
+            <div className="flex-1 flex justify-center">
+              <nav className="hidden md:flex space-x-8">
                 <button
                   onClick={() => {
-                    console.log('🔍 Library button clicked - toggling dropdown');
-                    setShowLibraryDropdown(!showLibraryDropdown);
+                    console.log('🔍 AppContent: About tab clicked');
+                    setActiveTab('about');
                   }}
-                  className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg flex items-center space-x-1 ${
-                    ['agents', 'conversations', 'documents'].includes(activeTab)
+                  className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
+                    activeTab === 'about' 
                       ? 'text-white bg-white/20' 
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  <span>📚 Library</span>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  🏠 About
                 </button>
+                <button
+                  onClick={() => {
+                    console.log('🔍 AppContent: Observatory tab clicked');
+                    setActiveTab('simulation');
+                  }}
+                  className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg ${
+                    activeTab === 'simulation' 
+                      ? 'text-white bg-white/20' 
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  🔭 Observatory
+                </button>
+                
+                {/* Library Dropdown */}
+                <div className="relative library-dropdown">
+                  <button
+                    onClick={() => {
+                      console.log('🔍 Library button clicked - toggling dropdown');
+                      setShowLibraryDropdown(!showLibraryDropdown);
+                    }}
+                    className={`text-sm font-medium transition-colors duration-200 px-3 py-2 rounded-lg flex items-center space-x-1 ${
+                      ['agents', 'conversations', 'documents'].includes(activeTab)
+                        ? 'text-white bg-white/20' 
+                        : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <span>📚 Library</span>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
                 
                 {/* Library Dropdown Menu */}
                 {showLibraryDropdown && (
@@ -664,8 +698,9 @@ const AppContent = () => {
                 )}
               </div>
             </nav>
+            </div>
             
-            {/* User Account Dropdown - WORKING VERSION */}
+            {/* User Account Dropdown - WORKING VERSION */}  
             <div className="relative account-dropdown">
               <button
                 onClick={() => {
@@ -704,20 +739,8 @@ const AppContent = () => {
                   <div className="py-1">
                     <button
                       onClick={() => {
-                        console.log('🔍 Analytics clicked');
-                        setShowAnalyticsModal(true);
-                        setShowAccountDropdown(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                    >
-                      <span>📊</span>
-                      <span>Analytics Dashboard</span>
-                    </button>
-                    <button
-                      onClick={() => {
                         console.log('🔍 Profile clicked - setting modal to true');
-                        setShowProfileModal(true);
-                        setShowAccountDropdown(false);
+                        openProfileModal();
                       }}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                     >
@@ -726,9 +749,18 @@ const AppContent = () => {
                     </button>
                     <button
                       onClick={() => {
+                        console.log('🔍 Analytics clicked');
+                        openAnalyticsModal();
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                    >
+                      <span>📊</span>
+                      <span>Analytics</span>
+                    </button>
+                    <button
+                      onClick={() => {
                         console.log('🔍 Preferences clicked');
-                        setShowPreferencesModal(true);
-                        setShowAccountDropdown(false);
+                        openPreferencesModal();
                       }}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                     >
@@ -738,8 +770,7 @@ const AppContent = () => {
                     <button
                       onClick={() => {
                         console.log('🔍 Help clicked');
-                        setShowHelpModal(true);
-                        setShowAccountDropdown(false);
+                        openHelpModal();
                       }}
                       className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                     >
@@ -768,10 +799,10 @@ const AppContent = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 min-h-screen">
         {console.log('🔍 AppContent: About to render main content, activeTab:', activeTab)}
         
-        <div style={{ minHeight: '400px' }}>
+        <div style={{ minHeight: 'calc(100vh - 120px)' }}>
           {/* Simple content without AnimatePresence to test */}
           {activeTab === 'about' && (
             <div className="relative overflow-hidden">
@@ -1451,7 +1482,7 @@ const AppContent = () => {
           console.log('🔍 Closing help modal');
           setShowHelpModal(false);
         }}
-        onOpenFeedback={() => setShowFeedbackModal(true)}
+        onOpenFeedback={() => openFeedbackModal()}
       />
 
       <FeedbackModal
@@ -1466,8 +1497,8 @@ const AppContent = () => {
 
       {/* Analytics Modal */}
       {showAnalyticsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 pt-12">
+          <div className="bg-white rounded-lg w-full max-w-7xl max-h-[85vh] overflow-hidden mt-2">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
               <div className="flex justify-between items-center">
                 <div>
@@ -1482,7 +1513,7 @@ const AppContent = () => {
                 </button>
               </div>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="p-6 overflow-y-auto" style={{maxHeight: 'calc(85vh - 120px)'}}>
               <AnalyticsDashboard />
             </div>
           </div>
@@ -1565,7 +1596,7 @@ const App = () => {
 const AppWithProvider = () => {
   return (
     <AuthProvider>
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      <div className="min-h-screen bg-transparent">
         <App />
       </div>
     </AuthProvider>

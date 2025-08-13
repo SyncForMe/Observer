@@ -53,7 +53,7 @@ const VoiceInput = ({
 
   const startRecording = async () => {
     if (!token || isDisabledDueToAuth) {
-      alert('🎤 Voice input requires authentication.\n\nPlease use "Continue as Guest" button to enable voice input.');
+      alert('🎤 Voice input requires authentication.\n\nPlease sign in with Google to enable voice input.');
       return;
     }
     
@@ -494,29 +494,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     window.location.href = googleAuthUrl.toString();
   };
 
-  const handleTestLogin = async () => {
-    setLoginLoading(true);
-    setError('');
-    
-    try {
-      const response = await axios.post(`${API}/auth/test-login`);
-      const { access_token, user: userData } = response.data;
-      
-      localStorage.setItem('auth_token', access_token);
-      setToken(access_token);
-      setUser(userData);
-      
-      onClose();
-      setTimeout(() => {
-        alert('✅ Test login successful! You can now save agents and access conversation history.');
-      }, 500);
-      
-    } catch (err) {
-      console.error('Test login error:', err);
-      setError(`Test login failed: ${err.response?.data?.detail || err.message}`);
-    }
-    setLoginLoading(false);
-  };
+
 
   if (!isOpen) return null;
 
@@ -597,16 +575,6 @@ const LoginModal = ({ isOpen, onClose }) => {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
                 <span>Sign in with Google</span>
-              </motion.button>
-              
-              <motion.button
-                onClick={handleTestLogin}
-                disabled={loginLoading}
-                className="btn-premium btn-primary w-full"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                🧪 Continue as Guest
               </motion.button>
             </div>
           </div>

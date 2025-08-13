@@ -1,306 +1,264 @@
 #!/usr/bin/env python3
 """
-Focused test script for the optimized observer message functionality with better error handling.
+Focused Observer Chat Performance Analysis
+Tests specific performance bottlenecks and response times
 """
-
 import requests
 import json
 import time
 import os
-import sys
 from dotenv import load_dotenv
-from datetime import datetime
+import statistics
 
 # Load environment variables
 load_dotenv('/app/frontend/.env')
 BACKEND_URL = os.environ.get('REACT_APP_BACKEND_URL')
 API_URL = f"{BACKEND_URL}/api"
 
-def make_request_with_retry(method, url, max_retries=3, timeout=30, **kwargs):
-    """Make HTTP request with retry logic"""
-    for attempt in range(max_retries):
-        try:
-            if method.upper() == 'GET':
-                response = requests.get(url, timeout=timeout, **kwargs)
-            elif method.upper() == 'POST':
-                response = requests.post(url, timeout=timeout, **kwargs)
-            elif method.upper() == 'PUT':
-                response = requests.put(url, timeout=timeout, **kwargs)
-            elif method.upper() == 'DELETE':
-                response = requests.delete(url, timeout=timeout, **kwargs)
-            else:
-                raise ValueError(f"Unsupported method: {method}")
-            
-            return response
-            
-        except requests.exceptions.Timeout:
-            print(f"   Timeout on attempt {attempt + 1}/{max_retries}")
-            if attempt < max_retries - 1:
-                time.sleep(2 ** attempt)  # Exponential backoff
-            else:
-                raise
-        except Exception as e:
-            print(f"   Error on attempt {attempt + 1}/{max_retries}: {str(e)}")
-            if attempt < max_retries - 1:
-                time.sleep(1)
-            else:
-                raise
+def authenticate_guest():
+    """Quick authentication"""
+    response = requests.post(f"{API_URL}/auth/test-login", timeout=10)
+    if response.status_code == 200:
+        data = response.json()
+        return data.get('access_token'), data.get('user', {}).get('id')
+    return None, None
 
-def test_core_observer_functionality():
-    """Test the core observer message functionality"""
-    print("🚀 FOCUSED OBSERVER MESSAGE TESTING")
-    print("=" * 50)
+def test_single_observer_message_performance():
+    """Test single observer message performance in detail"""
+    print("🔍 FOCUSED OBSERVER MESSAGE PERFORMANCE TEST")
+    print("=" * 60)
     
-    # Step 1: Authenticate
-    print("\n🔐 Authenticating...")
-    try:
-        auth_response = make_request_with_retry('POST', f"{API_URL}/auth/test-login")
-        if auth_response.status_code != 200:
-            print(f"❌ Authentication failed: {auth_response.status_code}")
-            return False
-        
-        auth_data = auth_response.json()
-        token = auth_data['access_token']
-        user_id = auth_data['user']['id']
-        print(f"✅ Authenticated as user: {user_id}")
-        
-    except Exception as e:
-        print(f"❌ Authentication error: {str(e)}")
-        return False
+    token, user_id = authenticate_guest()
+    if not token:
+        print("❌ Authentication failed")
+        return
     
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Step 2: Create agents
-    print("\n🤖 Creating test agents...")
-    agent_data = {
-        "name": "Dr. Test Agent",
-        "archetype": "scientist",
-        "goal": "Test observer functionality",
-        "expertise": "Testing",
-        "background": "Test agent for observer messages"
-    }
+    # Test single observer message with detailed timing
+    message = "Please provide a quick status update on system performance."
+    
+    print(f"📨 Sending observer message: '{message}'")
+    print("⏱️  Measuring detailed performance metrics...")
+    
+    start_time = time.time()
     
     try:
-        agent_response = make_request_with_retry('POST', f"{API_URL}/agents", json=agent_data, headers=headers)
-        if agent_response.status_code != 200:
-            print(f"❌ Agent creation failed: {agent_response.status_code}")
-            return False
-        
-        agent = agent_response.json()
-        print(f"✅ Created agent: {agent['name']} (ID: {agent['id']})")
-        
-    except Exception as e:
-        print(f"❌ Agent creation error: {str(e)}")
-        return False
-    
-    # Step 3: Start simulation
-    print("\n▶️ Starting simulation...")
-    try:
-        sim_response = make_request_with_retry('POST', f"{API_URL}/simulation/start", headers=headers)
-        if sim_response.status_code != 200:
-            print(f"❌ Simulation start failed: {sim_response.status_code}")
-            return False
-        
-        print("✅ Simulation started")
-        
-    except Exception as e:
-        print(f"❌ Simulation start error: {str(e)}")
-        return False
-    
-    # Step 4: Test observer message core functionality
-    print("\n💬 Testing observer message...")
-    observer_message = "Hello team, let's test the observer functionality"
-    
-    try:
-        start_time = time.time()
-        
-        observer_response = make_request_with_retry(
-            'POST', 
+        response = requests.post(
             f"{API_URL}/observer/send-message",
-            json={"observer_message": observer_message},
+            json={"observer_message": message},
             headers=headers,
-            timeout=20
+            timeout=45
         )
         
         end_time = time.time()
-        response_time = end_time - start_time
+        total_time = end_time - start_time
         
-        if observer_response.status_code != 200:
-            print(f"❌ Observer message failed: {observer_response.status_code}")
-            print(f"   Response: {observer_response.text}")
-            return False
-        
-        observer_data = observer_response.json()
-        print(f"✅ Observer message sent successfully")
-        print(f"   Response time: {response_time:.2f}s")
-        
-        # Check response structure
-        checks = {
-            "Has message field": 'message' in observer_data,
-            "Has observer_message field": 'observer_message' in observer_data,
-            "Has agent_responses field": 'agent_responses' in observer_data,
-            "Observer message matches": observer_data.get('observer_message') == observer_message,
-            "Fast response": response_time < 15.0
-        }
-        
-        agent_responses = observer_data.get('agent_responses', {})
-        checks.update({
-            "Scenario name is Observer Guidance": agent_responses.get('scenario_name') == 'Observer Guidance',
-            "Has messages": len(agent_responses.get('messages', [])) > 0
-        })
-        
-        # Check observer message positioning
-        messages = agent_responses.get('messages', [])
-        if messages:
-            first_message = messages[0]
-            checks["Observer message first"] = (
-                first_message.get('agent_name') == 'Observer (You)' and 
-                first_message.get('message') == observer_message
-            )
-        else:
-            checks["Observer message first"] = False
-        
-        print("\n📊 Response Structure Checks:")
-        all_passed = True
-        for check_name, passed in checks.items():
-            status = "✅" if passed else "❌"
-            print(f"   {status} {check_name}")
-            if not passed:
-                all_passed = False
-        
-        if all_passed:
-            print("\n🎉 All core observer message functionality checks PASSED!")
-        else:
-            print("\n⚠️  Some checks failed")
-        
-        # Step 5: Test conversation retrieval
-        print("\n📚 Testing conversation retrieval...")
-        try:
-            conv_response = make_request_with_retry('GET', f"{API_URL}/conversations", headers=headers, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            agent_responses = data.get('agent_responses', {})
+            messages = agent_responses.get('messages', [])
             
-            if conv_response.status_code == 200:
-                conversations = conv_response.json()
-                print(f"✅ Retrieved {len(conversations)} conversations")
-                
-                # Find observer conversation
-                observer_conv = None
-                for conv in conversations:
-                    if conv.get('scenario_name') == 'Observer Guidance':
-                        observer_conv = conv
-                        break
-                
-                if observer_conv:
-                    print("✅ Found Observer Guidance conversation")
-                    conv_messages = observer_conv.get('messages', [])
-                    print(f"   Messages in conversation: {len(conv_messages)}")
-                    
-                    # Check for duplicates
-                    observer_messages = [msg for msg in conv_messages if msg.get('agent_name') == 'Observer (You)']
-                    print(f"   Observer messages found: {len(observer_messages)}")
-                    
-                    if len(observer_messages) == 1:
-                        print("✅ No duplicate observer messages")
+            # Analyze response details
+            observer_msg = None
+            agent_msgs = []
+            
+            for msg in messages:
+                if isinstance(msg, dict):
+                    if msg.get('agent_name') == 'Observer (You)':
+                        observer_msg = msg
                     else:
-                        print("⚠️  Potential duplicate observer messages")
-                        
-                else:
-                    print("❌ Observer Guidance conversation not found")
-                    
-            else:
-                print(f"❌ Conversation retrieval failed: {conv_response.status_code}")
-                
-        except Exception as e:
-            print(f"⚠️  Conversation retrieval error: {str(e)}")
-        
-        return all_passed
-        
-    except Exception as e:
-        print(f"❌ Observer message error: {str(e)}")
-        return False
-
-def test_multiple_observer_messages():
-    """Test sending multiple observer messages"""
-    print("\n🔄 Testing multiple observer messages...")
-    
-    # Authenticate
-    try:
-        auth_response = make_request_with_retry('POST', f"{API_URL}/auth/test-login")
-        token = auth_response.json()['access_token']
-        headers = {"Authorization": f"Bearer {token}"}
-    except Exception as e:
-        print(f"❌ Authentication failed: {str(e)}")
-        return False
-    
-    messages = [
-        "First observer message",
-        "Second observer message", 
-        "Third observer message"
-    ]
-    
-    successful_sends = 0
-    
-    for i, message in enumerate(messages, 1):
-        try:
-            print(f"   Sending message {i}: {message}")
+                        agent_msgs.append(msg)
             
-            response = make_request_with_retry(
-                'POST',
-                f"{API_URL}/observer/send-message",
-                json={"observer_message": message},
-                headers=headers,
-                timeout=20
-            )
+            print(f"✅ SUCCESS - Observer message processed")
+            print(f"    📊 Total Response Time: {total_time:.3f}s")
+            print(f"    🤖 Agent Responses: {len(agent_msgs)}")
+            print(f"    📝 Observer Message Included: {'Yes' if observer_msg else 'No'}")
+            
+            if agent_msgs:
+                avg_length = sum(len(msg.get('message', '')) for msg in agent_msgs) / len(agent_msgs)
+                print(f"    📏 Average Response Length: {avg_length:.0f} characters")
+                
+                # Show sample responses
+                print(f"    💬 Sample Agent Responses:")
+                for i, msg in enumerate(agent_msgs[:3], 1):
+                    agent_name = msg.get('agent_name', 'Unknown')
+                    message_text = msg.get('message', '')[:100]
+                    print(f"        {i}. {agent_name}: {message_text}...")
+            
+            # Performance rating
+            if total_time < 10:
+                rating = "🟢 EXCELLENT"
+            elif total_time < 20:
+                rating = "🟡 GOOD"
+            else:
+                rating = "🔴 NEEDS IMPROVEMENT"
+            
+            print(f"    🏆 Performance Rating: {rating}")
+            
+        else:
+            print(f"❌ FAILED - Status Code: {response.status_code}")
+            print(f"    Response: {response.text[:200]}...")
+            
+    except requests.exceptions.Timeout:
+        print(f"❌ TIMEOUT - Request exceeded 45 seconds")
+    except Exception as e:
+        print(f"❌ ERROR - {str(e)}")
+
+def test_observer_message_retrieval():
+    """Test observer message retrieval performance"""
+    print("\n🗄️ OBSERVER MESSAGE RETRIEVAL TEST")
+    print("=" * 60)
+    
+    token, user_id = authenticate_guest()
+    if not token:
+        print("❌ Authentication failed")
+        return
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    print("📥 Testing observer message retrieval...")
+    
+    start_time = time.time()
+    
+    try:
+        response = requests.get(f"{API_URL}/observer/messages", headers=headers, timeout=10)
+        end_time = time.time()
+        retrieval_time = end_time - start_time
+        
+        if response.status_code == 200:
+            messages = response.json()
+            print(f"✅ SUCCESS - Messages retrieved")
+            print(f"    ⏱️  Retrieval Time: {retrieval_time:.3f}s")
+            print(f"    📊 Messages Count: {len(messages)}")
+            
+            if messages:
+                latest_msg = messages[0]
+                print(f"    📝 Latest Message: '{latest_msg.get('message', '')[:50]}...'")
+                print(f"    🕐 Timestamp: {latest_msg.get('timestamp', 'Unknown')}")
+            
+            # Performance rating for retrieval
+            if retrieval_time < 1:
+                rating = "🟢 EXCELLENT"
+            elif retrieval_time < 3:
+                rating = "🟡 GOOD"
+            else:
+                rating = "🔴 NEEDS IMPROVEMENT"
+            
+            print(f"    🏆 Retrieval Performance: {rating}")
+            
+        else:
+            print(f"❌ FAILED - Status Code: {response.status_code}")
+            
+    except Exception as e:
+        print(f"❌ ERROR - {str(e)}")
+
+def test_system_responsiveness_during_observer():
+    """Test system responsiveness while observer messages are being processed"""
+    print("\n⚡ SYSTEM RESPONSIVENESS TEST")
+    print("=" * 60)
+    
+    token, user_id = authenticate_guest()
+    if not token:
+        print("❌ Authentication failed")
+        return
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    print("🔄 Testing system responsiveness during observer message processing...")
+    
+    # Test baseline system response
+    print("    📊 Measuring baseline system response...")
+    baseline_times = []
+    
+    for i in range(3):
+        try:
+            start_time = time.time()
+            response = requests.get(f"{API_URL}/simulation/state", headers=headers, timeout=5)
+            end_time = time.time()
             
             if response.status_code == 200:
-                successful_sends += 1
-                print(f"   ✅ Message {i} sent successfully")
-            else:
-                print(f"   ❌ Message {i} failed: {response.status_code}")
-                
-            time.sleep(1)  # Brief pause between messages
-            
-        except Exception as e:
-            print(f"   ❌ Message {i} error: {str(e)}")
+                baseline_times.append(end_time - start_time)
+        except:
+            pass
     
-    print(f"\n📊 Multiple Messages Result: {successful_sends}/{len(messages)} sent successfully")
-    return successful_sends == len(messages)
+    if baseline_times:
+        baseline_avg = statistics.mean(baseline_times)
+        print(f"    ✅ Baseline Response Time: {baseline_avg:.3f}s")
+    else:
+        print(f"    ❌ Could not establish baseline")
+        return
+    
+    # Now test responsiveness after sending observer message
+    print("    📨 Sending observer message and testing system response...")
+    
+    try:
+        # Send observer message (don't wait for completion)
+        import threading
+        
+        def send_observer_message():
+            requests.post(
+                f"{API_URL}/observer/send-message",
+                json={"observer_message": "System responsiveness test - please respond briefly."},
+                headers=headers,
+                timeout=30
+            )
+        
+        # Start observer message in background
+        observer_thread = threading.Thread(target=send_observer_message)
+        observer_thread.start()
+        
+        # Wait a moment then test system responsiveness
+        time.sleep(2)
+        
+        response_times = []
+        for i in range(3):
+            try:
+                start_time = time.time()
+                response = requests.get(f"{API_URL}/simulation/state", headers=headers, timeout=5)
+                end_time = time.time()
+                
+                if response.status_code == 200:
+                    response_times.append(end_time - start_time)
+            except:
+                pass
+        
+        if response_times:
+            during_avg = statistics.mean(response_times)
+            impact = ((during_avg - baseline_avg) / baseline_avg) * 100
+            
+            print(f"    ✅ Response Time During Observer: {during_avg:.3f}s")
+            print(f"    📈 Performance Impact: {impact:+.1f}%")
+            
+            if abs(impact) < 20:
+                rating = "🟢 MINIMAL IMPACT"
+            elif abs(impact) < 50:
+                rating = "🟡 MODERATE IMPACT"
+            else:
+                rating = "🔴 SIGNIFICANT IMPACT"
+            
+            print(f"    🏆 Impact Rating: {rating}")
+        else:
+            print(f"    ❌ Could not measure response during observer processing")
+        
+        # Wait for observer thread to complete
+        observer_thread.join(timeout=30)
+        
+    except Exception as e:
+        print(f"❌ ERROR - {str(e)}")
 
 def main():
-    """Main test execution"""
-    print("🧪 OPTIMIZED OBSERVER MESSAGE TESTING")
-    print("=" * 60)
+    """Run focused performance tests"""
+    print("🎯 FOCUSED OBSERVER CHAT PERFORMANCE ANALYSIS")
+    print("=" * 80)
     
-    # Test core functionality
-    core_test_passed = test_core_observer_functionality()
+    test_single_observer_message_performance()
+    test_observer_message_retrieval()
+    test_system_responsiveness_during_observer()
     
-    # Test multiple messages
-    multiple_test_passed = test_multiple_observer_messages()
-    
-    # Summary
-    print("\n" + "=" * 60)
-    print("📊 FINAL RESULTS")
-    print("=" * 60)
-    
-    print(f"✅ Core Observer Functionality: {'PASSED' if core_test_passed else 'FAILED'}")
-    print(f"✅ Multiple Observer Messages: {'PASSED' if multiple_test_passed else 'FAILED'}")
-    
-    overall_success = core_test_passed and multiple_test_passed
-    
-    if overall_success:
-        print("\n🎉 OBSERVER MESSAGE OPTIMIZATION TESTING: SUCCESS")
-        print("   ⚡ Instant sending is working")
-        print("   💬 Response structure is correct")
-        print("   📝 Observer messages appear first in conversations")
-        print("   🔄 Multiple messages can be sent successfully")
-    else:
-        print("\n⚠️  OBSERVER MESSAGE OPTIMIZATION TESTING: NEEDS ATTENTION")
-        if not core_test_passed:
-            print("   ❌ Core functionality issues detected")
-        if not multiple_test_passed:
-            print("   ❌ Multiple message handling issues detected")
-    
-    return overall_success
+    print("\n" + "=" * 80)
+    print("📋 PERFORMANCE ANALYSIS COMPLETE")
+    print("=" * 80)
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()

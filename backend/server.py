@@ -8,15 +8,14 @@ from enhanced_document_system import DocumentQualityGate, ProfessionalDocumentFo
 from pdf_generator import ProfessionalPDFGenerator, generate_document_pdf
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, Response
 from pydantic import BaseModel, Field, EmailStr
 import bcrypt
 import jwt
 from jwt.exceptions import InvalidTokenError as JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from typing import List, Optional, Dict, Any
 import asyncio
-from datetime import datetime, timedelta, date
 import uuid
 import logging
 import os
@@ -343,6 +342,9 @@ async def send_observer_message(input_data: ObserverInput, current_user: User = 
     
     scenario = state.get("scenario", "Research Station")
     
+    # Create LLM manager for API calls
+    llm_manager = LLMManager()
+    
     # Store observer message with user_id
     observer_msg_data = {
         "message": observer_message,
@@ -350,6 +352,13 @@ async def send_observer_message(input_data: ObserverInput, current_user: User = 
         "timestamp": datetime.utcnow()
     }
     await db.observer_messages.insert_one(observer_msg_data)
+    
+    # OBSERVER IMPACT SYSTEM: Classify and assess message impact
+    observer_impact = await classify_observer_message_impact(observer_message, scenario, llm_manager)
+    
+    # Store impactful observer guidance for future reference
+    if observer_impact["impact_level"] in ["high", "medium"]:
+        await store_observer_guidance(current_user.id, observer_message, observer_impact, scenario)
     
     # Generate responses from each agent to the observer
     messages = []
@@ -363,85 +372,104 @@ async def send_observer_message(input_data: ObserverInput, current_user: User = 
     )
     messages.append(observer_display_msg)
     
-    for agent in agent_objects:
-        if not await llm_manager.can_make_request():
-            response = f"Hello! {agent.name} here - I hear you loud and clear."
-        else:
-            # Create LLM chat instance for this agent responding to observer
-            chat = LlmChat(
-                api_key=llm_manager.api_key,
-                session_id=f"observer_{agent.id}_{datetime.now().timestamp()}",
-                system_message=f"""You are {agent.name}, {AGENT_ARCHETYPES[agent.archetype]['description']}.
-                
-Your personality traits:
-- Extroversion: {agent.personality.extroversion}/10
-- Optimism: {agent.personality.optimism}/10  
-- Curiosity: {agent.personality.curiosity}/10
-- Cooperativeness: {agent.personality.cooperativeness}/10
-- Energy: {agent.personality.energy}/10
-
-Your goal: {agent.goal}
-Your expertise: {agent.expertise}
-
-🎯 IMPORTANT: The Observer is your project lead/supervisor with decision-making authority.
-
-You are in {scenario}. The Observer has just spoken to you and your team.
-
-RESPONSE GUIDELINES:
-- Respond naturally and conversationally
-- If they say "hello", respond with a friendly greeting
-- Be authentic to your personality while showing respect
-- Keep responses brief (1-2 sentences)
-- NO formal acknowledgments like "Understood" or "I acknowledge"
-- Talk like a real person, not a robot
-
-Examples:
-- If Observer says "hello agents" → "Hello! Good to hear from you."
-- If Observer gives direction → "Got it, I'll focus on that" or "Sounds like a plan"
-- Be conversational and human-like"""
-            ).with_model("gemini", "gemini-2.0-flash")
-            
-            try:
-                user_message = UserMessage(text=f"Observer says: '{observer_message}'\n\nRespond naturally and conversationally. Be authentic to your personality while showing appropriate respect for their leadership role.")
-                response = await chat.send_message(user_message)
-                await llm_manager.increment_usage()
-            except Exception as e:
-                logging.error(f"Error generating observer response for {agent.name}: {e}")
-                # More natural fallback responses based on message content
-                if "hello" in observer_message.lower():
-                    response = f"Hello! {agent.name} here - good to hear from you."
-                else:
-                    response = f"Got it! {agent.name} is on it."
-        
-        message = ConversationMessage(
-            agent_id=agent.id,
-            agent_name=agent.name,
-            message=response,
-            mood=agent.current_mood
-        )
-        messages.append(message)
-    
     # Get current round number for user
     conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
     
-    # Create special observer conversation round
-    conversation_round = ConversationRound(
+    # Calculate proper timestamp for chronological ordering
+    # Get the last conversation's timestamp and add 1 second to ensure proper ordering
+    last_conversation = await db.conversations.find_one(
+        {"user_id": current_user.id}, 
+        sort=[("created_at", -1)]
+    )
+    
+    if last_conversation:
+        # Add 1 second to the last conversation's timestamp to ensure proper chronological order
+        proper_timestamp = last_conversation["created_at"] + timedelta(seconds=1)
+    else:
+        # First conversation for this user
+        proper_timestamp = datetime.utcnow()
+    
+    # Create special observer conversation round with ONLY observer message initially
+    observer_conversation_round = ConversationRound(
         round_number=conversation_count + 1,
         time_period=f"Observer Input - {datetime.now().strftime('%H:%M')}",
         scenario=f"Observer Directive: {observer_message}",
         scenario_name="Observer Guidance",
-        messages=messages,
+        messages=messages,  # Only contains observer message at this point
         user_id=current_user.id,
-        created_at=datetime.utcnow()
+        created_at=proper_timestamp  # Use chronologically correct timestamp
     )
     
-    await db.conversations.insert_one(conversation_round.dict())
+    # Store observer message immediately for instant display
+    await db.conversations.insert_one(observer_conversation_round.dict())
+    
+    # IMMEDIATE RETURN: Return observer message right away for instant UI display
+    print(f"✅ Observer message stored and returned immediately")
+    
+    # Start agent response generation in background (no await - fire and forget)
+    import asyncio
+    asyncio.create_task(generate_agent_responses_progressively(
+        current_user.id, 
+        observer_conversation_round.id, 
+        observer_message, 
+        agent_objects, 
+        scenario, 
+        observer_impact, 
+        llm_manager
+    ))
     
     return {
-        "message": "Observer message sent and responses received",
+        "message": "Observer message sent successfully",
         "observer_message": observer_message,
-        "agent_responses": conversation_round
+        "conversation_id": observer_conversation_round.id,
+        "observer_impact": observer_impact,
+        "agent_responses_generating": True  # Frontend can show loading indicator
     }
+
+@api_router.get("/observer/guidance")
+async def get_observer_guidance(current_user: User = Depends(get_current_user)):
+    """Get stored observer guidance for the current user"""
+    try:
+        # Get user's simulation state for current scenario
+        state = await db.simulation_state.find_one({"user_id": current_user.id})
+        current_scenario = state.get("scenario", "") if state else ""
+        
+        # Get all observer guidance for user, sorted by impact and recency
+        # Custom sort: high impact first, then medium, then low, with newest first within each level
+        pipeline = [
+            {"$match": {"user_id": current_user.id}},
+            {"$addFields": {
+                "impact_priority": {
+                    "$switch": {
+                        "branches": [
+                            {"case": {"$eq": ["$impact_level", "high"]}, "then": 3},
+                            {"case": {"$eq": ["$impact_level", "medium"]}, "then": 2},
+                            {"case": {"$eq": ["$impact_level", "low"]}, "then": 1}
+                        ],
+                        "default": 0
+                    }
+                }
+            }},
+            {"$sort": {"impact_priority": -1, "created_at": -1}},
+            {"$limit": 20}
+        ]
+        
+        guidance_docs = await db.observer_guidance.aggregate(pipeline).to_list(20)
+        
+        # Convert ObjectId to string for JSON serialization
+        for guidance in guidance_docs:
+            if '_id' in guidance:
+                guidance['_id'] = str(guidance['_id'])
+        
+        return {
+            "current_scenario": current_scenario,
+            "guidance_count": len(guidance_docs),
+            "guidance": guidance_docs
+        }
+        
+    except Exception as e:
+        logging.error(f"Error retrieving observer guidance: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve observer guidance")
 
 @api_router.get("/usage")
 async def get_usage():
@@ -572,6 +600,11 @@ class SimulationState(BaseModel):
     current_time_period: str = "morning"
     daily_api_requests: int = 0
     last_reset_date: str = Field(default_factory=lambda: str(date.today()))
+    # DAILY REPORTING SYSTEM (Default: ON)
+    daily_reports_enabled: bool = True  # Changed from weekly focus to daily focus
+    weekly_reports_enabled: bool = True  # Weekly reports summarize daily reports  
+    last_daily_report_day: int = 0
+    last_weekly_report_week: int = 0
     scenario: str = "The Research Station"
     scenario_name: str = ""  # Name/title of the scenario
     is_active: bool = False
@@ -618,7 +651,6 @@ class AgentUpdate(BaseModel):
 class LLMManager:
     def __init__(self):
         self.api_key = os.environ.get('GEMINI_API_KEY')
-        self.claude_api_key = os.environ.get('ANTHROPIC_API_KEY')
         self.max_daily_requests = 50000  # Paid tier - much higher limit
         self.document_quality_gate = DocumentQualityGate()
         self.document_formatter = ProfessionalDocumentFormatter()
@@ -758,7 +790,7 @@ class LLMManager:
                                 api_key=self.api_key,
                                 session_id=f"url_summary_{hash(url)}",
                                 system_message="Summarize web content into 2-3 key facts that would be relevant for an AI agent's memory. Focus on the most important information."
-                            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(150)
+                            ).with_model("gemini", "gemini-2.5-flash")
                             
                             user_message = UserMessage(text=f"Summarize this web content concisely:\n\n{url_content}")
                             summary = await chat.send_message(user_message)
@@ -926,12 +958,12 @@ FORMAT: Use clear headers and bullet points. Be specific with names, technical d
 WORD LIMIT: 400-500 words for comprehensive yet concise summary."""
 
         try:
-            # Use Claude for high-quality summarization
+            # Use Gemini 2.5 Flash for high-quality summarization
             chat = LlmChat(
-                api_key=self.claude_api_key,
+                api_key=self.api_key,
                 session_id=f"summary_{int(datetime.now().timestamp())}",
                 system_message="You are an expert conversation analyst creating progress summaries for collaborative problem-solving teams."
-            ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(600)
+            ).with_model("gemini", "gemini-2.5-flash")  # Remove max_tokens for compatibility
             
             user_message = UserMessage(text=summary_prompt)
             response = await asyncio.wait_for(chat.send_message(user_message), timeout=10.0)
@@ -939,33 +971,16 @@ WORD LIMIT: 400-500 words for comprehensive yet concise summary."""
             if response and hasattr(response, 'content'):
                 summary = response.content.strip()
                 await self.increment_usage()
-                print(f"✅ Generated conversation summary ({len(summary)} chars)")
+                print(f"✅ Generated conversation summary with Gemini 2.5 Flash ({len(summary)} chars)")
                 return summary
-            else:
-                print("⚠️ Claude summary failed, using Gemini fallback...")
-                
-        except Exception as e:
-            print(f"⚠️ Claude summary error: {e}, using Gemini fallback...")
-        
-        # Fallback to Gemini
-        try:
-            chat = LlmChat(
-                api_key=self.api_key,
-                session_id=f"summary_gemini_{int(datetime.now().timestamp())}",
-                system_message="Create comprehensive conversation progress summaries for collaborative teams."
-            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(600)
-            
-            user_message = UserMessage(text=summary_prompt)
-            response = await asyncio.wait_for(chat.send_message(user_message), timeout=8.0)
-            
-            if response and hasattr(response, 'content'):
-                summary = response.content.strip()
+            elif response and hasattr(response, 'text'):
+                summary = response.text.strip()
                 await self.increment_usage()
-                print(f"✅ Generated conversation summary with Gemini ({len(summary)} chars)")
+                print(f"✅ Generated conversation summary with Gemini 2.5 Flash ({len(summary)} chars)")
                 return summary
                 
         except Exception as e:
-            print(f"❌ Both Claude and Gemini failed for summary: {e}")
+            print(f"❌ Gemini 2.5 Flash failed for summary: {e}")
         
         # Fallback summary if AI fails
         return f"""🎯 CONVERSATION PROGRESS SUMMARY
@@ -1141,7 +1156,7 @@ QUESTION TYPES (when you do ask):
 • Ask questions that move the discussion forward
 • Identify concrete next steps and implementation approaches
 
-WORD LIMIT: 120-140 words MAX. Complete your thought naturally within this limit - no cut-offs allowed.
+WORD LIMIT: 60-80 words MAX. Be concise and focused - complete your thought quickly.
 
 {document_context}
 
@@ -1291,191 +1306,49 @@ PROVIDE EXPERT ANALYSIS:
 - Set up the conversation for productive dialogue"""
         
         try:
-            # Try Claude Sonnet 4 first for better conversation quality
-            try:
-                chat = LlmChat(
-                    api_key=self.claude_api_key,
-                    session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
-                    system_message=system_message
-                ).with_model("anthropic", "claude-sonnet-4-20250514").with_max_tokens(180)  # Conservative limit to ensure complete thoughts
-                
-                print(f"🚀 FAST Claude Sonnet 4 for {agent.name}")
-                
-                user_message = UserMessage(text=prompt)
-                
-                # Optimized timeout for Claude Sonnet 4 speed
-                response = await asyncio.wait_for(
-                    chat.send_message(user_message), 
-                    timeout=6.0  # Optimal timeout for Claude Sonnet 4
-                )
-                await self.increment_usage()
-                
-                # Handle different response types from LlmChat
-                response_text = None
-                if response:
-                    if hasattr(response, 'content'):
-                        response_text = response.content
-                    elif hasattr(response, 'text'):  
-                        response_text = response.text
-                    elif isinstance(response, str):
-                        response_text = response
-                    else:
-                        response_text = str(response)
-                
-                if response_text and response_text.strip():
-                    print(f"✅ Claude Sonnet 4 SUCCESS for {agent.name} - Fast mode: {response_text[:60]}...")
-                    # Remove character narrations and ensure complete sentences
-                    cleaned_response = self._remove_narrations(response_text.strip())
-                    complete_response = self._ensure_complete_response(cleaned_response)
-                    return complete_response
+            # Use Gemini 2.5 Flash for agent responses (optimized prompts for speed)
+            chat = LlmChat(
+                api_key=self.api_key,
+                session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
+                system_message=system_message
+            ).with_model("gemini", "gemini-2.5-flash")
+            
+            print(f"🚀 Gemini 2.5 Flash for {agent.name}")
+            
+            user_message = UserMessage(text=prompt)
+            
+            # Optimized timeout for Gemini 2.5 Flash
+            response = await asyncio.wait_for(
+                chat.send_message(user_message), 
+                timeout=6.0  # Optimal timeout for Gemini 2.5 Flash
+            )
+            await self.increment_usage()
+            
+            # Handle different response types from LlmChat
+            response_text = None
+            if response:
+                if hasattr(response, 'content'):
+                    response_text = response.content
+                elif hasattr(response, 'text'):  
+                    response_text = response.text
+                elif isinstance(response, str):
+                    response_text = response
                 else:
-                    print(f"⚠️ Claude Sonnet 4 returned empty response for {agent.name}, trying Gemini...")
-                    raise Exception("Empty Claude response")
+                    response_text = str(response)
+            
+            if response_text and response_text.strip():
+                print(f"✅ Gemini 2.5 Flash SUCCESS for {agent.name}: {response_text[:60]}...")
+                # Remove character narrations and ensure complete sentences
+                cleaned_response = self._remove_narrations(response_text.strip())
+                complete_response = self._ensure_complete_response(cleaned_response)
+                return complete_response
+            else:
+                print(f"⚠️ Gemini 2.5 Flash returned empty response for {agent.name}")
+                raise Exception("Empty Gemini response")
                 
-            except asyncio.TimeoutError:
-                print(f"⏱️ Claude Sonnet 4 TIMEOUT for {agent.name} - Falling back to Gemini...")
-                
-                # Fast fallback to Gemini 2.0 Flash
-                chat = LlmChat(
-                    api_key=self.api_key,
-                    session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
-                    system_message=system_message
-                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(180)
-                
-                user_message = UserMessage(text=prompt)
-                
-                response = await asyncio.wait_for(
-                    chat.send_message(user_message), 
-                    timeout=4.0  # Gemini is typically faster
-                )
-                await self.increment_usage()
-                
-                # Handle different response types from LlmChat
-                response_text = None
-                if response:
-                    if hasattr(response, 'content'):
-                        response_text = response.content
-                    elif hasattr(response, 'text'):  
-                        response_text = response.text
-                    elif isinstance(response, str):
-                        response_text = response
-                    else:
-                        response_text = str(response)
-                
-                if response_text and response_text.strip():
-                    print(f"✅ Gemini 2.0 Flash SUCCESS (fast fallback) for {agent.name}: {response_text[:60]}...")
-                    # Remove character narrations and ensure complete sentences
-                    cleaned_response = self._remove_narrations(response_text.strip())
-                    complete_response = self._ensure_complete_response(cleaned_response)
-                    return complete_response
-                else:
-                    print(f"⚠️ Gemini also returned empty response for {agent.name}")
-                    raise Exception("Empty Gemini response")
-                
-            except Exception as claude_error:
-                print(f"❌ Claude Sonnet 4 FAILED for {agent.name}: {str(claude_error)[:50]}...")
-                print("🔄 Falling back to Gemini 2.0 Flash...")
-                
-                # Fallback to Gemini 2.0 Flash
-                chat = LlmChat(
-                    api_key=self.api_key,
-                    session_id=f"agent_{agent.id}_{int(datetime.now().timestamp())}",
-                    system_message=system_message
-                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(180)
-                
-                user_message = UserMessage(text=prompt)
-                
-                response = await asyncio.wait_for(
-                    chat.send_message(user_message), 
-                    timeout=4.0
-                )
-                await self.increment_usage()
-                
-                # Handle different response types from LlmChat
-                response_text = None
-                if response:
-                    if hasattr(response, 'content'):
-                        response_text = response.content
-                    elif hasattr(response, 'text'):  
-                        response_text = response.text
-                    elif isinstance(response, str):
-                        response_text = response
-                    else:
-                        response_text = str(response)
-                
-                if response_text and response_text.strip():
-                    print(f"✅ Gemini 2.0 Flash SUCCESS (fallback) for {agent.name}: {response_text[:60]}...")
-                    # Remove character narrations and ensure complete sentences
-                    cleaned_response = self._remove_narrations(response_text.strip())
-                    complete_response = self._ensure_complete_response(cleaned_response)
-                    return complete_response
-                else:
-                    print(f"⚠️ All API methods failed for {agent.name}")
-                    raise Exception("Empty API responses")
-                
-                # Validate response and filter out repetitive content
-                if response and len(response.strip()) > 5:
-                    # Enhanced banned phrases detection for natural expertise demonstration
-                    banned_phrases = [
-                        # Time-based and introductory phrases
-                        "good morning", "good afternoon", "good evening", "i'm", "my name is",
-                        "alright team", "alright everyone", "okay team", "okay everyone",
-                        
-                        # Expert/perspective statements - NO CREDENTIALS MENTIONING
-                        "as an expert in", "as a", "this is concerning", "this is interesting",
-                        "this is exciting", "this is fascinating", "fascinating challenge", 
-                        "fascinating problem", "interesting challenge", "let me share my perspective",
-                        "from my perspective", "from my experience in", "in my experience with",
-                        "based on my experience", "given my background", "with my expertise",
-                        "as someone with", "having worked in", "in my field", "as a professional",
-                        "from my professional experience", "speaking as a", "given my expertise in",
-                        "based on my background in", "with my years of experience", "as someone who has",
-                        
-                        # Urgency and repetition
-                        "we need to act urgently", "the situation requires immediate",
-                        "this is urgent", "we must act now", "time is of the essence",
-                        "urgent action is needed", "we need to move quickly",
-                        
-                        # Background restatements  
-                        "as you know", "as mentioned earlier", "as discussed before",
-                        "to reiterate", "as previously stated", "let me remind you",
-                        "the situation is", "the problem we're facing", "we're dealing with",
-                        
-                        # Generic team statements
-                        "we need to work together", "collaboration is key",
-                        "teamwork makes the dream work", "let's all pitch in",
-                        
-                        # Circular conversation killers
-                        "we need to address", "the situation requires", "we should consider",
-                        "it's important that we", "we must ensure that", "we need to make sure"
-                    ]
-                    
-                    response_lower = response.lower()
-                    
-                    # Check for scenario repetition (more sophisticated)
-                    scenario_keywords = scenario.lower().split()[:5]  # First 5 words of scenario
-                    scenario_repetition = sum(1 for word in scenario_keywords if len(word) > 3 and word in response_lower)
-                    excessive_scenario_repeat = scenario_repetition >= 3  # More than 3 scenario keywords = repetition
-                    
-                    has_banned_phrase = any(phrase in response_lower for phrase in banned_phrases)
-                    
-                    # Check if this is a good answer to a question
-                    has_question_marker = "?" in context or any(q_word in context.lower() for q_word in ["asked you", "question:", "your assessment", "your take", "what's your", "how would you"])
-                    
-                    if not has_banned_phrase and not excessive_scenario_repeat:
-                        return response.strip()
-                    elif has_question_marker and not has_banned_phrase and not excessive_scenario_repeat:
-                        # If answering a question, be more lenient with response requirements
-                        return response.strip()
-                    else:
-                        # Generate a better fallback if banned phrases or excessive repetition detected
-                        logging.warning(f"Detected repetitive/banned content in {agent.name}'s response, using fallback")
-                
-                # Generate intelligent fallback if response was poor or empty
-                return self._generate_intelligent_fallback(agent, context, scenario, pending_questions if 'pending_questions' in locals() else [])
-            except asyncio.TimeoutError:
-                logging.error(f"LLM request timed out for {agent.name}")
-                return self._generate_intelligent_fallback(agent, context, scenario)
+        except asyncio.TimeoutError:
+            logging.error(f"LLM request timed out for {agent.name}")
+            return self._generate_intelligent_fallback(agent, context, scenario)
                 
         except Exception as e:
             logging.error(f"LLM error for {agent.name}: {e}")
@@ -1657,7 +1530,7 @@ PROVIDE EXPERT ANALYSIS:
 Extract information that's relevant to your professional perspective and expertise. Keep it concise (2-3 sentences max).
             
 Previous memory: {agent.memory_summary or 'None'}"""
-        ).with_model("gemini", "gemini-2.0-flash")
+        ).with_model("gemini", "gemini-2.5-flash")
         
         try:
             user_message = UserMessage(text=f"Recent conversations:\n{conv_text}\n\nUpdate my memory focusing on developments relevant to my background and expertise:")
@@ -1690,26 +1563,31 @@ Previous memory: {agent.memory_summary or 'None'}"""
         if not await self.can_make_request():
             return ActionTriggerResult(should_create_document=False)
         
-        # Enhanced trigger detection - more thoughtful phrases
+        # Enhanced trigger detection - more natural and contextual phrases
         high_quality_triggers = [
-            "after thorough discussion, we need to",
-            "the team consensus is to create",
-            "we've agreed to formalize",
-            "following our analysis, we should document",
-            "it's time to create a comprehensive",
-            "we're ready to develop",
-            "let's formalize our decision in",
-            "we need to capture these conclusions",
-            "the team has decided to create",
-            "based on our thorough review",
-            "after careful consideration, let's create",
-            "we should document our final",
-            "let's put our agreed approach in writing",
-            "we need to formalize this into",
-            "time to create a detailed",
-            "let's develop a comprehensive",
-            "we should establish formal",
-            "our discussion points to the need for"
+            "we should document this approach",
+            "let's create a plan for",
+            "we need to formalize our",
+            "i'll draft a proposal for",
+            "let me create a document outlining",
+            "we should put together a",
+            "i recommend we document",
+            "let's develop a framework",
+            "we need to establish guidelines",
+            "i'll prepare a brief on",
+            "let's outline our strategy",
+            "we should create protocols",
+            "i'll work on a plan that",
+            "let's document our approach",
+            "we need to draft procedures",
+            "i suggest we formalize",
+            "let's establish a process",
+            "we should prepare documentation",
+            "i'll create an analysis of",
+            "let's put our recommendations",
+            "we need to build a case",
+            "i'll develop specifications",
+            "let's create implementation steps"
         ]
         
         conv_lower = conversation_text.lower()
@@ -1752,7 +1630,7 @@ Document Types: protocol/implementation/budget/risk/technical/timeline/training/
                 api_key=self.api_key,
                 session_id=f"enhanced_analysis_{datetime.now().timestamp()}",
                 system_message=system_message
-            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(300)
+            ).with_model("gemini", "gemini-2.5-flash")
             
             prompt = f"""Conversation Analysis:
 {conversation_text}
@@ -1830,7 +1708,7 @@ Respond with ONLY: YES, NO, or ABSTAIN followed by a brief 1-sentence reason."""
                     api_key=self.api_key,
                     session_id=f"voting_{agent.id}_{datetime.now().timestamp()}",
                     system_message=system_message
-                ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(150)
+                ).with_model("gemini", "gemini-2.5-flash")
                 
                 prompt = f"""Conversation context:\n{conversation_context}\n\nProposal to vote on: {proposal}\n\nYour vote (YES/NO/ABSTAIN) and brief reason:"""
                 
@@ -2525,7 +2403,7 @@ Make this document comprehensive, visually engaging, and immediately actionable.
                 api_key=self.api_key,
                 session_id=f"document_creation_{creating_agent.id}_{datetime.now().timestamp()}",
                 system_message=system_message
-            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(800)
+            ).with_model("gemini", "gemini-2.5-flash")
             
             prompt = f"""Based on this conversation context:
 {conversation_context}
@@ -2562,6 +2440,244 @@ Make it immediately usable for medical professionals. Include specific details, 
                 scenario_details="[Template - Content generation failed]",
                 category=document_type.title()
             )
+
+# Observer Impact System Functions
+async def classify_observer_message_impact(observer_message: str, scenario: str, llm_manager) -> dict:
+    """Classify the impact level of an observer message"""
+    if not await llm_manager.can_make_request():
+        return {"impact_level": "low", "classification": "default", "reasoning": "API limit reached"}
+    
+    try:
+        chat = LlmChat(
+            api_key=llm_manager.api_key,
+            session_id=f"observer_impact_{int(datetime.now().timestamp())}",
+            system_message="You are an expert at analyzing observer messages for their potential impact on AI agent behavior and simulation outcomes."
+        ).with_model("gemini", "gemini-2.5-flash")
+        
+        prompt = f"""Analyze this observer message for its impact level and classification:
+
+Observer Message: "{observer_message}"
+Scenario Context: {scenario}
+
+Classify the impact level as HIGH, MEDIUM, or LOW based on:
+- HIGH: Strategic direction changes, major decisions, critical guidance, emergency situations
+- MEDIUM: Tactical adjustments, specific requests, performance feedback, resource allocation
+- LOW: General encouragement, status checks, routine communication
+
+Also classify the message type as one of: strategic_direction, tactical_guidance, performance_feedback, resource_request, emergency_response, routine_communication
+
+Respond in this exact format:
+IMPACT_LEVEL: [HIGH/MEDIUM/LOW]
+CLASSIFICATION: [message_type]
+REASONING: [brief explanation]"""
+
+        user_message = UserMessage(text=prompt)
+        response = await chat.send_message(user_message)
+        await llm_manager.increment_usage()
+        
+        # Parse response
+        lines = response.strip().split('\n')
+        impact_level = "low"
+        classification = "routine_communication"
+        reasoning = "Default classification"
+        
+        for line in lines:
+            if line.startswith("IMPACT_LEVEL:"):
+                impact_level = line.split(":", 1)[1].strip().lower()
+            elif line.startswith("CLASSIFICATION:"):
+                classification = line.split(":", 1)[1].strip()
+            elif line.startswith("REASONING:"):
+                reasoning = line.split(":", 1)[1].strip()
+        
+        return {
+            "impact_level": impact_level,
+            "classification": classification,
+            "reasoning": reasoning
+        }
+        
+    except Exception as e:
+        logging.error(f"Error classifying observer message impact: {e}")
+        return {"impact_level": "low", "classification": "routine_communication", "reasoning": "Classification failed"}
+
+async def get_relevant_observer_guidance(user_id: str, scenario: str, conversation_context: str = "") -> str:
+    """Retrieve relevant observer guidance for conversation context"""
+    try:
+        # Get recent high and medium impact observer guidance
+        guidance_docs = await db.observer_guidance.find({
+            "user_id": user_id,
+            "impact_level": {"$in": ["high", "medium"]},
+            "scenario": scenario
+        }).sort("created_at", -1).limit(5).to_list(5)
+        
+        if not guidance_docs:
+            return ""
+        
+        guidance_context = "\n🎯 OBSERVER GUIDANCE & PRIORITIES:\n"
+        guidance_context += "You must consider and reference these important directives from your Observer:\n\n"
+        
+        for i, guidance in enumerate(guidance_docs, 1):
+            impact_emoji = "🔥" if guidance["impact_level"] == "high" else "⭐"
+            classification = guidance["classification"].replace("_", " ").title()
+            
+            guidance_context += f"{impact_emoji} {classification}: \"{guidance['observer_message']}\"\n"
+            guidance_context += f"   Reasoning: {guidance['reasoning']}\n\n"
+        
+        guidance_context += "IMPORTANT: Reference these observer directives when relevant to your response.\n"
+        guidance_context += "Show that you remember and are following the Observer's guidance!\n\n"
+        
+        return guidance_context
+        
+    except Exception as e:
+        logging.error(f"Error retrieving observer guidance: {e}")
+        return ""
+
+async def store_observer_guidance(user_id: str, observer_message: str, observer_impact: dict, scenario: str):
+    """Store impactful observer guidance for future reference"""
+    try:
+        # Debug logging
+        print(f"🔍 DEBUG: Storing guidance with scenario: '{scenario}'")
+        
+        guidance_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "observer_message": observer_message,
+            "impact_level": observer_impact["impact_level"],
+            "classification": observer_impact["classification"],
+            "reasoning": observer_impact["reasoning"],
+            "scenario": scenario if scenario else "Default Scenario",  # Ensure scenario is not empty
+            "created_at": datetime.utcnow(),
+            "type": "observer_guidance"
+        }
+        
+        await db.observer_guidance.insert_one(guidance_doc)
+        print(f"✅ Stored observer guidance: {guidance_doc['id']} (Impact: {observer_impact['impact_level']}, Scenario: '{guidance_doc['scenario']}')")
+        return guidance_doc['id']
+        
+    except Exception as e:
+        logging.error(f"Error storing observer guidance: {e}")
+        return None
+
+async def generate_agent_responses_progressively(user_id: str, conversation_id: str, observer_message: str, agent_objects: List[Agent], scenario: str, observer_impact: dict, llm_manager):
+    """Generate agent responses progressively in background and update conversation"""
+    try:
+        print(f"🔄 Starting progressive agent response generation for conversation {conversation_id}")
+        
+        # Generate responses from each agent to the observer
+        agent_responses = []
+        
+        # PERFORMANCE OPTIMIZATION: Limit agents and add response caching
+        MAX_OBSERVER_AGENTS = 3  # Limit to 3 agents for performance
+        OBSERVER_TIMEOUT = 8.0   # 8 second timeout per agent
+        
+        # Get agents limited to MAX_OBSERVER_AGENTS for better performance
+        limited_agents = agent_objects[:MAX_OBSERVER_AGENTS] if len(agent_objects) > MAX_OBSERVER_AGENTS else agent_objects
+        
+        for agent in limited_agents:
+            try:
+                # Create LLM chat instance for this agent responding to observer
+                chat = LlmChat(
+                    api_key=llm_manager.api_key,
+                    session_id=f"observer_{agent.id}_{datetime.now().timestamp()}",
+                    system_message=f"""You are {agent.name}, {AGENT_ARCHETYPES[agent.archetype]['description']}.
+                    
+Your personality traits:
+- Extroversion: {agent.personality.extroversion}/10
+- Optimism: {agent.personality.optimism}/10  
+- Curiosity: {agent.personality.curiosity}/10
+- Cooperativeness: {agent.personality.cooperativeness}/10
+- Energy: {agent.personality.energy}/10
+
+Your goal: {agent.goal}
+Your expertise: {agent.expertise}
+
+🎯 IMPORTANT: The Observer is your project lead/supervisor with decision-making authority.
+
+You are in {scenario}. The Observer has just spoken to you and your team.
+
+CRITICAL: READ THE OBSERVER'S MESSAGE CAREFULLY AND RESPOND TO THEIR SPECIFIC REQUEST.
+If they ask for a list, provide a list. If they ask for analysis, provide analysis.
+If they ask about priorities, focus on priorities. Be helpful and specific.
+
+RESPONSE GUIDELINES:
+- FIRST: Address their specific request directly
+- Respond naturally and conversationally  
+- Be authentic to your personality while showing respect
+- Keep responses focused (2-3 sentences)
+- NO generic acknowledgments like "Ready to work together"
+- Give substantial, helpful responses based on your expertise
+
+Examples:
+- If Observer asks for priorities → List actual priorities from your expertise
+- If Observer asks for analysis → Provide real analysis based on your knowledge
+- If Observer gives direction → Acknowledge and explain how you'll approach it"""
+                ).with_model("gemini", "gemini-2.5-flash")
+                
+                # Generate response with timeout
+                user_message = UserMessage(text=f"Observer says: '{observer_message}'\n\nRespond naturally and conversationally. Be authentic to your personality while showing appropriate respect for their leadership role.")
+                response = await asyncio.wait_for(
+                    chat.send_message(user_message), 
+                    timeout=OBSERVER_TIMEOUT
+                )
+                await llm_manager.increment_usage()
+                
+                # Create response message
+                agent_response = ConversationMessage(
+                    agent_id=agent.id,
+                    agent_name=agent.name,
+                    message=response,
+                    mood=agent.current_mood
+                )
+                agent_responses.append(agent_response)
+                print(f"✅ Generated response from {agent.name}")
+                
+            except asyncio.TimeoutError:
+                logging.warning(f"Timeout generating observer response for {agent.name}")
+                # Quick fallback for timeout
+                if "hello" in observer_message.lower():
+                    response = f"Hello! {agent.name} here - good to hear from you."
+                else:
+                    response = f"Got it! {agent.name} is on it."
+                
+                agent_response = ConversationMessage(
+                    agent_id=agent.id,
+                    agent_name=agent.name,
+                    message=response,
+                    mood=agent.current_mood
+                )
+                agent_responses.append(agent_response)
+                print(f"⚠️ {agent.name} used timeout fallback")
+                
+            except Exception as e:
+                logging.error(f"Error generating observer response for {agent.name}: {e}")
+                # More natural fallback responses based on message content
+                if "hello" in observer_message.lower():
+                    response = f"Hello! {agent.name} here - good to hear from you."
+                else:
+                    response = f"Got it! {agent.name} is on it."
+                
+                agent_response = ConversationMessage(
+                    agent_id=agent.id,
+                    agent_name=agent.name,
+                    message=response,
+                    mood=agent.current_mood
+                )
+                agent_responses.append(agent_response)
+                print(f"⚠️ {agent.name} used error fallback")
+        
+        # Update the conversation with agent responses
+        if agent_responses:
+            # Convert to dict format for MongoDB
+            agent_response_dicts = [response.dict() for response in agent_responses]
+            
+            # Add agent responses to the existing conversation
+            await db.conversations.update_one(
+                {"id": conversation_id},
+                {"$push": {"messages": {"$each": agent_response_dicts}}}
+            )
+            print(f"✅ Added {len(agent_responses)} agent responses to conversation {conversation_id}")
+        
+    except Exception as e:
+        logging.error(f"Error in progressive agent response generation: {e}")
 
 llm_manager = LLMManager()
 
@@ -2611,7 +2727,7 @@ Be constructive and focus on actionable feedback."""
                 api_key=llm_manager.api_key,
                 session_id=f"review_{document.id}_{lead_reviewer.id}",
                 system_message=system_message
-            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+            ).with_model("gemini", "gemini-2.5-flash")
             
             user_message = UserMessage(text=review_context)
             review_response = await chat.send_message(user_message)
@@ -3094,49 +3210,7 @@ async def google_oauth_callback(callback_request: GoogleOAuthCallbackRequest):
         logging.error(f"Google OAuth callback error: {e}")
         raise HTTPException(status_code=400, detail="OAuth authentication failed")
 
-@api_router.post("/auth/test-login", response_model=TokenResponse)
-async def test_login():
-    """Test login endpoint for development (creates a test user)"""
-    try:
-        # Create or get test user
-        test_user_data = {
-            "id": "test-user-123",
-            "email": "test@example.com",
-            "name": "Test User",
-            "picture": "https://via.placeholder.com/40",
-            "google_id": "test-google-id-123",
-            "created_at": datetime.utcnow(),
-            "last_login": datetime.utcnow(),
-            "is_active": True
-        }
-        
-        # Check if test user exists
-        existing_user = await db.users.find_one({"id": "test-user-123"})
-        
-        if existing_user:
-            # Update last login
-            await db.users.update_one(
-                {"id": "test-user-123"},
-                {"$set": {"last_login": datetime.utcnow()}}
-            )
-            user = User(**existing_user)
-        else:
-            # Create test user
-            user = User(**test_user_data)
-            await db.users.insert_one(user.dict())
-        
-        # Create JWT token
-        access_token = create_access_token(data={"sub": user.email, "user_id": user.id})
-        
-        return TokenResponse(
-            access_token=access_token,
-            token_type="bearer",
-            user=UserResponse(**user.dict())
-        )
-        
-    except Exception as e:
-        logging.error(f"Test login error: {e}")
-        raise HTTPException(status_code=500, detail="Test login failed")
+# Test login endpoint removed - using Google OAuth only
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
@@ -3149,12 +3223,12 @@ async def get_me(current_user: User = Depends(get_current_user)):
         profile_data = await db.user_profiles.find_one({"user_id": current_user.id})
         
         if profile_data:
-            # Merge profile data with user data
+            # Merge profile data with user data, but preserve important fields if profile data is empty
             user_data.update({
                 "name": profile_data.get("name", user_data.get("name")),
-                "email": profile_data.get("email", user_data.get("email")),
+                "email": profile_data.get("email") or user_data.get("email"),  # Use user_data email if profile email is empty
                 "bio": profile_data.get("bio", user_data.get("bio", "")),
-                "picture": profile_data.get("picture", user_data.get("picture"))
+                "picture": profile_data.get("picture") or user_data.get("picture")  # Use user_data picture if profile picture is empty
             })
         
         return UserResponse(**user_data)
@@ -3267,14 +3341,29 @@ async def login_user(user_credentials: UserLogin):
             data={"sub": user_doc["email"], "user_id": user_doc["id"]}
         )
         
-        # Prepare user response
+        # Get user data and merge with profile data (same as /auth/me endpoint)
+        user_data = dict(user_doc)
+        
+        # Try to get profile data from user_profiles collection
+        profile_data = await db.user_profiles.find_one({"user_id": user_doc["id"]})
+        
+        if profile_data:
+            # Merge profile data with user data, but preserve important fields if profile data is empty
+            user_data.update({
+                "name": profile_data.get("name", user_data.get("name")),
+                "email": profile_data.get("email") or user_data.get("email"),  # Use user_data email if profile email is empty
+                "bio": profile_data.get("bio", user_data.get("bio", "")),
+                "picture": profile_data.get("picture") or user_data.get("picture", "")  # Use user_data picture if profile picture is empty/placeholder
+            })
+        
+        # Prepare user response with merged data
         user_response = UserResponse(
-            id=user_doc["id"],
-            email=user_doc["email"],
-            name=user_doc["name"],
-            picture=user_doc.get("picture", ""),
-            created_at=user_doc["created_at"],
-            last_login=user_doc["last_login"]
+            id=user_data["id"],
+            email=user_data["email"],
+            name=user_data["name"],
+            picture=user_data.get("picture", ""),
+            created_at=user_data["created_at"],
+            last_login=datetime.utcnow()  # Use current time since we just updated it
         )
         
         return TokenResponse(
@@ -3967,6 +4056,32 @@ async def get_random_scenario():
         "scenario_name": selected_scenario["name"]
     }
 
+@api_router.post("/simulation/force-time-update")
+async def force_time_update(current_user: User = Depends(get_current_user)):
+    """Force time advancement check - useful for debugging time progression issues"""
+    try:
+        print(f"🔧 Manual time advancement check triggered by user {current_user.id}")
+        
+        # Force check time advancement
+        time_advanced = await check_and_advance_time_automatically(current_user.id)
+        
+        # Get updated state
+        state = await db.simulation_state.find_one({"user_id": current_user.id})
+        
+        return {
+            "message": "Time advancement check completed",
+            "time_advanced": time_advanced,
+            "current_state": {
+                "current_day": state.get("current_day", 1) if state else 1,
+                "current_time_period": state.get("current_time_period", "morning") if state else "morning",
+                "is_active": state.get("is_active", False) if state else False
+            }
+        }
+        
+    except Exception as e:
+        print(f"Error in force time update: {e}")
+        raise HTTPException(status_code=500, detail=f"Force time update failed: {str(e)}")
+
 @api_router.post("/simulation/pause")
 async def pause_simulation(current_user: User = Depends(get_current_user)):
     """Pause the simulation (stops auto-generation)"""
@@ -3990,6 +4105,399 @@ async def resume_simulation(current_user: User = Depends(get_current_user)):
         upsert=True
     )
     return {"message": "Simulation resumed", "is_active": True, "success": True}
+
+@api_router.post("/simulation/generate-daily-report")
+async def generate_daily_report(request: Request, current_user: User = Depends(get_current_user)):
+    """Generate a daily report manually or automatically"""
+    try:
+        # Get request body
+        body = await request.json()
+        manual = body.get('manual', False)
+        
+        # Use the authenticated user's ID
+        user_id = current_user.id
+        
+        # Get current simulation state for this user
+        state = await db.simulation_state.find_one({"user_id": user_id}) if user_id else await db.simulation_state.find_one()
+        if not state:
+            return {"success": False, "message": "No simulation state found"}
+            
+        current_day = state.get("current_day", 1)
+        current_time_period = state.get("current_time_period", "morning")
+        
+        # Get conversations for the current day (filter by user if available)
+        query = {"user_id": user_id} if user_id else {}
+        conversations_cursor = db.conversations.find(query).sort("created_at", -1).limit(100)
+        conversations = []
+        async for conv in conversations_cursor:
+            # Convert ObjectId to string for JSON serialization
+            if '_id' in conv:
+                conv['_id'] = str(conv['_id'])
+            conversations.append(conv)
+        
+        if not conversations:
+            return {"success": False, "message": "No conversations to summarize yet"}
+        
+        # Check API usage
+        if not await llm_manager.can_make_request():
+            return {"success": False, "message": "Cannot generate report - daily API limit reached"}
+        
+        # Generate report content using AI
+        report_content = await generate_ai_daily_report(conversations, current_day, current_time_period)
+        
+        # Create report document
+        report_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "type": "daily",
+            "day": current_day,
+            "time_period": current_time_period,
+            "title": f"Day {current_day} Report",
+            "subtitle": "manual" if manual else "auto",
+            "content": report_content,
+            "created_at": datetime.utcnow().isoformat(),
+            "conversation_count": len(conversations),
+            "generation_type": "manual" if manual else "automatic"
+        }
+        
+        # Store in database (assuming reports collection)
+        print(f"🔍 DEBUG: Storing report in database...")
+        await db.reports.insert_one(report_doc)
+        print(f"✅ DEBUG: Report stored in database")
+        
+        # Update simulation state with last report info
+        print(f"🔍 DEBUG: Updating simulation state...")
+        update_query = {"user_id": user_id} if user_id else {}
+        await db.simulation_state.update_one(
+            update_query,
+            {"$set": {
+                "last_daily_report_day": current_day,
+                "last_report_generated": datetime.utcnow().isoformat()
+            }},
+            upsert=True
+        )
+        
+        print(f"✅ DEBUG: About to return success response")
+        return {
+            "success": True,
+            "message": f"Daily report generated successfully ({'manually' if manual else 'automatically'})",
+            "report": {
+                "id": report_doc["id"],
+                "type": report_doc["type"],
+                "day": report_doc["day"],
+                "time_period": report_doc["time_period"],
+                "title": report_doc["title"],
+                "subtitle": report_doc["subtitle"],
+                "content": report_doc["content"],  # Full content restored
+                "created_at": report_doc["created_at"],
+                "conversation_count": report_doc["conversation_count"],
+                "generation_type": report_doc["generation_type"]
+            }
+        }
+        
+    except Exception as e:
+        logging.error(f"Error generating daily report: {e}")
+        return {"success": False, "message": f"Error generating daily report: {str(e)}"}
+
+@api_router.get("/reports")
+async def get_reports(current_user: User = Depends(get_current_user)):
+    """Get all reports for the current user"""
+    try:
+        # Fetch all reports for the current user, sorted by creation date (newest first)
+        reports_cursor = db.reports.find({"user_id": current_user.id}).sort("created_at", -1)
+        reports = []
+        
+        async for report in reports_cursor:
+            # Convert ObjectId to string for JSON serialization
+            if '_id' in report:
+                report['_id'] = str(report['_id'])
+            reports.append(report)
+        
+        return {
+            "success": True,
+            "reports": reports,
+            "count": len(reports)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error fetching reports: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching reports: {str(e)}")
+
+@api_router.get("/reports/{report_id}/download-pdf")
+async def download_report_pdf(report_id: str, current_user: User = Depends(get_current_user)):
+    """Download report as PDF"""
+    try:
+        # Find the report by ID and user_id for security
+        report = await db.reports.find_one({"id": report_id, "user_id": current_user.id})
+        
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        # Create HTML content for PDF
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>{report.get('title', 'Strategic Report')}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 40px; color: #333; }}
+                .header {{ text-align: center; margin-bottom: 30px; border-bottom: 2px solid #ddd; padding-bottom: 20px; }}
+                .title {{ font-size: 24px; font-weight: bold; margin-bottom: 10px; }}
+                .meta {{ color: #666; font-size: 14px; }}
+                .section {{ margin-bottom: 25px; padding: 20px; border-left: 4px solid #3b82f6; background: #f8fafc; }}
+                .section-header {{ font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #1f2937; }}
+                .section-content {{ line-height: 1.6; }}
+                strong {{ color: #1f2937; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="title">{report.get('title', 'Strategic Report')}</div>
+                <div class="meta">Generated: {report.get('created_at', 'Unknown Date')} | Type: {report.get('type', 'Daily').title()}</div>
+            </div>
+            <div class="content">
+                {report.get('content', 'No content available')}
+            </div>
+        </body>
+        </html>
+        """
+        
+        # Generate PDF using the pdf_generator module
+        from pdf_generator import generate_pdf_from_html
+        
+        pdf_content = generate_pdf_from_html(html_content)
+        
+        # Return PDF as response
+        filename = f"report_{report.get('type', 'daily')}_day_{report.get('day', '1')}.pdf"
+        
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error generating PDF for report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")
+
+@api_router.get("/reports/{report_id}")
+async def get_report(report_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific report by ID"""
+    try:
+        # Find the report by ID and user_id for security
+        report = await db.reports.find_one({"id": report_id, "user_id": current_user.id})
+        
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        # Convert ObjectId to string for JSON serialization
+        if '_id' in report:
+            report['_id'] = str(report['_id'])
+        
+        return {
+            "success": True,
+            "report": report
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error fetching report {report_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Error fetching report: {str(e)}")
+
+async def generate_ai_daily_report(conversations, current_day, current_time_period):
+    """Generate AI-powered daily report content"""
+    try:
+        print(f"🔍 DEBUG: Starting AI daily report generation...")
+        print(f"🔍 DEBUG: Conversations: {len(conversations)}, Day: {current_day}, Period: {current_time_period}")
+        
+        # Use the global llm_manager instance
+        global llm_manager
+        
+        # Prepare conversation text for summary
+        conv_text = ""
+        key_events = []
+        agent_activities = {}
+        
+        print(f"🔍 DEBUG: Processing conversations...")
+        for conv in conversations[-15:]:  # Last 15 conversations for daily report
+            time_period = conv.get('time_period', 'Unknown')
+            conv_text += f"\n**{time_period}:**\n"
+            
+            for msg in conv.get('messages', []):
+                agent_name = msg.get('agent_name', 'Unknown')
+                message = msg.get('message', '')
+                
+                conv_text += f"- **{agent_name}**: {message}\n"
+                
+                # Track agent activities
+                if agent_name not in agent_activities:
+                    agent_activities[agent_name] = []
+                agent_activities[agent_name].append(message)
+                
+                # Identify key events
+                if any(keyword in message.lower() for keyword in ['decision', 'discovery', 'breakthrough', 'crisis', 'solution', 'agreement', 'conflict']):
+                    key_events.append(f"{agent_name}: {message}")
+        
+        # Create comprehensive daily report prompt with enhanced visual structure
+        report_prompt = f"""
+        Generate a VISUALLY STUNNING and PROFESSIONALLY FORMATTED daily report for Day {current_day} of an AI agent simulation.
+        
+        CRITICAL FORMATTING REQUIREMENTS:
+        - DO NOT include generic introductions like "Of course. Here is the comprehensive daily report"
+        - DO NOT use markdown separators like "---" or "###"
+        - Use ONLY the specified HTML structure below
+        - Make content substantive and actionable
+        - DO NOT add extra icons or emojis beyond what's in the template
+        - Each section header should have EXACTLY ONE icon as specified
+        
+        **SIMULATION CONTEXT:**
+        - Current Day: {current_day}
+        - Current Phase: {current_time_period.title()}
+        - Conversations Analyzed: {len(conversations)}
+        - Active Agents: {len(agent_activities)}
+        
+        **CONVERSATION DATA:**
+        {conv_text[:4000]}
+        
+        **KEY EVENTS:**
+        {chr(10).join(key_events[:15])}
+        
+        **AGENT CONTRIBUTIONS:**
+        {chr(10).join([f"{agent}: {len(activities)} contributions" for agent, activities in agent_activities.items()])}
+        
+        Generate the report using this EXACT HTML structure with CONCISE, SCANNABLE content:
+        
+        <div class="report-section executive">
+        <h2 class="section-header executive-header">Executive Summary</h2>
+        <div class="section-content">
+        <p><strong>Key Achievement:</strong> [1 sentence highlighting the main accomplishment]</p>
+        <p><strong>Current Focus:</strong> [1 sentence on current priorities]</p>
+        <p><strong>Next Steps:</strong> [1 sentence on immediate actions]</p>
+        </div>
+        </div>
+        
+        <div class="report-section strategic">
+        <h2 class="section-header strategic-header">Strategic Developments</h2>
+        <div class="section-content">
+        <ul>
+        <li><strong>Breakthrough:</strong> [Key innovation or decision made]</li>
+        <li><strong>New Approach:</strong> [Method or strategy adopted]</li>
+        <li><strong>Impact:</strong> [Expected outcome or benefit]</li>
+        </ul>
+        </div>
+        </div>
+        
+        <div class="report-section performance">
+        <h2 class="section-header performance-header">Agent Performance Analysis</h2>
+        <div class="section-content">
+        <ul>
+        <li><strong>[Agent Name]:</strong> [Key contribution in 1 line]</li>
+        <li><strong>[Agent Name]:</strong> [Key contribution in 1 line]</li>
+        <li><strong>Team Synergy:</strong> [Collaboration highlight in 1 line]</li>
+        </ul>
+        </div>
+        </div>
+        
+        <div class="report-section operational">
+        <h2 class="section-header operational-header">Operational Insights</h2>
+        <div class="section-content">
+        <p><strong>Problem-Solving:</strong> [Approach used in 1 sentence]</p>
+        <p><strong>Resource Status:</strong> [Current allocation in 1 sentence]</p>
+        <p><strong>Communication:</strong> [Key information flow in 1 sentence]</p>
+        </div>
+        </div>
+        
+        <div class="report-section challenges">
+        <h2 class="section-header challenges-header">Challenges & Solutions</h2>
+        <div class="section-content">
+        <ul>
+        <li><strong>Challenge:</strong> [Main obstacle] → <strong>Solution:</strong> [How addressed]</li>
+        <li><strong>Risk:</strong> [Potential issue] → <strong>Mitigation:</strong> [Prevention strategy]</li>
+        </ul>
+        </div>
+        </div>
+        
+        <div class="report-section recommendations">
+        <h2 class="section-header recommendations-header">Strategic Recommendations</h2>
+        <div class="section-content">
+        <ol>
+        <li><strong>Priority 1:</strong> [Action item with timeline]</li>
+        <li><strong>Priority 2:</strong> [Action item with timeline]</li>
+        <li><strong>Priority 3:</strong> [Action item with timeline]</li>
+        </ol>
+        </div>
+        </div>
+        
+        CRITICAL CONTENT REQUIREMENTS:
+        - Keep ALL content CONCISE - maximum 1-2 sentences per point
+        - Use BULLET POINTS and NUMBERED LISTS for easy scanning
+        - Use HTML <strong> tags for bold text, NEVER use ** markdown syntax
+        - Write in ACTIVE voice and present tense
+        - Focus on ACTIONABLE insights, not verbose descriptions
+        - Each section should be scannable in 10 seconds or less
+        - DO NOT include title, date, or header information - this will be added by the frontend
+        - DO NOT add extra icons or emojis in section headers
+        - Adaptive responses to unexpected situations
+        
+        ## 6. KNOWLEDGE CREATION
+        - New insights, frameworks, or protocols developed
+        - Documentation and knowledge sharing activities
+        - Research findings and their implications
+        
+        ## 7. STRATEGIC RECOMMENDATIONS
+        - Actionable recommendations for Day {current_day + 1}
+        - Process improvements and optimization opportunities
+        - Risk factors to monitor and mitigation strategies
+        
+        ## 8. QUANTITATIVE METRICS
+        - Conversation volume and distribution patterns
+        - Decision points and resolution times
+        - Collaboration frequency and effectiveness scores
+        
+        Make this report highly detailed, analytical, and strategic. Focus on meaningful insights, patterns, and actionable intelligence. Use professional business report language with clear section headers and comprehensive analysis.
+        """
+        
+        # Generate using the LLM
+        if not await llm_manager.can_make_request():
+            return "Unable to generate report content - daily API limit reached."
+        
+        try:
+            chat = LlmChat(
+                api_key=llm_manager.api_key,
+                session_id=f"daily_report_{int(datetime.now().timestamp())}",
+                system_message="You are a senior strategic analyst creating professional HTML-formatted reports. Generate detailed content with proper HTML structure and visual formatting."
+            ).with_model("gemini", "gemini-2.5-flash")  # Use Flash for speed
+            
+            user_message = UserMessage(text=report_prompt)
+            response = await asyncio.wait_for(chat.send_message(user_message), timeout=15.0)  # Reduce timeout
+            await llm_manager.increment_usage()
+            
+            if response and hasattr(response, 'content'):
+                return response.content.strip()
+            elif response and hasattr(response, 'text'):
+                return response.text.strip()
+            elif isinstance(response, str):
+                return response.strip()
+            else:
+                return str(response).strip() if response else "Unable to generate report content at this time."
+                
+        except asyncio.TimeoutError:
+            logging.error("Daily report generation timed out")
+            return "Report generation timed out. Please try again."
+        except Exception as e:
+            logging.error(f"Error in LLM call for daily report: {e}")
+            return f"Error generating report content: {str(e)}"
+        
+        return response if response else "Unable to generate report content at this time."
+        
+    except Exception as e:
+        logging.error(f"Error generating AI daily report: {e}")
+        return f"Error generating report content: {str(e)}"
+
 
 @api_router.post("/simulation/generate-summary")
 async def generate_weekly_summary():
@@ -4132,12 +4640,12 @@ IMPORTANT FORMATTING RULES:
     model_used = "unknown"
     
     try:
-        # First attempt: Claude 3.5 Sonnet for superior report generation
-        print("🔥 Attempting Claude 3.5 Sonnet for report generation...")
+        # Use Gemini 2.5 Flash for report generation
+        print("🔥 Using Gemini 2.5 Flash for report generation...")
         
-        claude_chat = LlmChat(
-            api_key=llm_manager.claude_api_key,
-            session_id=f"weekly_summary_claude_{datetime.now().timestamp()}",
+        gemini_chat = LlmChat(
+            api_key=llm_manager.api_key,
+            session_id=f"weekly_summary_gemini_{datetime.now().timestamp()}",
             system_message="""You are an expert executive analyst creating comprehensive weekly reports for AI agent simulations. 
             Your reports are read by executives, project managers, and stakeholders who need clear, actionable insights.
             
@@ -4159,50 +4667,18 @@ IMPORTANT FORMATTING RULES:
             - Provide specific examples and evidence from conversations
             - Make actionable recommendations
             - Analyze the "why" behind agent behaviors and decisions"""
-        ).with_model("anthropic", "claude-3-5-sonnet-20241022")
+        ).with_model("gemini", "gemini-2.5-flash")
         
         user_message = UserMessage(text=prompt)
-        report_response = await claude_chat.send_message(user_message)
-        model_used = "Claude 3.5 Sonnet"
-        print("✅ SUCCESS: Claude 3.5 Sonnet generated report successfully!")
+        report_response = await gemini_chat.send_message(user_message)
+        model_used = "Gemini 2.5 Flash"
+        print("✅ SUCCESS: Gemini 2.5 Flash generated report successfully!")
         
-    except Exception as claude_error:
-        print(f"❌ Claude 3.5 Sonnet failed: {str(claude_error)}")
-        print("🔄 Falling back to Gemini 2.0 Flash...")
+    except Exception as gemini_error:
+        print(f"❌ Gemini 2.5 Flash failed: {str(gemini_error)}")
         
-        try:
-            # Fallback: Gemini 2.0 Flash
-            gemini_chat = LlmChat(
-                api_key=llm_manager.api_key,
-                session_id=f"weekly_summary_gemini_{datetime.now().timestamp()}",
-                system_message="""You are analyzing AI agent interactions to create a structured weekly report. 
-                Focus on concrete discoveries, decisions, breakthroughs, significant developments, and documents created.
-                
-                Create a comprehensive report with these sections:
-                1. EXECUTIVE SUMMARY (2-3 sentences highlighting the most important developments)
-                2. KEY EVENTS & DISCOVERIES (main focus - most important developments, decisions, breakthroughs)
-                3. DOCUMENTS & DELIVERABLES (focus on documents created, their purpose, and impact)
-                4. RELATIONSHIP DEVELOPMENTS (how agent relationships changed)
-                5. EMERGING PERSONALITIES (how each agent's personality manifested)
-                6. SOCIAL DYNAMICS (team cohesion, leadership patterns, conflicts)
-                7. STRATEGIC DECISIONS (important choices made by the team)
-                8. ACTION-ORIENTED OUTCOMES (tangible results and deliverables produced)
-                9. LOOKING AHEAD (predictions for future developments)
-                
-                Use **bold** for section headers and important points. Be specific and actionable.
-                Pay special attention to the documents created and their strategic value."""
-            ).with_model("gemini", "gemini-2.0-flash")
-            
-            user_message = UserMessage(text=prompt)
-            report_response = await gemini_chat.send_message(user_message)
-            model_used = "Gemini 2.0 Flash (fallback)"
-            print("✅ SUCCESS: Gemini 2.0 Flash generated report as fallback!")
-            
-        except Exception as gemini_error:
-            print(f"❌ Both Claude and Gemini failed: Claude({claude_error}), Gemini({gemini_error})")
-            
-            # Create a fallback summary when both APIs fail
-            report_response = f"""**Week Summary - Day {current_day}**
+        # Create a fallback summary when API fails
+        report_response = f"""**Week Summary - Day {current_day}**
 
 **1. 🔥 KEY EVENTS & DISCOVERIES**
 - {len(recent_conversations)} conversations analyzed from recent simulation periods
@@ -4229,9 +4705,9 @@ IMPORTANT FORMATTING RULES:
 - Further development of personality-based conversation patterns
 - Enhanced document creation and strategic planning processes
 
-*Note: This summary was generated using conversation analysis due to AI service limitations. Both Claude 3.5 Sonnet and Gemini 2.0 Flash were unavailable. Please try again later.*"""
-            
-            model_used = "Fallback Analysis (Both AI models failed)"
+*Note: This summary was generated using conversation analysis due to AI service limitations. Gemini 2.5 Flash was unavailable. Please try again later.*"""
+        
+        model_used = "Fallback Analysis (AI model failed)"
     
     
     # Add model information to response
@@ -4752,6 +5228,8 @@ async def get_simulation_state(current_user: User = Depends(get_current_user)):
         # Create default state for the user
         state = SimulationState(user_id=current_user.id).dict()
         await db.simulation_state.insert_one(state)
+        # Initialize empty reports for new state
+        state['reports'] = []
         return state
     
     # Convert MongoDB ObjectId to string to make it JSON serializable
@@ -4777,6 +5255,23 @@ async def get_simulation_state(current_user: User = Depends(get_current_user)):
             {"id": state["id"], "user_id": current_user.id},
             {"$set": {"time_remaining_hours": remaining_hours}}
         )
+    
+    # Fetch and include reports for this user
+    try:
+        reports_cursor = db.reports.find({"user_id": current_user.id}).sort("created_at", -1)
+        reports = []
+        
+        async for report in reports_cursor:
+            # Convert ObjectId to string for JSON serialization
+            if '_id' in report:
+                report['_id'] = str(report['_id'])
+            reports.append(report)
+        
+        state['reports'] = reports
+        
+    except Exception as e:
+        logging.error(f"Error fetching reports for simulation state: {e}")
+        state['reports'] = []  # Fallback to empty array
     
     return state
 
@@ -4829,13 +5324,15 @@ async def get_time_status():
     return time_status
 
 @api_router.post("/simulation/next-period")
-async def advance_time_period():
+async def advance_time_period(current_user: User = Depends(get_current_user)):
     """Advance to next time period"""
-    state = await db.simulation_state.find_one()
+    state = await db.simulation_state.find_one({"user_id": current_user.id})
     if not state:
         raise HTTPException(status_code=404, detail="Simulation not started")
     
     current_period = state["current_time_period"]
+    current_day = state.get("current_day", 1)
+    
     if current_period == "morning":
         new_period = "afternoon"
     elif current_period == "afternoon":
@@ -4844,16 +5341,416 @@ async def advance_time_period():
         new_period = "morning"
         # Advance day
         await db.simulation_state.update_one(
-            {"id": state["id"]},
+            {"user_id": current_user.id},
             {"$inc": {"current_day": 1}}
         )
+        current_day += 1
     
     await db.simulation_state.update_one(
-        {"id": state["id"]},
+        {"user_id": current_user.id},
         {"$set": {"current_time_period": new_period}}
     )
     
-    return {"message": f"Advanced to {new_period}", "new_period": new_period}
+    return {
+        "message": f"Advanced to Day {current_day} {new_period.title()}", 
+        "new_period": new_period,
+        "current_day": current_day
+    }
+
+async def sync_simulation_state_time(user_id: str, round_number: int):
+    """Sync simulation state with conversation time progression"""
+    try:
+        # Get current simulation state
+        state = await db.simulation_state.find_one({"user_id": user_id})
+        if not state or not state.get("is_active", False):
+            return False
+        
+        # Update the simulation state to reflect the current conversation round
+        await db.simulation_state.update_one(
+            {"user_id": user_id},
+            {"$set": {
+                "last_conversation_round": round_number,
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        
+        print(f"🔄 Synced simulation state for user {user_id} at round {round_number}")
+        return True
+        
+    except Exception as e:
+        print(f"Error syncing simulation state time: {e}")
+        return False
+
+async def generate_daily_report_automatically(user_id: str, completed_day: int):
+    """Generate an automatic daily report when a day is completed"""
+    try:
+        print(f"📅 Generating automatic daily report for user {user_id}, completed day {completed_day}")
+        
+        # Check if daily reports are enabled for this user
+        state = await db.simulation_state.find_one({"user_id": user_id})
+        if not state or not state.get("daily_reports_enabled", True):
+            print(f"📅 Daily reports disabled for user {user_id}")
+            return False
+        
+        # Get conversations from the completed day
+        day_conversations = await db.conversations.find({
+            "user_id": user_id,
+        }).sort("created_at", -1).to_list(30)  # Get recent conversations for the day
+        
+        if not day_conversations:
+            print(f"📅 No conversations found for day {completed_day}")
+            return False
+        
+        # Generate AI report content
+        try:
+            report_content = await generate_ai_daily_report(day_conversations, completed_day, "day_completed")
+        except Exception as e:
+            print(f"❌ Error generating AI report content: {e}")
+            # Fallback to basic report
+            report_content = f"""**Daily Report - Day {completed_day} Completed**
+
+**📊 DAILY SUMMARY**
+- {len(day_conversations)} conversations completed
+- Day {completed_day} activities concluded
+- Time advanced to Day {completed_day + 1}
+
+**🎯 KEY ACTIVITIES**
+- Agent interactions throughout morning, afternoon, and evening periods
+- Collaborative problem-solving and decision-making
+- Progress toward simulation objectives
+
+**📋 NEXT STEPS**
+- Continue with Day {completed_day + 1} activities
+- Monitor agent interactions and developments
+- Track progress toward long-term goals
+
+*This is an automated daily report generated when time advances to a new day.*"""
+        
+        # Store the daily report using new structure
+        report_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "type": "daily",
+            "day": completed_day,
+            "title": f"Day {completed_day} Report",
+            "subtitle": "auto",
+            "content": report_content,
+            "created_at": datetime.utcnow().isoformat(),
+            "conversation_count": len(day_conversations),
+            "generation_type": "automatic"
+        }
+        
+        await db.reports.insert_one(report_doc)
+        print(f"✅ Automatic daily report generated and stored for day {completed_day}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error generating automatic daily report for user {user_id}, day {completed_day}: {e}")
+        return False
+
+async def generate_weekly_report_automatically(user_id: str, week_number: int):
+    """Generate an automatic weekly report when a week is completed"""
+    try:
+        print(f"📅 Generating automatic weekly report for user {user_id}, week {week_number}")
+        
+        # Check if weekly reports are enabled for this user
+        state = await db.simulation_state.find_one({"user_id": user_id})
+        if not state or not state.get("weekly_reports_enabled", True):
+            print(f"📅 Weekly reports disabled for user {user_id}")
+            return False
+        
+        # Get daily reports from the completed week to create summary
+        week_daily_reports = await db.reports.find({
+            "user_id": user_id,
+            "type": "daily"
+        }).sort("created_at", -1).to_list(7)  # Get last 7 daily reports
+        
+        # Get conversations from the completed week
+        week_conversations = await db.conversations.find({
+            "user_id": user_id,
+        }).sort("created_at", -1).to_list(100)  # Get recent conversations for the week
+        
+        if not week_conversations:
+            print(f"📅 No conversations found for week {week_number}")
+            return False
+        
+        # Generate AI-powered weekly report content
+        try:
+            weekly_report_content = await generate_ai_weekly_report(week_conversations, week_daily_reports, week_number)
+        except Exception as e:
+            print(f"❌ Error generating AI weekly report content: {e}")
+            # Fallback to basic weekly report
+            weekly_report_content = f"""**Weekly Report - Week {week_number} Completed**
+
+**📊 EXECUTIVE SUMMARY**
+Week {week_number} has concluded with {len(week_conversations)} total conversations across 7 days of simulation. The team has demonstrated consistent collaboration and progress toward their objectives.
+
+**🔥 KEY DEVELOPMENTS**
+- Completed 7 full days of simulation activities
+- {len(week_conversations)} agent interactions documented
+- Consistent team collaboration and problem-solving
+- Progress toward long-term simulation goals
+
+**📈 WEEKLY METRICS**
+- Days completed: 7
+- Total conversations: {len(week_conversations)}
+- Average conversations per day: {len(week_conversations) / 7:.1f}
+- Week number: {week_number}
+
+**🎯 STRATEGIC PROGRESS**
+- Team dynamics continue to evolve
+- Collaborative decision-making processes established
+- Knowledge sharing and expertise integration ongoing
+- Simulation objectives being pursued systematically
+
+**🔮 LOOKING AHEAD**
+- Beginning Week {week_number + 1} activities
+- Continued monitoring of team dynamics
+- Focus on achieving simulation milestones
+- Enhanced collaboration and problem-solving
+
+*This is an automated weekly report generated when 7 days (Week {week_number}) are completed.*"""
+        
+        # Store the weekly report using new structure
+        report_doc = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "type": "weekly",
+            "week": week_number,
+            "title": f"Week {week_number} Report",
+            "subtitle": "auto",
+            "content": weekly_report_content,
+            "created_at": datetime.utcnow().isoformat(),
+            "conversation_count": len(week_conversations),
+            "daily_reports_included": len(week_daily_reports),
+            "generation_type": "automatic"
+        }
+        
+        await db.reports.insert_one(report_doc)
+        print(f"✅ Automatic weekly report generated and stored for week {week_number}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Error generating automatic weekly report for user {user_id}, week {week_number}: {e}")
+        return False
+
+async def generate_ai_weekly_report(conversations, daily_reports, week_number):
+    """Generate AI-powered weekly report content"""
+    try:
+        # Prepare daily reports summary
+        daily_summaries = ""
+        for report in daily_reports:
+            day = report.get('day', 'Unknown')
+            content = report.get('content', '')[:300]  # First 300 chars of each daily report
+            daily_summaries += f"\n**Day {day}:** {content}...\n"
+        
+        # Prepare conversation highlights
+        conv_highlights = ""
+        for conv in conversations[-21:]:  # Last 21 conversations for weekly report
+            time_period = conv.get('time_period', 'Unknown')
+            for msg in conv.get('messages', [])[:2]:  # First 2 messages per conversation
+                agent_name = msg.get('agent_name', 'Unknown')
+                message = msg.get('message', '')[:150]  # Truncate long messages
+                conv_highlights += f"- **{agent_name}** ({time_period}): {message}...\n"
+        
+        # Create comprehensive weekly report prompt
+        weekly_prompt = f"""
+        Generate a comprehensive weekly report for Week {week_number} of an AI agent simulation.
+        
+        **Daily Reports Summary:**
+        {daily_summaries[:2000]}
+        
+        **Recent Conversation Highlights:**
+        {conv_highlights[:2000]}
+        
+        **Statistics:**
+        - Week Number: {week_number}
+        - Conversations Analyzed: {len(conversations)}
+        - Daily Reports: {len(daily_reports)}
+        
+        Please generate a structured weekly report with the following sections:
+        1. **Executive Summary** - High-level overview of the week's progress
+        2. **Key Achievements** - Major accomplishments across the week
+        3. **Strategic Developments** - Important decisions and directions
+        4. **Team Performance** - How agents collaborated throughout the week
+        5. **Challenges & Solutions** - Problems faced and how they were resolved
+        6. **Weekly Metrics** - Quantitative summary of activities
+        7. **Strategic Outlook** - Recommendations for next week
+        
+        Keep the report strategic, insightful, and forward-looking. Focus on trends, patterns, and strategic implications.
+        """
+        
+        # Generate using the LLM with Gemini 2.5 Pro
+        if not await llm_manager.can_make_request():
+            return "Unable to generate weekly report content - daily API limit reached."
+        
+        try:
+            chat = LlmChat(
+                api_key=llm_manager.api_key,
+                session_id=f"weekly_report_{int(datetime.now().timestamp())}",
+                system_message="You are an expert strategic report writer creating comprehensive weekly reports for AI agent simulations. Focus on trends, patterns, and strategic insights."
+            ).with_model("gemini", "gemini-2.5-pro")
+            
+            user_message = UserMessage(text=weekly_prompt)
+            response = await asyncio.wait_for(chat.send_message(user_message), timeout=20.0)  # Longer timeout for weekly reports
+            await llm_manager.increment_usage()
+            
+            if response and hasattr(response, 'content'):
+                return response.content.strip()
+            elif response and hasattr(response, 'text'):
+                return response.text.strip()
+            elif isinstance(response, str):
+                return response.strip()
+            else:
+                return str(response).strip() if response else "Unable to generate weekly report content at this time."
+                
+        except asyncio.TimeoutError:
+            logging.error("Weekly report generation timed out")
+            return "Weekly report generation timed out. Please try again."
+        except Exception as e:
+            logging.error(f"Error in LLM call for weekly report: {e}")
+            return f"Error generating weekly report content: {str(e)}"
+        
+    except Exception as e:
+        logging.error(f"Error generating AI weekly report: {e}")
+        return f"Error generating weekly report content: {str(e)}"
+
+async def check_and_advance_time_automatically(user_id: str):
+    """SIMPLIFIED TIME SYSTEM: Advance time based on messages per agent per time period (1 message per agent)"""
+    try:
+        # Get current simulation state
+        state = await db.simulation_state.find_one({"user_id": user_id})
+        if not state or not state.get("is_active", False):
+            print(f"⚠️ Time advancement skipped - simulation not active for user {user_id}")
+            return False
+        
+        # Get ALL conversations for this user to calculate total messages
+        all_conversations = await db.conversations.find({"user_id": user_id}).sort("created_at", 1).to_list(None)
+        
+        if not all_conversations:
+            print(f"⚠️ Time advancement skipped - no conversations found for user {user_id}")
+            return False
+        
+        # Calculate total messages across all conversations
+        total_messages = 0
+        agent_count = 0
+        
+        # Get agent count from the latest conversation
+        if all_conversations:
+            latest_conversation = all_conversations[-1]
+            messages = latest_conversation.get("messages", [])
+            unique_agents = set()
+            for msg in messages:
+                if msg.get("agent_name"):
+                    unique_agents.add(msg.get("agent_name"))
+            agent_count = len(unique_agents)
+        
+        # Count total messages across all conversations
+        for conv in all_conversations:
+            total_messages += len(conv.get("messages", []))
+        
+        if agent_count == 0:
+            print(f"🚨 Time advancement failed - No agents found in conversations for user {user_id}")
+            return False
+        
+        # SIMPLIFIED CALCULATION: Each agent sends 9 messages per time period (since 1 message per conversation)
+        # With 3 agents = 27 messages per time period (Morning/Afternoon/Evening)
+        messages_per_agent_per_period = 9
+        messages_per_time_period = agent_count * messages_per_agent_per_period
+        
+        print(f"🎯 TIME ADVANCEMENT CHECK for user {user_id}:")
+        print(f"  - Total messages: {total_messages}")
+        print(f"  - Agent count: {agent_count}")
+        print(f"  - Messages per agent per time period: {messages_per_agent_per_period}")
+        print(f"  - Messages per time period: {messages_per_time_period}")
+        
+        # Calculate which time period we should be in based on total messages
+        time_period_number = total_messages // messages_per_time_period
+        current_period = state["current_time_period"]
+        current_day = state.get("current_day", 1)
+        
+        # Determine what time period we should be in
+        time_periods = ["morning", "afternoon", "evening"]
+        expected_period_index = time_period_number % 3
+        expected_period = time_periods[expected_period_index]
+        expected_day = (time_period_number // 3) + 1
+        
+        print(f"  - Current: Day {current_day}, {current_period}")
+        print(f"  - Expected: Day {expected_day}, {expected_period}")
+        print(f"  - Time period calculation: {total_messages} // {messages_per_time_period} = {time_period_number}")
+        
+        # Check if time should advance
+        if expected_day != current_day or expected_period != current_period:
+            print(f"🕐 TIME ADVANCE NEEDED:")
+            print(f"  - FROM: Day {current_day}, {current_period}")
+            print(f"  - TO: Day {expected_day}, {expected_period}")
+            
+            # Check if we're advancing to a new day - trigger daily report
+            day_changed = expected_day != current_day
+            if day_changed:
+                print(f"📅 DAY CHANGE DETECTED: Day {current_day} → Day {expected_day}")
+                # Trigger daily report generation for the completed day
+                await generate_daily_report_automatically(user_id, current_day)
+                
+                # Check if we need to generate a weekly report (every 7 days)
+                if expected_day > 1 and (expected_day - 1) % 7 == 0:
+                    week_number = (expected_day - 1) // 7
+                    print(f"📅 WEEK COMPLETION DETECTED: Generating weekly report for week {week_number}")
+                    await generate_weekly_report_automatically(user_id, week_number)
+            
+            # RETRY LOGIC: Attempt database update with retries for reliability
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    # Update simulation state
+                    update_result = await db.simulation_state.update_one(
+                        {"user_id": user_id},
+                        {"$set": {
+                            "current_time_period": expected_period,
+                            "current_day": expected_day,
+                            "last_total_messages": total_messages,
+                            "last_time_advance": datetime.utcnow(),
+                            "daily_reports_enabled": state.get("daily_reports_enabled", True),  # Default to True
+                            "weekly_reports_enabled": state.get("weekly_reports_enabled", True)
+                        }}
+                    )
+                    
+                    if update_result.modified_count > 0:
+                        print(f"✅ TIME ADVANCED SUCCESSFULLY (attempt {attempt + 1}): Day {expected_day}, {expected_period.title()}")
+                        
+                        # Verify the update worked
+                        verification = await db.simulation_state.find_one({"user_id": user_id})
+                        if verification and verification.get("current_time_period") == expected_period:
+                            print(f"✅ Update verified in database")
+                            return True
+                        else:
+                            print(f"⚠️ Update not verified, retrying...")
+                            continue
+                    else:
+                        print(f"⚠️ Database update returned modified_count=0, retrying...")
+                        continue
+                        
+                except Exception as e:
+                    print(f"❌ Database update attempt {attempt + 1} failed: {e}")
+                    if attempt == max_retries - 1:
+                        print(f"❌ All retry attempts exhausted for user {user_id}")
+                        return False
+                    continue
+            
+            print(f"❌ Failed to advance time after {max_retries} attempts")
+            return False
+        else:
+            messages_until_next = messages_per_time_period - (total_messages % messages_per_time_period)
+            print(f"  - No time advance needed")
+            print(f"  - Messages until next time period: {messages_until_next}")
+        
+        return False
+        
+    except Exception as e:
+        print(f"❌ Critical error in time advancement for user {user_id}: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 @api_router.post("/simulation/reset")
 async def reset_simulation(current_user: User = Depends(get_current_user)):
@@ -4868,7 +5765,9 @@ async def reset_simulation(current_user: User = Depends(get_current_user)):
             db.relationships.delete_many({"user_id": current_user.id}),
             db.summaries.delete_many({"user_id": current_user.id}),
             db.agents.delete_many({"user_id": current_user.id}),
-            db.observer_messages.delete_many({"user_id": current_user.id})  # Add observer messages
+            db.observer_messages.delete_many({"user_id": current_user.id}),  # Observer messages
+            db.documents.delete_many({"metadata.user_id": current_user.id}),  # Delete user's documents
+            db.reports.delete_many({"user_id": current_user.id})  # Delete user's reports
         ]
         
         # Execute all deletions concurrently
@@ -4882,7 +5781,10 @@ async def reset_simulation(current_user: User = Depends(get_current_user)):
         
         # Log deletion summary
         successful_deletions = len([r for r in delete_results if not isinstance(r, Exception)])
-        logging.info(f"Start Fresh: {successful_deletions}/6 collections cleared for user {current_user.id}")
+        logging.info(f"Start Fresh: {successful_deletions}/8 collections cleared for user {current_user.id}")
+        
+        # Log specific deletions for transparency
+        logging.info(f"Fresh Start completed - cleared: simulation state, conversations, relationships, summaries, agents, observer messages, documents, and reports")
         
         # Create a clean default simulation state
         default_state = SimulationState(
@@ -4905,10 +5807,10 @@ async def reset_simulation(current_user: User = Depends(get_current_user)):
         await db.simulation_state.insert_one(default_state.dict())
         
         return {
-            "message": "Simulation reset successfully - all data cleared",
+            "message": "Simulation reset successfully - all data cleared (conversations, agents, documents, reports, and settings)",
             "success": True,
             "state": default_state.dict(),
-            "cleared_collections": successful_deletions
+            "cleared_collections": ["simulation_state", "conversations", "relationships", "summaries", "agents", "observer_messages", "documents", "reports"]
         }
         
     except Exception as e:
@@ -5140,7 +6042,7 @@ Your task: Update the document to incorporate the new information and decisions 
             api_key=llm_manager.api_key,
             session_id=f"doc_update_{updating_agent.id}_{datetime.now().timestamp()}",
             system_message=system_message
-        ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(400)
+        ).with_model("gemini", "gemini-2.5-flash")
         
         prompt = f"Update this document to include the new conversation insights. Maintain the structure but add new information:\n\n{existing_doc['content']}"
         user_message = UserMessage(text=prompt)
@@ -5236,207 +6138,244 @@ def select_best_agent_for_document(agent_objects, doc_type):
 async def create_contextual_document(creating_agent, doc_type, title, conversation_text, scenario, scenario_name, llm_manager, user_id=""):
     """Create a specific document based on conversation context"""
     
-    # Document templates
+    # Enhanced HTML document templates with professional styling
     templates = {
-        "budget": """# {title}
+        "budget": """<div class="document-header">
+<h1 class="document-title">{title}</h1>
+<div class="document-meta">
+<span class="doc-type">Budget Analysis</span> | 
+<span class="doc-author">Created by {creating_agent.name}</span>
+</div>
+</div>
 
-## Executive Summary
-[Budget overview and key financial points]
+<div class="document-section overview">
+<h2 class="section-header budget-header">💰 Executive Summary</h2>
+<div class="section-content">
+[Budget overview and key financial strategic points]
+</div>
+</div>
 
-## Cost Breakdown
-- Initial Investment: $[amount]
-- Operational Costs: $[amount] per year
-- ROI Timeline: [timeframe]
+<div class="document-section details">
+<h2 class="section-header budget-header">📊 Cost Breakdown</h2>
+<div class="section-content">
+<ul class="doc-list">
+<li><strong>Initial Investment:</strong> $[amount]</li>
+<li><strong>Operational Costs:</strong> $[amount] per year</li>
+<li><strong>ROI Timeline:</strong> [timeframe]</li>
+</ul>
+</div>
+</div>
 
-## Key Assumptions
-[List major assumptions affecting costs]
+<div class="document-section recommendations">
+<h2 class="section-header budget-header">🎯 Financial Recommendations</h2>
+<div class="section-content">
+[Budget recommendation and strategic next steps]
+</div>
+</div>""",
 
-## Risk Factors
-[Financial risks and mitigation strategies]
+        "implementation": """<div class="document-header">
+<h1 class="document-title">{title}</h1>
+<div class="document-meta">
+<span class="doc-type">Implementation Plan</span> | 
+<span class="doc-author">Created by {creating_agent.name}</span>
+</div>
+</div>
 
-## Recommendation
-[Budget recommendation and next steps]""",
+<div class="document-section overview">
+<h2 class="section-header strategic-header">🚀 Implementation Strategy</h2>
+<div class="section-content">
+[Implementation strategy summary and strategic approach]
+</div>
+</div>
 
-        "implementation": """# {title}
+<div class="document-section details">
+<h2 class="section-header strategic-header">📋 Execution Phases</h2>
+<div class="section-content">
+<div class="phase-block">
+<h3><strong>Phase 1: Preparation</strong></h3>
+<ul class="doc-list">
+<li><strong>Timeline:</strong> [dates]</li>
+<li><strong>Key Activities:</strong> [specific activities]</li>
+<li><strong>Resources Needed:</strong> [detailed resources]</li>
+</ul>
+</div>
 
-## Overview
-[Implementation strategy summary]
+<div class="phase-block">
+<h3><strong>Phase 2: Deployment</strong></h3>
+<ul class="doc-list">
+<li><strong>Timeline:</strong> [dates]</li>
+<li><strong>Key Activities:</strong> [specific activities]</li>
+<li><strong>Success Metrics:</strong> [measurable outcomes]</li>
+</ul>
+</div>
+</div>
+</div>
 
-## Phase 1: Preparation
-- Timeline: [dates]
-- Key Activities: [list]
-- Resources Needed: [list]
+<div class="document-section recommendations">
+<h2 class="section-header strategic-header">⚠️ Risk Mitigation</h2>
+<div class="section-content">
+[Key risks and comprehensive mitigation strategies]
+</div>
+</div>""",
 
-## Phase 2: Deployment
-- Timeline: [dates]
-- Key Activities: [list]
-- Success Metrics: [list]
+        "risk": """<div class="document-header">
+<h1 class="document-title">{title}</h1>
+<div class="document-meta">
+<span class="doc-type">Risk Assessment</span> | 
+<span class="doc-author">Created by {creating_agent.name}</span>
+</div>
+</div>
 
-## Phase 3: Optimization
-- Timeline: [dates]
-- Key Activities: [list]
-- Review Points: [list]
+<div class="document-section overview">
+<h2 class="section-header challenges-header">⚠️ Risk Assessment Summary</h2>
+<div class="section-content">
+[Overall risk evaluation and strategic implications]
+</div>
+</div>
 
-## Risk Mitigation
-[Key risks and mitigation strategies]""",
+<div class="document-section details">
+<h2 class="section-header challenges-header">🔴 Critical Risks</h2>
+<div class="section-content">
+<ol class="doc-list">
+<li><strong>[Risk Name]</strong>
+   <ul>
+   <li>Probability: [High/Medium/Low]</li>
+   <li>Impact: [High/Medium/Low]</li>
+   <li>Mitigation: [comprehensive strategy]</li>
+   </ul>
+</li>
+</ol>
+</div>
+</div>
 
-        "risk": """# {title}
+<div class="document-section recommendations">
+<h2 class="section-header challenges-header">📈 Monitoring & Contingency</h2>
+<div class="section-content">
+[Monitoring plan and contingency strategies]
+</div>
+</div>""",
 
-## Risk Assessment Summary
-[Overall risk evaluation]
+        "technical": """<div class="document-header">
+<h1 class="document-title">{title}</h1>
+<div class="document-meta">
+<span class="doc-type">Technical Specification</span> | 
+<span class="doc-author">Created by {creating_agent.name}</span>
+</div>
+</div>
 
-## High Priority Risks
-1. **[Risk Name]**
-   - Probability: [High/Medium/Low]
-   - Impact: [High/Medium/Low]
-   - Mitigation: [strategy]
+<div class="document-section overview">
+<h2 class="section-header operational-header">⚙️ Technical Overview</h2>
+<div class="section-content">
+[System/technology description and architecture approach]
+</div>
+</div>
 
-## Medium Priority Risks
-[List with brief descriptions]
+<div class="document-section details">
+<h2 class="section-header operational-header">📋 Requirements</h2>
+<div class="section-content">
+<ul class="doc-list">
+<li><strong>Functional Requirements:</strong> [detailed specifications]</li>
+<li><strong>Performance Requirements:</strong> [measurable criteria]</li>
+<li><strong>Security Requirements:</strong> [security standards]</li>
+</ul>
+</div>
+</div>
 
-## Monitoring Plan
-[How risks will be tracked]
+<div class="document-section recommendations">
+<h2 class="section-header operational-header">🧪 Testing Strategy</h2>
+<div class="section-content">
+[Comprehensive validation and testing approach]
+</div>
+</div>""",
 
-## Contingency Plans
-[Backup strategies if risks materialize]""",
+        "action": """<div class="document-header">
+<h1 class="document-title">{title}</h1>
+<div class="document-meta">
+<span class="doc-type">Action Plan</span> | 
+<span class="doc-author">Created by {creating_agent.name}</span>
+</div>
+</div>
 
-        "technical": """# {title}
+<div class="document-section overview">
+<h2 class="section-header recommendations-header">🎯 Action Plan Summary</h2>
+<div class="section-content">
+[Strategic objectives and what we plan to accomplish]
+</div>
+</div>
 
-## Technical Overview
-[System/technology description]
+<div class="document-section details">
+<h2 class="section-header recommendations-header">⚡ Immediate Actions</h2>
+<div class="section-content">
+<ol class="doc-list">
+<li><strong>Priority 1:</strong> [specific action with timeline]</li>
+<li><strong>Priority 2:</strong> [specific action with timeline]</li>
+<li><strong>Priority 3:</strong> [specific action with timeline]</li>
+</ol>
+</div>
+</div>
 
-## Requirements
-- Functional Requirements: [list]
-- Performance Requirements: [list]
-- Security Requirements: [list]
-
-## Architecture
-[High-level system design]
-
-## Implementation Considerations
-[Technical challenges and solutions]
-
-## Testing Strategy
-[How system will be validated]""",
-
-        "policy": """# {title}
-
-## Policy Objective
-[What this policy aims to achieve]
-
-## Scope
-[Who and what this policy covers]
-
-## Key Principles
-[Guiding principles for decision-making]
-
-## Implementation Guidelines
-[How policy should be applied]
-
-## Compliance Requirements
-[What organizations must do]
-
-## Review Process
-[How policy will be updated]""",
-
-        "training": """# {title}
-
-## Training Objectives
-[What participants will learn]
-
-## Target Audience
-[Who needs this training]
-
-## Learning Modules
-1. **Module 1: [Topic]**
-   - Duration: [time]
-   - Key Concepts: [list]
-
-2. **Module 2: [Topic]**
-   - Duration: [time]
-   - Key Concepts: [list]
-
-## Assessment Methods
-[How competency will be evaluated]
-
-## Resources Required
-[Equipment, materials, facilities needed]""",
-
-        "timeline": """# {title}
-
-## Project Timeline Overview
-[Total duration and key phases]
-
-## Milestones
-- **Month 1**: [major deliverable]
-- **Month 3**: [major deliverable]
-- **Month 6**: [major deliverable]
-
-## Critical Path Activities
-[Tasks that affect overall timeline]
-
-## Dependencies
-[What must happen before other tasks can start]
-
-## Resource Allocation
-[When different teams/resources are needed]""",
-
-        "action": """# {title}
-
-## Action Plan Summary
-[What we plan to accomplish]
-
-## Immediate Actions (Next 30 Days)
-1. [Specific action item]
-2. [Specific action item]
-
-## Short-term Goals (1-3 Months)
-[Key objectives and activities]
-
-## Long-term Strategy (3+ Months)
-[Strategic direction and major initiatives]
-
-## Success Metrics
-[How progress will be measured]
-
-## Resource Requirements
-[What we need to succeed]"""
+<div class="document-section recommendations">
+<h2 class="section-header recommendations-header">📈 Success Metrics</h2>
+<div class="section-content">
+[How progress will be measured and resource requirements]
+</div>
+</div>"""
     }
     
     template = templates.get(doc_type, templates["action"])
     
-    # Use LLM to generate content based on conversation
+    # Use LLM to generate high-quality content based on conversation
     try:
-        system_message = f"""You are {creating_agent.name}, creating a {doc_type} document titled "{title}".
+        system_message = f"""You are {creating_agent.name} ({creating_agent.archetype}), an expert in {creating_agent.expertise}, creating a professional {doc_type} document titled "{title}".
 
-Based on the conversation below, fill in the template with specific, actionable content.
-Make it professional and immediately usable.
+CRITICAL INSTRUCTIONS:
+- Generate SUBSTANTIAL, DETAILED content for each section
+- Replace ALL placeholders with specific, actionable information
+- Use your expertise in {creating_agent.expertise} to provide strategic insights
+- Make content immediately usable and professional
+- Include specific timelines, metrics, and actionable items
+- DO NOT leave any placeholders like [amount], [dates], [list] - fill everything with realistic content
 
-CONVERSATION CONTEXT:
+CONVERSATION CONTEXT (base your document on this):
 {conversation_text}
 
-SCENARIO: {scenario}"""
+SCENARIO: {scenario_name}
+YOUR BACKGROUND: {creating_agent.background}
+
+Fill the HTML template with comprehensive, professional content that reflects your expertise."""
 
         chat = LlmChat(
             api_key=llm_manager.api_key,
             session_id=f"doc_gen_{creating_agent.id}_{datetime.now().timestamp()}",
             system_message=system_message
-        ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(300)
+        ).with_model("gemini", "gemini-2.5-flash")  # Use Flash for faster generation
         
-        prompt = f"Create detailed content for this {doc_type} document. Fill in the template with specific information based on the conversation:\n\n{template}"
+        prompt = f"""Create detailed, professional content for this {doc_type} document. 
+
+Template to fill:
+{template}
+
+REQUIREMENTS:
+- Replace ALL placeholders with specific, realistic content
+- Generate 2-3 substantial paragraphs for each section
+- Include specific numbers, dates, and actionable items
+- Make it immediately useful for the team
+- Use professional business language
+- Reflect your expertise as {creating_agent.name} ({creating_agent.archetype})"""
+        
         user_message = UserMessage(text=prompt)
         
-        response = await asyncio.wait_for(chat.send_message(user_message), timeout=10.0)
+        response = await asyncio.wait_for(chat.send_message(user_message), timeout=15.0)  # Shorter timeout
         
-        if response and len(response.strip()) > 50:
+        if response and len(response.strip()) > 100:  # Ensure substantial content
             content = response.strip()
         else:
-            # Fallback to template
-            content = template.format(title=title)
+            # Fallback to template with agent info
+            content = template.format(title=title, creating_agent=creating_agent)
             
     except Exception as e:
         print(f"LLM document generation failed: {e}")
-        content = template.format(title=title)
+        content = template.format(title=title, creating_agent=creating_agent)
     
     # Create document object with proper structure for new DocumentMetadata
     metadata = {
@@ -5865,7 +6804,10 @@ Continue building on the progress above. The team should advance the solutions a
                 # Show recent discussion for context
                 collaborative_context += f"RECENT DISCUSSION:\n"
                 for msg in recent_messages[-3:]:  # Last 3 messages
-                    collaborative_context += f"• {msg['agent_name']}: {msg['content']}\n"
+                    # Handle both new structure (dict) and old structure (object)
+                    agent_name = msg.get('agent_name', '') if isinstance(msg, dict) else getattr(msg, 'agent_name', '')
+                    message_text = msg.get('message', '') if isinstance(msg, dict) else getattr(msg, 'message', '')
+                    collaborative_context += f"• {agent_name}: {message_text}\n"
                 
                 collaborative_context += f"\nYOUR TEAMMATES: {', '.join(other_agents)}\n"
                 
@@ -5984,9 +6926,6 @@ Continue building on the progress above. The team should advance the solutions a
             print(f"❌ Response generation failed for {agent.name}: {str(e)[:100]}...")
             return None, agent, str(e)
     
-    # Create tasks for parallel execution with enhanced collaboration
-    tasks = []
-    
     # Determine conversation stage based on content analysis and message count
     total_messages = len(messages)
     conversation_text_lower = " ".join([msg.message.lower() for msg in messages[-6:]]) if messages else ""
@@ -6013,94 +6952,132 @@ Continue building on the progress above. The team should advance the solutions a
     
     print(f"🎯 Conversation stage: {conversation_stage} (Messages: {total_messages}, Solutions: {has_solutions}, Actions: {has_action_items})")
     
-    # Extract agent names for collaboration
-    agent_names = [agent.name for agent in agent_objects]
+    # ===== SIMPLIFIED SYSTEM: 1 MESSAGE PER AGENT =====
+    # Each conversation = 1 message per agent for better flow and performance
+    messages = []
+    conversation_so_far = ""
     
-    for i, agent in enumerate(agent_objects):
-        # Use the rolling context messages we prepared earlier
-        # conversation_history_msgs already contains proper rolling context with summaries
-        agent_history_msgs = [{"agent_name": msg.get('agent_name'), "content": msg.get('content')} for msg in conversation_history_msgs]
-        
-        task = generate_agent_response_wrapper(
-            agent, 
-            agent_history_msgs,
-            observer_context + f"\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n\nYour job is to collaborate with your teammates to find concrete, actionable solutions. Reference what others say, build on their ideas, and work toward implementation.",
-            existing_documents,
-            agent_names,
-            conversation_stage
-        )
-        tasks.append(task)
+    print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages (SIMPLIFIED SYSTEM)")
     
-    # Execute all agent responses in parallel for speed
-    print(f"🌟 Generating {len(tasks)} natural conversation responses in parallel...")
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+    # Generate 1 message per agent for clean, simple conversations
+    try:
+        for i, agent in enumerate(agent_objects):
+            try:
+                print(f"  🤖 Generating message for {agent.name} ({i + 1}/{len(agent_objects)})")
+                
+                # Build comprehensive context including conversation history
+                current_context = f"{observer_context}\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n"
+                
+                # Include previous messages from this conversation for context
+                if messages:
+                    current_context += f"\nConversation so far:\n"
+                    for prev_msg in messages:
+                        current_context += f"• {prev_msg.agent_name}: {prev_msg.message}\n"
+                    current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
+                
+                response = await llm_manager.generate_agent_response(
+                    agent, scenario, agent_objects, current_context, conversation_history_msgs, language_instruction, existing_documents, state
+                )
+                
+                # Determine mood based on personality and content
+                mood = _determine_agent_mood(agent, response)
+                
+                message = ConversationMessage(
+                    agent_name=agent.name,
+                    agent_id=agent.id,
+                    message=response,
+                    mood=mood,
+                    timestamp=datetime.utcnow()
+                )
+                messages.append(message)
+                
+                # Update conversation_so_far for next agent
+                conversation_so_far += f"{agent.name}: {response}\n"
+                
+                print(f"  ✅ {agent.name}: {len(response)} chars")
+                
+            except Exception as agent_error:
+                print(f"  ❌ Error generating message for {agent.name}: {str(agent_error)[:100]}...")
+                # Create personality-driven fallback response
+                fallback_response = _create_personality_fallback(agent, scenario, messages)
+                mood = _determine_agent_mood(agent, fallback_response)
+                
+                message = ConversationMessage(
+                    agent_name=agent.name,
+                    agent_id=agent.id,
+                    message=fallback_response,
+                    mood=mood,
+                    timestamp=datetime.utcnow()
+                )
+                messages.append(message)
+                print(f"  🔄 Using personality fallback for {agent.name}")
+                continue
+                        
+    except Exception as e:
+        print(f"❌ Error in message generation: {e}")
+        # Ensure we have at least some messages
+        if not messages:
+            for agent in agent_objects:
+                fallback_response = _create_personality_fallback(agent, scenario, [])
+                mood = _determine_agent_mood(agent, fallback_response)
+                
+                message = ConversationMessage(
+                    agent_name=agent.name,
+                    agent_id=agent.id,
+                    message=fallback_response,
+                    mood=mood,
+                    timestamp=datetime.utcnow()
+                )
+                messages.append(message)
     
-    # Process results and create messages
-    for result in results:
-        if isinstance(result, Exception):
-            print(f"❌ Parallel execution error: {result}")
-            continue
-            
-        message_text, agent, error = result
-        
-        if error and not message_text:
-            # Create personality-driven fallback response
-            fallback_response = _create_personality_fallback(agent, scenario, messages)
-            message_text = fallback_response
-            print(f"🔄 Using personality fallback for {agent.name}: {message_text[:80]}...")
-        elif not message_text:
-            continue  # Skip if no valid response
-        
-        # Determine mood based on personality and content
-        mood = _determine_agent_mood(agent, message_text)
-        
-        message = ConversationMessage(
-            agent_name=agent.name,
-            agent_id=agent.id,
-            message=message_text,
-            mood=mood,
-            timestamp=datetime.utcnow()
-        )
-        messages.append(message)
+    print(f"✅ Generated {len(messages)} total messages ({len(messages)}/{len(agent_objects)} target messages)")
     
-    # Get conversation count for round numbering (user-specific)
+    # SIMPLIFIED SYSTEM: Remove all round calculations
+    # Just get a simple conversation count for reference
     conversation_count = await db.conversations.count_documents({"user_id": current_user.id})
-    round_number = conversation_count + 1
+    conversation_number = conversation_count + 1
     
-    # Calculate day and time period based on round number
-    def calculate_day_and_time_period(round_num):
-        if round_num <= 0:
-            return "Day 1 - Morning"
-        
-        day = ((round_num - 1) // 9) + 1
-        round_in_day = ((round_num - 1) % 9) + 1
-        
-        if round_in_day <= 3:
-            period = "Morning"
-            round_in_period = round_in_day
-        elif round_in_day <= 6:
-            period = "Afternoon"
-            round_in_period = round_in_day - 3
-        else:
-            period = "Evening"
-            round_in_period = round_in_day - 6
-        
-        return f"Day {day} - {period}"
+    # Calculate day and time period based on TOTAL MESSAGES (simplified)
+    all_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", 1).to_list(None)
+    total_messages_before_this = sum(len(conv.get("messages", [])) for conv in all_conversations)
+    total_messages_including_this = total_messages_before_this + len(messages)
     
-    time_period = calculate_day_and_time_period(round_number)
+    # Simple time calculation: 9 messages per agent per time period
+    agent_count = len(agent_objects)
+    messages_per_time_period = agent_count * 9  # Each agent sends 9 messages per time period
+    time_period_number = total_messages_including_this // messages_per_time_period
     
-    # Create conversation round  
+    # Determine time period
+    time_periods = ["Morning", "Afternoon", "Evening"]
+    period_index = time_period_number % 3
+    day_number = (time_period_number // 3) + 1
+    time_period = time_periods[period_index]
+    
+    time_period_display = f"Day {day_number} - {time_period}"
+    
+    print(f"🎯 SIMPLIFIED TIME CALCULATION:")
+    print(f"  - Total messages (including this): {total_messages_including_this}")
+    print(f"  - Messages per time period: {messages_per_time_period}")
+    print(f"  - Time period: {time_period_display}")
+    
+    # Create conversation round (without complex round numbers)
     conversation_round = ConversationRound(
-        round_number=round_number,
-        time_period=time_period,
+        round_number=conversation_number,  # Simple conversation counter
+        time_period=time_period_display,
         scenario=scenario,
         scenario_name=scenario_name,
         messages=messages,
-        user_id=current_user.id  # Associate with current user
+        user_id=current_user.id
     )
     
     # Save conversation
     await db.conversations.insert_one(conversation_round.dict())
+    
+    # Sync simulation state with conversation time progression
+    await sync_simulation_state_time(current_user.id, conversation_number)
+    
+    # Check for automatic time advancement after saving conversation
+    await check_and_advance_time_automatically(current_user.id)
     
     # AUTO-GENERATE HELPFUL DOCUMENTS based on conversation content
     try:
@@ -6257,87 +7234,70 @@ Continue building on the progress above. The team should advance the solutions a
     context += f"- Timeline documents for project planning\n"
     context += f"\nWhen you reach consensus or make important decisions, suggest creating a document to formalize it.\n"
     
-    # ===== ENHANCED ROUND STRUCTURE: 3 MESSAGES PER AGENT =====
+    # ===== SIMPLIFIED SINGLE MESSAGE STRUCTURE =====
     messages = []
     conversation_so_far = ""
     
-    print(f"🎯 TARGET: {len(agent_objects)} agents × 3 messages = {len(agent_objects) * 3} total messages")
+    print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages")
     
-    # Generate 3 sequential messages per agent for deeper conversation
+    # Generate 1 message per agent for faster processing
     try:
-        for round_iteration in range(3):
-            print(f"🔄 Starting round {round_iteration + 1}/3 with {len(agent_objects)} agents...")
+        print(f"🔄 Starting conversation with {len(agent_objects)} agents...")
+        
+        for i, agent in enumerate(agent_objects):
+            try:
+                print(f"  🤖 Generating message for {agent.name} (Agent {i + 1}/{len(agent_objects)})")
+                
+                # Simplified guidance for single message per agent
+                agent_guidance = f"Share your perspective on solving this challenge. Be specific about your approach and focus area."
+                
+                # Build simple context for faster processing
+                current_context = f"{context}\n\n{agent_guidance}\n"
+                
+                # Include previous messages for context
+                if messages:
+                    current_context += f"\nConversation so far:\n"
+                    # Group messages by agent to show conversation flow clearly
+                    agent_messages = {}
+                    for prev_msg in messages:
+                        if prev_msg.agent_name not in agent_messages:
+                            agent_messages[prev_msg.agent_name] = []
+                        agent_messages[prev_msg.agent_name].append(prev_msg.message)
+                    
+                    for agent_name, agent_msgs in agent_messages.items():
+                        if agent_name != agent.name:  # Don't show current agent's own messages
+                            for j, msg in enumerate(agent_msgs, 1):
+                                current_context += f"• {agent_name} (Message {j}): {msg}\n"
+                    
+                    current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
+                
+                # Minimal delay to prevent rate limiting (optimized for speed)
+                if len(messages) > 0:
+                    await asyncio.sleep(0.1)  # Reduced to 0.1s for faster generation
+                
+                response = await llm_manager.generate_agent_response(
+                    agent, scenario, agent_objects, current_context, recent_conversations, language_instruction, existing_documents, state
+                )
+                
+                message = ConversationMessage(
+                    agent_id=agent.id,
+                    agent_name=agent.name,
+                    message=response,
+                    mood=agent.current_mood
+                )
+                messages.append(message)
+                
+                # Update conversation_so_far for next agent
+                conversation_so_far += f"{agent.name}: {response}\n"
+                
+                print(f"    ✅ Generated message for {agent.name} (Agent {i + 1}/{len(agent_objects)})")
+                
+            except Exception as agent_error:
+                print(f"    ❌ Error generating message for {agent.name}: {agent_error}")
+                # Continue with next agent instead of breaking
+                continue
             
-            for i, agent in enumerate(agent_objects):
-                try:
-                    print(f"  🤖 Generating message for {agent.name} (Round {round_iteration + 1}, Agent {i + 1}/{len(agent_objects)})")
-                    
-                    # Choose response type based on conversation flow and iteration with document focus
-                    if round_iteration == 0:
-                        # First iteration: Set the stage with document awareness
-                        if i == 0:
-                            agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area. Consider what documentation we might need."
-                        elif i == 1:
-                            agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities. Think about what processes might need documentation."
-                        else:
-                            agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention and what documents could help formalize our approach."
-                    elif round_iteration == 1:
-                        # Second iteration: Deep dive with document planning
-                        if len(messages) < len(agent_objects) * 2:  # Still in second round
-                            agent_guidance = f"Reference specific points made by your teammates in their previous messages. Provide detailed analysis or concrete solutions. If you see consensus forming, consider proposing a document to capture it."
-                        else:
-                            agent_guidance = f"We're making good progress. Look at the solutions and decisions emerging. What specific documents should we create to formalize our conclusions?"
-                    else:
-                        # Third iteration: Synthesis and document creation
-                        agent_guidance = f"Synthesize the discussion so far. Make specific recommendations for both actions AND documents. If there's clear consensus on any point, suggest we create documentation for it."
-                    
-                    # Build comprehensive context including conversation history
-                    current_context = f"{context}\n\n{agent_guidance}\n"
-                    
-                    # Include ALL previous messages from this round for full context
-                    if messages:
-                        current_context += f"\nConversation so far:\n"
-                        # Group messages by agent to show conversation flow clearly
-                        agent_messages = {}
-                        for prev_msg in messages:
-                            if prev_msg.agent_name not in agent_messages:
-                                agent_messages[prev_msg.agent_name] = []
-                            agent_messages[prev_msg.agent_name].append(prev_msg.message)
-                        
-                        for agent_name, agent_msgs in agent_messages.items():
-                            if agent_name != agent.name:  # Don't show current agent's own messages
-                                for j, msg in enumerate(agent_msgs, 1):
-                                    current_context += f"• {agent_name} (Message {j}): {msg}\n"
-                        
-                        current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
-                    
-                    # Add delay to prevent rate limiting and ensure quality responses
-                    if len(messages) > 0:
-                        await asyncio.sleep(1)  # Reduced delay to prevent timeout issues
-                    
-                    response = await llm_manager.generate_agent_response(
-                        agent, scenario, agent_objects, current_context, recent_conversations, language_instruction, existing_documents, state
-                    )
-                    
-                    message = ConversationMessage(
-                        agent_id=agent.id,
-                        agent_name=agent.name,
-                        message=response,
-                        mood=agent.current_mood
-                    )
-                    messages.append(message)
-                    
-                    # Update conversation_so_far for next agent
-                    conversation_so_far += f"{agent.name}: {response}\n"
-                    
-                    print(f"    ✅ Generated message for {agent.name} (Round {round_iteration + 1}, Total messages: {len(messages)})")
-                    
-                except Exception as agent_error:
-                    print(f"    ❌ Error generating message for {agent.name}: {agent_error}")
-                    # Continue with next agent instead of breaking
-                    continue
-            
-            print(f"✅ Completed round {round_iteration + 1}/3. Messages so far: {len(messages)}")
+            print(f"✅ Generated message for agent {i + 1}/{len(agent_objects)}. Messages so far: {len(messages)}")
     
     except Exception as e:
         print(f"❌ Error in conversation generation loop: {e}")
@@ -6375,6 +7335,9 @@ Continue building on the progress above. The team should advance the solutions a
     )
     
     await db.conversations.insert_one(conversation_round.dict())
+    
+    # Check for automatic time advancement after saving conversation
+    await check_and_advance_time_automatically(current_user.id)
     
     # Update agent relationships based on interactions
     await update_relationships(agent_objects, messages)
@@ -6835,27 +7798,65 @@ async def toggle_auto_mode(request: dict):
         "time_interval": time_interval
     }
 
+@api_router.post("/simulation/auto-daily-report")
+async def toggle_auto_daily_report(request: dict, current_user: User = Depends(get_current_user)):
+    """Enable/disable automatic daily report generation"""
+    try:
+        enabled = request.get("enabled", True)
+        
+        # Update simulation state
+        result = await db.simulation_state.update_one(
+            {"user_id": current_user.id},
+            {"$set": {"daily_reports_enabled": enabled}}
+        )
+        
+        if result.matched_count == 0:
+            # Create simulation state if it doesn't exist
+            state = SimulationState(
+                user_id=current_user.id,
+                daily_reports_enabled=enabled
+            )
+            await db.simulation_state.insert_one(state.dict())
+        
+        print(f"Auto daily reports {'enabled' if enabled else 'disabled'} for user {current_user.id}")
+        
+        return {
+            "message": f"Auto daily reports {'enabled' if enabled else 'disabled'}",
+            "daily_reports_enabled": enabled
+        }
+    except Exception as e:
+        print(f"Error toggling auto daily reports: {e}")
+        raise HTTPException(status_code=500, detail="Failed to toggle auto daily reports")
+
 @api_router.post("/simulation/auto-weekly-report")
-async def setup_auto_weekly_report(request: dict):
-    """Setup automatic weekly report generation"""
-    enabled = request.get("enabled", False)
-    interval_hours = request.get("interval_hours", 168)  # Default 7 days = 168 hours
-    
-    await db.simulation_state.update_one(
-        {},
-        {"$set": {
-            "auto_weekly_reports": enabled,
-            "report_interval_hours": interval_hours,
-            "last_auto_report": datetime.utcnow().isoformat() if enabled else None
-        }},
-        upsert=True
-    )
-    
-    return {
-        "message": f"Auto weekly reports {'enabled' if enabled else 'disabled'}",
-        "interval_hours": interval_hours,
-        "next_report_in": f"{interval_hours} hours" if enabled else "disabled"
-    }
+async def toggle_auto_weekly_report(request: dict, current_user: User = Depends(get_current_user)):
+    """Enable/disable automatic weekly report generation"""
+    try:
+        enabled = request.get("enabled", True)
+        
+        # Update simulation state
+        result = await db.simulation_state.update_one(
+            {"user_id": current_user.id},
+            {"$set": {"weekly_reports_enabled": enabled}}
+        )
+        
+        if result.matched_count == 0:
+            # Create simulation state if it doesn't exist
+            state = SimulationState(
+                user_id=current_user.id,
+                weekly_reports_enabled=enabled
+            )
+            await db.simulation_state.insert_one(state.dict())
+        
+        print(f"Auto weekly reports {'enabled' if enabled else 'disabled'} for user {current_user.id}")
+        
+        return {
+            "message": f"Auto weekly reports {'enabled' if enabled else 'disabled'}",
+            "weekly_reports_enabled": enabled
+        }
+    except Exception as e:
+        print(f"Error toggling auto weekly reports: {e}")
+        raise HTTPException(status_code=500, detail="Failed to toggle auto weekly reports")
 
 @api_router.get("/reports/check-auto-generation")
 async def check_auto_report_generation():
@@ -7146,7 +8147,7 @@ async def add_agent_memory(agent_id: str, request: dict):
 
 @api_router.post("/conversation/generate-enhanced")
 async def generate_enhanced_conversation(current_user: User = Depends(get_current_user)):
-    """Generate enhanced conversation with 3 messages per agent and detailed debugging"""
+    """Generate enhanced conversation with 1 message per agent (temporarily simplified for speed)"""
     # Create LLM manager for API calls
     llm_manager = LLMManager()
     
@@ -7191,110 +8192,56 @@ async def generate_enhanced_conversation(current_user: User = Depends(get_curren
     context += f"- Timeline documents for project planning\n"
     context += f"\nWhen you reach consensus or make important decisions, suggest creating a document to formalize it.\n"
     
-    # ===== ENHANCED ROUND STRUCTURE: 3 MESSAGES PER AGENT =====
+    # ===== SIMPLIFIED SYSTEM: 1 MESSAGE PER AGENT =====
+    # Each conversation = 1 message per agent for better flow and performance
     messages = []
     conversation_so_far = ""
     
-    print(f"🎯 TARGET: {len(agent_objects)} agents × 3 messages = {len(agent_objects) * 3} total messages")
+    print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages (SIMPLIFIED SYSTEM)")
     
-    # Generate 3 sequential messages per agent for deeper conversation
+    # Generate 1 message per agent for clean, simple conversations
     try:
-        for round_iteration in range(3):
-            print(f"🔄 Starting round {round_iteration + 1}/3 with {len(agent_objects)} agents...")
-            
-            for i, agent in enumerate(agent_objects):
-                try:
-                    print(f"  🤖 Generating message for {agent.name} (Round {round_iteration + 1}, Agent {i + 1}/{len(agent_objects)})")
-                    
-                    # Choose response type based on conversation flow and iteration with document focus
-                    if round_iteration == 0:
-                        # First iteration: Set the stage with document awareness
-                        if i == 0:
-                            agent_guidance = "Introduce the specific aspect of our challenge you want to tackle. Be clear about your focus area. Consider what documentation we might need."
-                        elif i == 1:
-                            agent_guidance = "Build on what was just introduced. Add your perspective and identify potential issues or opportunities. Think about what processes might need documentation."
-                        else:
-                            agent_guidance = "Analyze what's been discussed. Highlight the most critical points that need immediate attention and what documents could help formalize our approach."
-                    elif round_iteration == 1:
-                        # Second iteration: Deep dive with document planning
-                        if len(messages) < len(agent_objects) * 2:  # Still in second round
-                            agent_guidance = f"Reference specific points made by your teammates in their previous messages. Provide detailed analysis or concrete solutions. If you see consensus forming, consider proposing a document to capture it."
-                        else:
-                            agent_guidance = f"We're making good progress. Look at the solutions and decisions emerging. What specific documents should we create to formalize our conclusions?"
-                    else:
-                        # Third iteration: Synthesis and document creation
-                        agent_guidance = f"Synthesize the discussion so far. Make specific recommendations for both actions AND documents. If there's clear consensus on any point, suggest we create documentation for it."
-                    
-                    # Build comprehensive context including conversation history
-                    current_context = f"{context}\n\n{agent_guidance}\n"
-                    
-                    # Include ALL previous messages from this round for full context
-                    if messages:
-                        current_context += f"\nConversation so far:\n"
-                        # Group messages by agent to show conversation flow clearly
-                        agent_messages = {}
-                        for prev_msg in messages:
-                            if prev_msg.agent_name not in agent_messages:
-                                agent_messages[prev_msg.agent_name] = []
-                            agent_messages[prev_msg.agent_name].append(prev_msg.message)
-                        
-                        for agent_name, agent_msgs in agent_messages.items():
-                            if agent_name != agent.name:  # Don't show current agent's own messages
-                                for j, msg in enumerate(agent_msgs, 1):
-                                    current_context += f"• {agent_name} (Message {j}): {msg}\n"
-                        
-                        current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
-                    
-                    # Add delay to prevent rate limiting and ensure quality responses
-                    if len(messages) > 0:
-                        await asyncio.sleep(1)  # Reduced delay to prevent timeout issues
-                    
-                    response = await llm_manager.generate_agent_response(
-                        agent, scenario, agent_objects, current_context, [], "Respond in English.", existing_documents, state
-                    )
-                    
-                    message = ConversationMessage(
-                        agent_id=agent.id,
-                        agent_name=agent.name,
-                        message=response,
-                        mood=agent.current_mood
-                    )
-                    messages.append(message)
-                    
-                    # Update conversation_so_far for next agent
-                    conversation_so_far += f"{agent.name}: {response}\n"
-                    
-                    print(f"    ✅ Generated message for {agent.name} (Round {round_iteration + 1}, Total messages: {len(messages)})")
-                    
-                except Exception as agent_error:
-                    print(f"    ❌ Error generating message for {agent.name}: {agent_error}")
-                    # Continue with next agent instead of breaking
-                    continue
-            
-            print(f"✅ Completed round {round_iteration + 1}/3. Messages so far: {len(messages)}")
+        for i, agent in enumerate(agent_objects):
+            try:
+                print(f"  🤖 Generating message for {agent.name} ({i + 1}/{len(agent_objects)})")
+                
+                # Build comprehensive context including conversation history
+                current_context = f"{context}\n"
+                
+                # Include previous messages for context
+                if messages:
+                    current_context += f"\nConversation so far:\n"
+                    for prev_msg in messages:
+                        current_context += f"• {prev_msg.agent_name}: {prev_msg.message}\n"
+                    current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
+                
+                response = await llm_manager.generate_agent_response(
+                    agent, scenario, agent_objects, current_context, [], "Respond in English.", existing_documents, state
+                )
+                
+                message = ConversationMessage(
+                    agent_id=agent.id,
+                    agent_name=agent.name,
+                    message=response,
+                    mood=agent.current_mood
+                )
+                messages.append(message)
+                
+                # Update conversation_so_far for next agent
+                conversation_so_far += f"{agent.name}: {response}\n"
+                
+                print(f"  ✅ {agent.name}: {len(response)} chars")
+                
+            except Exception as agent_error:
+                print(f"  ❌ Error generating message for {agent.name}: {str(agent_error)[:100]}...")
+                # Continue with next agent instead of breaking
+                continue
     
     except Exception as e:
-        print(f"❌ Error in conversation generation loop: {e}")
+        print(f"❌ Error in message generation: {e}")
         # Continue with whatever messages we have
     
-    print(f"🎯 Completed conversation generation: {len(messages)} total messages from {len(agent_objects)} agents")
-    
-    # Verify we got the expected number of messages
-    expected_messages = len(agent_objects) * 3
-    if len(messages) == expected_messages:
-        print(f"✅ Perfect! Got exactly {expected_messages} messages as expected")
-    else:
-        print(f"⚠️ Expected {expected_messages} messages, got {len(messages)}")
-        
-        # Show distribution
-        agent_message_count = {}
-        for msg in messages:
-            agent_name = msg.agent_name
-            agent_message_count[agent_name] = agent_message_count.get(agent_name, 0) + 1
-        
-        for agent_name, count in sorted(agent_message_count.items()):
-            status = "✅" if count == 3 else "❌"
-            print(f"  {status} {agent_name}: {count} messages")
+    print(f"✅ Generated {len(messages)} total messages ({len(messages)}/{len(agent_objects)} target messages)")
     
     # Create conversation round  
     conversation_round = ConversationRound(
@@ -7307,6 +8254,9 @@ async def generate_enhanced_conversation(current_user: User = Depends(get_curren
     )
     
     await db.conversations.insert_one(conversation_round.dict())
+    
+    # Check for automatic time advancement after saving conversation  
+    await check_and_advance_time_automatically(current_user.id)
     
     return conversation_round
 
@@ -7441,7 +8391,7 @@ Respond to the CEO's message in 2-3 sentences. Be professional, authentic to you
             api_key=llm_manager.api_key,
             session_id=f"observer_{agent.id}_{datetime.now().timestamp()}",
             system_message=system_message
-        ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+        ).with_model("gemini", "gemini-2.5-flash")
         
         prompt = f"The CEO/Observer has sent this message to the team: '{observer_message}'\n\nRespond professionally based on your expertise and personality."
         
@@ -7577,6 +8527,527 @@ async def delete_agents_bulk_post(
         logging.error(f"Error deleting agents: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete agents: {str(e)}")
 
+@api_router.post("/conversation/add-contextual-message")
+async def add_contextual_message(current_user: User = Depends(get_current_user)):
+    """Add a contextually aware message that builds natural conversation flow"""
+    # Create LLM manager for API calls
+    llm_manager = LLMManager()
+    
+    # Get current user's agents
+    all_agents = await db.agents.find({"user_id": current_user.id}).to_list(100)
+    print(f"🔍 DEBUG: Found {len(all_agents)} agents for user {current_user.id}")
+    for agent in all_agents:
+        print(f"  - Agent: {agent.get('name', 'NO_NAME')} (ID: {agent.get('id', 'NO_ID')})")
+    
+    if len(all_agents) < 2:
+        raise HTTPException(status_code=400, detail="Need at least 2 agents for conversation.")
+    
+    # Get user's simulation state and scenario
+    state = await db.simulation_state.find_one({"user_id": current_user.id})
+    if not state:
+        raise HTTPException(status_code=400, detail="Please set a scenario first")
+    
+    scenario = state.get("scenario", "General discussion")
+    scenario_name = state.get("scenario_name", "Ongoing Discussion")
+    
+    # Get the current ongoing conversation or create one
+    current_conversation = await db.conversations.find_one(
+        {"user_id": current_user.id}, 
+        sort=[("created_at", -1)]
+    )
+    
+    if not current_conversation:
+        # Create the first ongoing conversation with dynamic time period
+        current_day = state.get("current_day", 1)
+        current_time_period = state.get("current_time_period", "morning")
+        time_period_display = f"Day {current_day} - {current_time_period.title()}"
+        
+        current_conversation = {
+            "id": str(uuid.uuid4()),
+            "user_id": current_user.id,
+            "round_number": 1,
+            "time_period": time_period_display,
+            "scenario": scenario,
+            "scenario_name": scenario_name,
+            "messages": [],
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "conversation_type": "contextual_flow",
+            "conversation_state": {
+                "topics_discussed": [],
+                "questions_asked": [],
+                "solutions_proposed": [],
+                "current_focus": "problem_identification",
+                "goal_progress": 0.0
+            }
+        }
+        await db.conversations.insert_one(current_conversation)
+    
+    # Analyze conversation context and select appropriate agent
+    conversation_messages = current_conversation.get("messages", [])
+    conversation_state = current_conversation.get("conversation_state", {})
+    
+    # Select next agent using enhanced context-aware selection
+    selected_agent = await select_contextual_agent(all_agents, conversation_messages, scenario)
+    
+    print(f"🤖 Selected {selected_agent.name} for contextual message generation")
+    
+    # Analyze conversation context for intelligent response generation
+    context_analysis = {
+        "needs_question": len(conversation_messages) % 3 == 0,
+        "needs_solution": len(conversation_messages) > 5,
+        "current_topic": "general discussion",
+        "responding_to": conversation_messages[-1].get("agent_name") if conversation_messages else None
+    }
+    
+    # Generate contextually aware message
+    try:
+        processed_memory = selected_agent.memory_summary or "No specific memories recorded."
+        
+        # Build comprehensive context for natural conversation
+        conversation_context = ""
+        if conversation_messages:
+            conversation_context = "Recent conversation:\n"
+            for msg in conversation_messages[-5:]:
+                agent_name = msg.get('agent_name', '')
+                message_text = msg.get('message', '')
+                conversation_context += f"{agent_name}: {message_text}\n"
+        
+        # Get relevant observer guidance for this scenario
+        observer_guidance = await get_relevant_observer_guidance(current_user.id, scenario, conversation_context)
+        
+        system_message = f"""You are {selected_agent.name} participating in a collaborative discussion about: {scenario}
+
+Your background: {selected_agent.background}
+Your expertise: {selected_agent.expertise}
+Your personality traits:
+- Extroversion: {selected_agent.personality.extroversion}/10
+- Optimism: {selected_agent.personality.optimism}/10
+- Curiosity: {selected_agent.personality.curiosity}/10
+- Cooperativeness: {selected_agent.personality.cooperativeness}/10
+- Energy: {selected_agent.personality.energy}/10
+
+Your memories: {processed_memory}
+
+{observer_guidance}
+
+CONVERSATION CONTEXT:
+{conversation_context}
+
+CRITICAL INSTRUCTIONS FOR NATURAL CONVERSATION:
+1. **RESPOND CONTEXTUALLY**: Build directly on what others have said, reference their specific ideas
+2. **ADDRESS OTHERS BY NAME**: Talk TO your colleagues, not just speak generally
+3. **ASK MEANINGFUL QUESTIONS**: When you need clarification or want to explore ideas deeper
+4. **ANSWER QUESTIONS DIRECTED AT YOU**: If someone asks you something, respond directly
+5. **WORK TOWARD SOLUTIONS**: Keep the goal in mind - we're trying to solve: {scenario}
+6. **BE CONVERSATIONAL**: Use natural language, show you're listening and thinking
+7. **BUILD ON IDEAS**: Don't just state your view - connect it to what others have contributed
+8. **SHOW EXPERTISE**: Apply your specific knowledge ({selected_agent.expertise}) to help solve the problem
+9. **FOLLOW OBSERVER GUIDANCE**: When relevant, reference or follow the Observer's directives above
+
+CONVERSATION FLOW GUIDELINES:
+- If someone just proposed an idea, respond to it specifically
+- If there's a question hanging (even if not directed at you), consider answering or building on it  
+- If you see an UNANSWERED GENERAL QUESTION, this is a great opportunity to contribute your perspective
+- If the conversation needs direction, ask a thoughtful question
+- If you disagree, do so constructively and explain why
+- Always keep the end goal in mind: finding a solution to {scenario}
+- Reference Observer guidance when it's relevant to the current discussion
+
+🎯 QUESTION RESPONSE PRIORITY:
+- If you see "GENERAL QUESTION" in the analysis above, consider offering your expertise on that topic
+- General questions are opportunities for anyone to contribute - don't wait to be specifically asked
+- Answer with your unique perspective based on your expertise in {selected_agent.expertise}
+
+Remember: This is a COLLABORATIVE discussion. Listen, respond, build, and work together toward a solution.
+
+Generate your next contextually aware message:"""
+
+        user_message = f"Continue the collaborative discussion about: {scenario}. Build on what others have said and work toward a solution."
+        
+        # Generate response using enhanced contextual prompting
+        response = await llm_manager.generate_agent_response(
+            agent=selected_agent,
+            scenario=scenario,
+            other_agents=[Agent(**agent) for agent in all_agents if agent.get('id') != selected_agent.id],
+            context=system_message,
+            conversation_history=conversation_messages[-10:]  # Last 10 messages for context
+        )
+        
+        if not response:
+            # Contextual fallback based on conversation state
+            if context_analysis.get("needs_question"):
+                response = f"I think we should explore this further. What are your thoughts on {context_analysis.get('current_topic', 'this approach')}?"
+            elif context_analysis.get("needs_solution"):
+                response = f"Based on my expertise in {selected_agent.expertise}, I believe we could approach this by focusing on the core challenge."
+            else:
+                response = f"Building on what's been discussed, I think my experience in {selected_agent.expertise} could help us move forward."
+        
+        # Create the new contextual message
+        new_message = {
+            "agent_name": selected_agent.name,
+            "agent_id": selected_agent.id,
+            "message": response,
+            "timestamp": datetime.utcnow(),
+            "message_id": str(uuid.uuid4()),
+            "message_type": "contextual_response",
+            "context_info": {
+                "responding_to": context_analysis.get("responding_to"),
+                "contains_question": "?" in response,
+                "addresses_agent": None,  # Simplified for now
+                "conversation_contribution": "statement"  # Simplified for now
+            }
+        }
+        
+        # Update conversation state based on new message
+        updated_state = conversation_state.copy()
+        if "?" in response:
+            updated_state.setdefault("questions_asked", []).append(response[:100])
+        if any(word in response.lower() for word in ["solution", "approach", "recommend"]):
+            updated_state.setdefault("solutions_proposed", []).append(response[:100])
+        
+        # Add message to the ongoing conversation
+        await db.conversations.update_one(
+            {"id": current_conversation["id"]},
+            {
+                "$push": {"messages": new_message},
+                "$set": {
+                    "updated_at": datetime.utcnow(),
+                    "conversation_state": updated_state
+                }
+            }
+        )
+        
+        # Check for automatic time advancement after adding message
+        await check_and_advance_time_automatically(current_user.id)
+        
+        print(f"✅ Added contextual message from {selected_agent.name}")
+        print(f"📝 Message type: {new_message['context_info']['conversation_contribution']}")
+        if new_message['context_info']['addresses_agent']:
+            print(f"👥 Addresses: {new_message['context_info']['addresses_agent']}")
+        
+        # Return the updated conversation with the new message
+        updated_conversation = await db.conversations.find_one({"id": current_conversation["id"]})
+        
+        # Convert ObjectId and datetime objects to JSON-serializable format
+        if updated_conversation:
+            updated_conversation.pop('_id', None)
+            if 'created_at' in updated_conversation:
+                updated_conversation['created_at'] = updated_conversation['created_at'].isoformat()
+            if 'updated_at' in updated_conversation:
+                updated_conversation['updated_at'] = updated_conversation['updated_at'].isoformat()
+            
+            # Convert message timestamps
+            for message in updated_conversation.get('messages', []):
+                if 'timestamp' in message and hasattr(message['timestamp'], 'isoformat'):
+                    message['timestamp'] = message['timestamp'].isoformat()
+        
+        return updated_conversation
+        
+    except Exception as e:
+        print(f"❌ Error generating contextual message for {selected_agent.name}: {e}")
+        # Return conversation without new message if generation fails
+        fallback_conversation = current_conversation.copy()
+        fallback_conversation.pop('_id', None)
+        if 'created_at' in fallback_conversation:
+            fallback_conversation['created_at'] = fallback_conversation['created_at'].isoformat()
+        if 'updated_at' in fallback_conversation:
+            fallback_conversation['updated_at'] = fallback_conversation['updated_at'].isoformat()
+        return fallback_conversation
+
+def analyze_conversation_context(messages, scenario):
+    """Analyze conversation context to determine what type of response is needed"""
+    if not messages:
+        return {
+            "needs_question": True,
+            "needs_solution": False,
+            "current_topic": scenario,
+            "responding_to": None,
+            "conversation_phase": "opening"
+        }
+    
+    recent_messages = messages[-3:] if len(messages) >= 3 else messages
+    last_message = messages[-1] if messages else None
+    
+    # Check if last message contains a question
+    has_recent_question = any("?" in msg.get("message", "") for msg in recent_messages)
+    
+    # Determine conversation phase
+    if len(messages) < 3:
+        phase = "opening"
+    elif len(messages) < 8:
+        phase = "exploration"
+    else:
+        phase = "solution_seeking"
+    
+    return {
+        "needs_question": not has_recent_question and len(messages) % 4 == 0,
+        "needs_solution": len(messages) > 6,
+        "current_topic": scenario,
+        "responding_to": last_message.get("agent_name") if last_message else None,
+        "conversation_phase": phase,
+        "has_recent_question": has_recent_question
+    }
+
+def extract_addressed_agent(message, all_agents):
+    """Extract which agent is being addressed in the message"""
+    agent_names = [agent.get("name", "") for agent in all_agents]
+    for name in agent_names:
+        if name.lower() in message.lower():
+            return name
+    return None
+
+def classify_message_type(message):
+    """Classify the type of message contribution"""
+    message_lower = message.lower()
+    
+    if "?" in message:
+        return "question"
+    elif any(word in message_lower for word in ["i think", "i believe", "in my opinion"]):
+        return "opinion"
+    elif any(word in message_lower for word in ["we should", "let's", "we could"]):
+        return "proposal"
+    elif any(word in message_lower for word in ["building on", "adding to", "following up"]):
+        return "building"
+    elif any(word in message_lower for word in ["however", "but", "on the other hand"]):
+        return "counterpoint"
+    else:
+        return "contribution"
+
+def update_conversation_state(current_state, new_message, all_messages):
+    """Update conversation state with round-robin tracking"""
+    updated_state = current_state.copy()
+    
+    # Initialize state if needed
+    if "topics_discussed" not in updated_state:
+        updated_state["topics_discussed"] = []
+    if "questions_asked" not in updated_state:
+        updated_state["questions_asked"] = []
+    if "solutions_proposed" not in updated_state:
+        updated_state["solutions_proposed"] = []
+    if "round_robin_stats" not in updated_state:
+        updated_state["round_robin_stats"] = {}
+    
+    # Track round-robin statistics
+    agent_name = new_message["agent_name"]
+    if agent_name not in updated_state["round_robin_stats"]:
+        updated_state["round_robin_stats"][agent_name] = {
+            "message_count": 0,
+            "last_message_index": -1
+        }
+    
+    updated_state["round_robin_stats"][agent_name]["message_count"] += 1
+    updated_state["round_robin_stats"][agent_name]["last_message_index"] = len(all_messages)
+    
+    # Calculate fairness score (how equal the participation is)
+    message_counts = [stats["message_count"] for stats in updated_state["round_robin_stats"].values()]
+    if len(message_counts) > 1:
+        fairness_score = 1.0 - (max(message_counts) - min(message_counts)) / max(message_counts, 1)
+        updated_state["participation_fairness"] = fairness_score
+    else:
+        updated_state["participation_fairness"] = 1.0
+    
+    # Track questions
+    if new_message["context_info"]["contains_question"]:
+        updated_state["questions_asked"].append({
+            "agent": new_message["agent_name"],
+            "question": new_message["message"],
+            "timestamp": new_message["timestamp"]
+        })
+    
+    # Track solutions
+    if "solution" in new_message["message"].lower() or "propose" in new_message["message"].lower():
+        updated_state["solutions_proposed"].append({
+            "agent": new_message["agent_name"],
+            "proposal": new_message["message"],
+            "timestamp": new_message["timestamp"]
+        })
+    
+    # Update progress and focus based on message count and content
+    message_count = len(all_messages) + 1
+    if message_count < 5:
+        updated_state["current_focus"] = "problem_identification"
+        updated_state["goal_progress"] = 0.2
+    elif message_count < 10:
+        updated_state["current_focus"] = "solution_exploration" 
+        updated_state["goal_progress"] = 0.5
+    else:
+        updated_state["current_focus"] = "solution_refinement"
+        updated_state["goal_progress"] = 0.8
+    
+    return updated_state
+
+async def select_contextual_agent(all_agents, conversation_messages, scenario):
+    """Select agent using STRICT ROUND-ROBIN rotation to ensure equal participation"""
+    if not conversation_messages:
+        # First message - select the first agent alphabetically for consistency
+        sorted_agents = sorted(all_agents, key=lambda x: x.get("name", ""))
+        return Agent(**sorted_agents[0])
+    
+    # Get the speaking order from recent messages
+    agent_names = [agent.get("name", "") for agent in all_agents]
+    sorted_agent_names = sorted(agent_names)  # Consistent ordering
+    
+    print(f"🔄 Available agents in order: {sorted_agent_names}")
+    
+    # Count messages per agent to ensure equal participation
+    agent_message_counts = {}
+    speaking_order = []
+    
+    for msg in conversation_messages:
+        agent_name = msg.get("agent_name", "")
+        if agent_name in agent_names:
+            agent_message_counts[agent_name] = agent_message_counts.get(agent_name, 0) + 1
+            speaking_order.append(agent_name)
+    
+    print(f"📊 Message counts: {agent_message_counts}")
+    print(f"🗣️ Speaking order: {speaking_order[-5:] if len(speaking_order) > 5 else speaking_order}")
+    
+    # STRICT ROUND-ROBIN LOGIC
+    if len(conversation_messages) == 0:
+        # First message
+        next_agent_name = sorted_agent_names[0]
+        print(f"🎯 First message - selecting: {next_agent_name}")
+    else:
+        # Determine next agent in round-robin order
+        last_speaker = speaking_order[-1] if speaking_order else None
+        
+        # Find current position in round-robin cycle
+        if last_speaker in sorted_agent_names:
+            current_index = sorted_agent_names.index(last_speaker)
+            next_index = (current_index + 1) % len(sorted_agent_names)
+            next_agent_name = sorted_agent_names[next_index]
+            print(f"🔄 Round-robin: {last_speaker} → {next_agent_name}")
+        else:
+            # Fallback: start with first agent
+            next_agent_name = sorted_agent_names[0]
+            print(f"🔄 Fallback: selecting {next_agent_name}")
+    
+    # Verify the selected agent doesn't speak consecutively (safety check)
+    if len(speaking_order) > 0 and speaking_order[-1] == next_agent_name:
+        # Emergency fallback - find different agent
+        for name in sorted_agent_names:
+            if name != next_agent_name:
+                next_agent_name = name
+                print(f"⚠️ Emergency fallback to prevent consecutive: {next_agent_name}")
+                break
+    
+    # Find and return the selected agent
+    for agent_doc in all_agents:
+        if agent_doc.get("name") == next_agent_name:
+            print(f"✅ Selected agent: {next_agent_name} (Round-robin enforced)")
+            return Agent(**agent_doc)
+    
+    # Ultimate fallback
+    print(f"⚠️ Ultimate fallback - returning first agent")
+    return Agent(**all_agents[0])
+
+def build_conversation_context(messages, all_agents, selected_agent, scenario, context_analysis):
+    """Build comprehensive conversation context for the agent"""
+    if not messages:
+        return f"This is the beginning of a collaborative discussion about: {scenario}\nYour goal is to contribute your expertise and work with others toward a solution."
+    
+    context = "CONVERSATION SO FAR:\n"
+    
+    # INVISIBLE SUMMARY SYSTEM: For long conversations (15+ messages), provide summary context
+    if len(messages) > 15:
+        # Get older messages (everything except last 6)
+        older_messages = messages[:-6]
+        
+        # Create invisible conversation summary for agent context
+        key_decisions = []
+        important_questions = []
+        solutions_proposed = []
+        
+        for msg in older_messages:
+            message_text = msg.get("message", "").lower()
+            agent_name = msg.get("agent_name", "")
+            
+            # Extract key decisions and agreements
+            if any(phrase in message_text for phrase in ["we should", "let's", "agreed", "decision", "conclude"]):
+                key_decisions.append(f"{agent_name}: {msg.get('message', '')[:100]}...")
+            
+            # Extract important questions that shaped discussion  
+            if "?" in message_text and any(word in message_text for word in ["how", "what", "why", "when", "where"]):
+                important_questions.append(f"{agent_name}: {msg.get('message', '')[:100]}...")
+            
+            # Extract solution proposals
+            if any(word in message_text for word in ["solution", "approach", "recommend", "suggest", "propose"]):
+                solutions_proposed.append(f"{agent_name}: {msg.get('message', '')[:100]}...")
+        
+        # Add invisible summary context (agent sees this, user doesn't)
+        if key_decisions or important_questions or solutions_proposed:
+            context += "EARLIER CONVERSATION HIGHLIGHTS:\n"
+            
+            if key_decisions:
+                context += f"Key Decisions/Agreements:\n"
+                for decision in key_decisions[-3:]:  # Last 3 most recent
+                    context += f"• {decision}\n"
+            
+            if solutions_proposed:
+                context += f"Solutions Discussed:\n" 
+                for solution in solutions_proposed[-3:]:  # Last 3 most recent
+                    context += f"• {solution}\n"
+            
+            if important_questions:
+                context += f"Key Questions Raised:\n"
+                for question in important_questions[-2:]:  # Last 2 most recent
+                    context += f"• {question}\n"
+            
+            context += "\n"
+    
+    # Include recent messages with analysis (existing functionality)
+    recent_messages = messages[-6:] if len(messages) > 6 else messages
+    context += "RECENT DISCUSSION:\n"
+    
+    unanswered_questions = []
+    
+    for i, msg in enumerate(recent_messages):
+        agent_name = msg.get("agent_name", "")
+        message_text = msg.get("message", "")
+        context += f"{agent_name}: {message_text}\n"
+        
+        # Detect unanswered questions
+        if "?" in message_text and agent_name != selected_agent.name:
+            # Check if this question was answered in subsequent messages
+            was_answered = False
+            remaining_messages = recent_messages[i+1:]
+            
+            for follow_msg in remaining_messages:
+                follow_text = follow_msg.get("message", "").lower()
+                # Simple heuristics to detect if someone answered
+                if any(word in follow_text for word in ["yes", "no", "i think", "my opinion", "i believe", "answer", "response"]):
+                    was_answered = True
+                    break
+            
+            if not was_answered:
+                unanswered_questions.append({
+                    "asker": agent_name,
+                    "question": message_text,
+                    "is_general": selected_agent.name.lower() not in message_text.lower()
+                })
+    
+    # Add contextual guidance
+    context += f"\nCONVERSATION ANALYSIS:\n"
+    context += f"- Current phase: {context_analysis.get('conversation_phase', 'discussion')}\n"
+    context += f"- Total messages so far: {len(messages)}\n"
+    
+    if unanswered_questions:
+        context += f"- UNANSWERED QUESTIONS DETECTED ({len(unanswered_questions)}):\n"
+        for q in unanswered_questions:
+            if q["is_general"]:
+                context += f"  • GENERAL QUESTION from {q['asker']}: {q['question'][:150]}...\n"
+                context += f"    → This question wasn't directed at anyone specific - you can offer your perspective!\n"
+            else:
+                context += f"  • Question from {q['asker']}: {q['question'][:150]}...\n"
+    
+    if context_analysis.get("responding_to"):
+        context += f"- Last speaker was: {context_analysis.get('responding_to')}\n"
+    
+    return context
+
+@api_router.post("/conversation/add-message")
+
 @api_router.post("/conversations/translate")
 async def translate_conversations(request: dict):
     """Translate all existing conversations to target language with improved error handling"""
@@ -7697,7 +9168,7 @@ Translate to {target_language_name}:"""
                 api_key=llm_manager.api_key,
                 session_id=f"translate_{target_language}_{datetime.now().timestamp()}",
                 system_message=f"You are a professional translator. Translate text to {target_language_name} while preserving tone and meaning. Only return the translated text, nothing else."
-            ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(300)
+            ).with_model("gemini", "gemini-2.5-flash")
             
             user_message = UserMessage(text=translation_prompt)
             translated_text = await chat.send_message(user_message)
@@ -8865,7 +10336,7 @@ async def transcribe_and_summarize_for_field(
             "word_count": len(summarized_text.split()) if summarized_text else 0,
             "processing_info": {
                 "model": "whisper-1",
-                "summarization": "gemini-2.0-flash",
+                "summarization": "gemini-2.5-flash",
                 "timestamp": datetime.utcnow().isoformat(),
                 "user_id": current_user.id
             }
@@ -8888,7 +10359,7 @@ async def create_field_appropriate_text(raw_text: str, field_type: str) -> str:
             api_key=llm_manager.api_key,
             session_id=f"field-{field_type}-{datetime.now().timestamp()}",
             system_message=f"You are a professional content creator. Transform the provided text to be appropriate for a {field_type} field while maintaining accuracy and professionalism. Keep it concise and clear."
-        ).with_model("gemini", "gemini-2.0-flash").with_max_tokens(200)
+        ).with_model("gemini", "gemini-2.5-flash")
         
         user_message = UserMessage(
             text=f"Transform this text to be appropriate for {field_type}: {raw_text}"

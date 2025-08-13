@@ -202,17 +202,17 @@ const AnalyticsDashboard = () => {
   const processedAnalytics = processAnalyticsData(analytics);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gradient-to-br from-slate-800 to-blue-900 min-h-screen p-6 rounded-xl">
       {/* Enhanced Header and Controls */}
-      <div className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-gray-600/30 shadow-2xl">
+      <div className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-slate-600/30 shadow-xl">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 space-y-4 lg:space-y-0">
           <div>
-            <h2 className="text-3xl font-bold text-gray-100 mb-2 flex items-center">
+            <h2 className="text-3xl font-bold text-white mb-2 flex items-center">
               <span className="text-4xl mr-3">📊</span>
               Analytics Dashboard
             </h2>
-            <p className="text-gray-300">Monitor your AI simulation performance and insights</p>
-            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-400">
+            <p className="text-blue-100">Monitor your AI simulation performance and insights</p>
+            <div className="flex items-center space-x-4 mt-2 text-sm text-blue-200">
               <span>📅 {processedAnalytics?.generated_at ? new Date(processedAnalytics.generated_at).toLocaleDateString() : 'Today'}</span>
               <span>👤 {user?.name || 'User'}</span>
               <span>🔄 Auto-refresh: On</span>
@@ -222,15 +222,15 @@ const AnalyticsDashboard = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
             {/* Time Range Selector */}
             <div className="flex items-center space-x-2">
-              <span className="text-gray-300 text-sm font-medium">Period:</span>
+              <span className="text-blue-100 text-sm font-medium">Period:</span>
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value)}
-                className="px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 backdrop-blur-sm"
+                className="px-4 py-2 bg-slate-700/80 border border-slate-600 rounded-lg text-blue-100 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm"
               >
-                <option value="7d" className="bg-gray-800 text-gray-100">Last 7 days</option>
-                <option value="30d" className="bg-gray-800 text-gray-100">Last 30 days</option>
-                <option value="90d" className="bg-gray-800 text-gray-100">Last 90 days</option>
+                <option value="7d" className="bg-slate-700 text-blue-100">Last 7 days</option>
+                <option value="30d" className="bg-slate-700 text-blue-100">Last 30 days</option>
+                <option value="90d" className="bg-slate-700 text-blue-100">Last 90 days</option>
               </select>
             </div>
             
@@ -242,7 +242,7 @@ const AnalyticsDashboard = () => {
                   fetchWeeklyData();
                 }}
                 disabled={loading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 shadow-lg"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 shadow-lg border border-blue-500"
               >
                 <span>🔄</span>
                 <span>Refresh</span>
@@ -262,22 +262,22 @@ const AnalyticsDashboard = () => {
         
         {/* Quick Metrics Preview */}
         {processedAnalytics && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-600/30">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-100">{formatNumber(processedAnalytics.conversations.total)}</div>
-              <div className="text-gray-400 text-sm">Total Conversations</div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-600/40">
+            <div className="text-center bg-slate-700/50 rounded-lg p-4 border border-slate-600/30">
+              <div className="text-2xl font-bold text-white">{formatNumber(processedAnalytics.conversations.total)}</div>
+              <div className="text-blue-200 text-sm">Total Conversations</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-100">{processedAnalytics.agents.total}</div>
-              <div className="text-gray-400 text-sm">Active Agents</div>
+            <div className="text-center bg-slate-700/50 rounded-lg p-4 border border-slate-600/30">
+              <div className="text-2xl font-bold text-white">{processedAnalytics.agents.total}</div>
+              <div className="text-green-200 text-sm">Active Agents</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-100">{formatNumber(processedAnalytics.documents.total)}</div>
-              <div className="text-gray-400 text-sm">Documents Generated</div>
+            <div className="text-center bg-slate-700/50 rounded-lg p-4 border border-slate-600/30">
+              <div className="text-2xl font-bold text-white">{formatNumber(processedAnalytics.documents.total)}</div>
+              <div className="text-purple-200 text-sm">Documents Generated</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-100">{formatDuration(processedAnalytics.simulation_time.total)}</div>
-              <div className="text-gray-400 text-sm">Total Simulation Time</div>
+            <div className="text-center bg-slate-700/50 rounded-lg p-4 border border-slate-600/30">
+              <div className="text-2xl font-bold text-white">{formatDuration(processedAnalytics.simulation_time.total)}</div>
+              <div className="text-orange-200 text-sm">Total Simulation Time</div>
             </div>
           </div>
         )}
@@ -291,10 +291,10 @@ const AnalyticsDashboard = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.02 }}
-            className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-blue-600/40 hover:border-blue-500/60 transition-all duration-300 shadow-xl"
+            className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-blue-500/30 hover:border-blue-400/50 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
                 <span className="text-2xl">💬</span>
               </div>
               <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.conversations?.growth)}`}>
@@ -302,10 +302,10 @@ const AnalyticsDashboard = () => {
                 <span className="text-sm font-medium">{processedAnalytics.conversations?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
-            <div className="text-gray-100">
+            <div className="text-white">
               <div className="text-3xl font-bold mb-1">{formatNumber(processedAnalytics.conversations?.total || 0)}</div>
-              <div className="text-gray-300 text-sm font-medium">Total Conversations</div>
-              <div className="text-gray-500 text-xs mt-2">
+              <div className="text-blue-200 text-sm font-medium">Total Conversations</div>
+              <div className="text-blue-300 text-xs mt-2">
                 +{processedAnalytics.conversations?.weekly || 0} this week
               </div>
             </div>
@@ -317,10 +317,10 @@ const AnalyticsDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             whileHover={{ scale: 1.02 }}
-            className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-green-600/40 hover:border-green-500/60 transition-all duration-300 shadow-xl"
+            className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-green-500/30 hover:border-green-400/50 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
                 <span className="text-2xl">🤖</span>
               </div>
               <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.agents?.growth)}`}>
@@ -328,10 +328,10 @@ const AnalyticsDashboard = () => {
                 <span className="text-sm font-medium">{processedAnalytics.agents?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
-            <div className="text-gray-100">
+            <div className="text-white">
               <div className="text-3xl font-bold mb-1">{formatNumber(processedAnalytics.agents?.active || 0)}</div>
-              <div className="text-gray-300 text-sm font-medium">Active Agents</div>
-              <div className="text-gray-500 text-xs mt-2">
+              <div className="text-green-200 text-sm font-medium">Active Agents</div>
+              <div className="text-green-300 text-xs mt-2">
                 Performance: {processedAnalytics.agents?.average_performance?.toFixed(1) || '0'}/10
               </div>
             </div>
@@ -343,10 +343,10 @@ const AnalyticsDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             whileHover={{ scale: 1.02 }}
-            className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-purple-600/40 hover:border-purple-500/60 transition-all duration-300 shadow-xl"
+            className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-600 to-purple-700 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
                 <span className="text-2xl">📄</span>
               </div>
               <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.documents?.growth)}`}>
@@ -354,10 +354,10 @@ const AnalyticsDashboard = () => {
                 <span className="text-sm font-medium">{processedAnalytics.documents?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
-            <div className="text-gray-100">
+            <div className="text-white">
               <div className="text-3xl font-bold mb-1">{formatNumber(processedAnalytics.documents?.total || 0)}</div>
-              <div className="text-gray-300 text-sm font-medium">Documents Generated</div>
-              <div className="text-gray-500 text-xs mt-2">
+              <div className="text-purple-200 text-sm font-medium">Documents Generated</div>
+              <div className="text-purple-300 text-xs mt-2">
                 +{processedAnalytics.documents?.weekly || 0} this week
               </div>
             </div>
@@ -369,10 +369,10 @@ const AnalyticsDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             whileHover={{ scale: 1.02 }}
-            className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-orange-600/40 hover:border-orange-500/60 transition-all duration-300 shadow-xl"
+            className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-orange-500/30 hover:border-orange-400/50 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-600 to-orange-700 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-md">
                 <span className="text-2xl">⏱️</span>
               </div>
               <div className={`flex items-center space-x-1 ${getGrowthColor(processedAnalytics.simulation_time?.growth)}`}>
@@ -380,10 +380,10 @@ const AnalyticsDashboard = () => {
                 <span className="text-sm font-medium">{processedAnalytics.simulation_time?.growth?.toFixed(1) || '0'}%</span>
               </div>
             </div>
-            <div className="text-gray-100">
+            <div className="text-white">
               <div className="text-3xl font-bold mb-1">{formatDuration(processedAnalytics.simulation_time?.total || 0)}</div>
-              <div className="text-gray-300 text-sm font-medium">Simulation Time</div>
-              <div className="text-gray-500 text-xs mt-2">
+              <div className="text-orange-200 text-sm font-medium">Simulation Time</div>
+              <div className="text-orange-300 text-xs mt-2">
                 Avg: {formatDuration((processedAnalytics.simulation_time?.total || 0) / Math.max(processedAnalytics.conversations?.total || 1, 1))} per conversation
               </div>
             </div>
@@ -398,10 +398,10 @@ const AnalyticsDashboard = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-gray-600/30 shadow-xl"
+          className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-slate-600/30 shadow-lg"
         >
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-100 flex items-center">
+            <h3 className="text-xl font-bold text-white flex items-center">
               <span className="text-2xl mr-2">📈</span>
               Activity Overview
             </h3>
@@ -411,7 +411,7 @@ const AnalyticsDashboard = () => {
                 className={`px-3 py-1 rounded-lg text-sm transition-all font-medium ${
                   selectedMetric === 'conversations' 
                     ? 'bg-blue-600 text-white shadow-lg' 
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-slate-700/50 text-blue-200 hover:bg-slate-600/50'
                 }`}
               >
                 Conversations
@@ -421,7 +421,7 @@ const AnalyticsDashboard = () => {
                 className={`px-3 py-1 rounded-lg text-sm transition-all font-medium ${
                   selectedMetric === 'agents' 
                     ? 'bg-green-600 text-white shadow-lg' 
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-slate-700/50 text-green-200 hover:bg-slate-600/50'
                 }`}
               >
                 Agents
@@ -508,9 +508,9 @@ const AnalyticsDashboard = () => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-gray-900/95 backdrop-blur-lg rounded-xl p-6 border border-gray-600/30 shadow-xl"
+          className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-slate-600/30 shadow-lg"
         >
-          <h3 className="text-xl font-bold text-gray-100 mb-6 flex items-center">
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center">
             <span className="text-2xl mr-2">🏆</span>
             Top Performing Agents
           </h3>
@@ -523,7 +523,7 @@ const AnalyticsDashboard = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + index * 0.1 }}
-                  className="flex items-center space-x-4 p-4 bg-gray-800/60 rounded-lg hover:bg-gray-700/60 transition-all duration-200 group"
+                  className="flex items-center space-x-4 p-4 bg-slate-700/50 rounded-lg hover:bg-slate-700/70 transition-all duration-200 group border border-slate-600/40"
                 >
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold ${
                     index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600 text-yellow-900' : 
@@ -536,56 +536,56 @@ const AnalyticsDashboard = () => {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
-                      <div className="text-gray-100 font-medium truncate">{agent.name}</div>
-                      <span className="text-xs bg-gray-700 text-gray-300 px-2 py-1 rounded-full">
+                      <div className="text-white font-medium truncate">{agent.name}</div>
+                      <span className="text-xs bg-white/10 text-blue-200 px-2 py-1 rounded-full border border-white/20">
                         {agent.archetype}
                       </span>
                     </div>
-                    <div className="text-gray-400 text-sm">
+                    <div className="text-blue-200 text-sm">
                       {agent.conversations} conversations
                     </div>
                     
                     {/* Performance Bar */}
                     <div className="mt-2">
                       <div className="flex items-center space-x-2">
-                        <div className="flex-1 bg-gray-700 rounded-full h-2">
+                        <div className="flex-1 bg-white/10 rounded-full h-2">
                           <motion.div
                             initial={{ width: 0 }}
                             animate={{ width: `${(agent.performance_score / 10) * 100}%` }}
                             transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
                             className={`h-2 rounded-full ${
-                              index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                              index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-500' :
-                              index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600' :
-                              'bg-gradient-to-r from-blue-400 to-blue-600'
+                              index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' : 
+                              index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-400' : 
+                              index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-500' : 
+                              'bg-gradient-to-r from-blue-400 to-blue-500'
                             }`}
                           />
                         </div>
-                        <div className="text-gray-200 text-sm font-medium min-w-0">
+                        <div className="text-white text-sm font-medium min-w-0">
                           {agent.performance_score?.toFixed(1) || 'N/A'}/10
                         </div>
                       </div>
                     </div>
                   </div>
                   
-                  <div className="text-gray-400 group-hover:text-gray-300 transition-colors">
+                  <div className="text-blue-200 group-hover:text-white transition-colors">
                     #{index + 1}
                   </div>
                 </motion.div>
               ))}
               
               {/* View All Button */}
-              <div className="pt-4 border-t border-gray-600/30">
-                <button className="w-full py-2 text-gray-300 hover:text-gray-100 text-sm hover:bg-gray-800/40 rounded-lg transition-all">
+              <div className="pt-4 border-t border-white/20">
+                <button className="w-full py-2 text-blue-200 hover:text-white text-sm hover:bg-white/10 rounded-lg transition-all border border-white/10 hover:border-white/20">
                   View All Agents →
                 </button>
               </div>
             </div>
           ) : (
-            <div className="text-center text-gray-400 py-12">
+            <div className="text-center text-blue-200 py-12">
               <div className="text-6xl mb-4">🤖</div>
-              <p>No agents data available</p>
-              <p className="text-sm mt-2">Create some agents to see performance metrics!</p>
+              <p className="text-white">No agents data available</p>
+              <p className="text-sm mt-2 text-blue-300">Create some agents to see performance metrics!</p>
             </div>
           )}
         </motion.div>
@@ -597,7 +597,7 @@ const AnalyticsDashboard = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="bg-gradient-to-br from-slate-800/40 to-slate-900/40 backdrop-blur-lg rounded-xl p-6 border border-white/10"
+          className="bg-slate-800/80 backdrop-blur-lg rounded-xl p-6 border border-slate-600/30 shadow-lg"
         >
           <h3 className="text-xl font-bold text-white mb-6 flex items-center">
             <span className="text-2xl mr-2">📋</span>
@@ -606,32 +606,32 @@ const AnalyticsDashboard = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Conversation Stats */}
-            <div className="bg-blue-500/20 rounded-lg p-5 border border-blue-300/30">
+            <div className="bg-slate-700/60 rounded-lg p-5 border border-blue-500/30">
               <h4 className="text-white font-semibold mb-4 flex items-center">
                 <span className="text-xl mr-2">💬</span>
                 Conversations
               </h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Total Messages:</span>
+                  <span className="text-blue-200">Total Messages:</span>
                   <span className="text-white font-medium">{formatNumber(processedAnalytics.messages?.total || 0)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Avg per Conversation:</span>
+                  <span className="text-blue-200">Avg per Conversation:</span>
                   <span className="text-white font-medium">{processedAnalytics.messages?.average_per_conversation?.toFixed(1) || '0'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">This Week:</span>
+                  <span className="text-blue-200">This Week:</span>
                   <span className="text-white font-medium">{processedAnalytics.conversations?.weekly || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">This Month:</span>
+                  <span className="text-blue-200">This Month:</span>
                   <span className="text-white font-medium">{processedAnalytics.conversations?.monthly || 0}</span>
                 </div>
                 
                 {/* Progress Bar for Monthly Goal */}
                 <div className="pt-2">
-                  <div className="flex justify-between text-xs text-white/60 mb-1">
+                  <div className="flex justify-between text-xs text-blue-200 mb-1">
                     <span>Monthly Progress</span>
                     <span>{((processedAnalytics.conversations?.monthly || 0) / 100 * 100).toFixed(0)}%</span>
                   </div>
@@ -648,32 +648,32 @@ const AnalyticsDashboard = () => {
             </div>
 
             {/* Agent Performance */}
-            <div className="bg-green-500/20 rounded-lg p-5 border border-green-300/30">
+            <div className="bg-slate-700/60 rounded-lg p-5 border border-green-500/30">
               <h4 className="text-white font-semibold mb-4 flex items-center">
                 <span className="text-xl mr-2">🤖</span>
                 Agent Performance
               </h4>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Total Agents:</span>
+                  <span className="text-green-200">Total Agents:</span>
                   <span className="text-white font-medium">{processedAnalytics.agents?.total || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Most Active:</span>
+                  <span className="text-green-200">Most Active:</span>
                   <span className="text-white font-medium truncate ml-2">{processedAnalytics.agents?.most_active || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Avg Performance:</span>
+                  <span className="text-green-200">Avg Performance:</span>
                   <span className="text-white font-medium">{processedAnalytics.agents?.average_performance?.toFixed(1) || '0'}/10</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white/60">Created This Week:</span>
+                  <span className="text-green-200">Created This Week:</span>
                   <span className="text-white font-medium">{processedAnalytics.agents?.weekly || 0}</span>
                 </div>
                 
                 {/* Performance Gauge */}
                 <div className="pt-2">
-                  <div className="flex justify-between text-xs text-white/60 mb-1">
+                  <div className="flex justify-between text-xs text-green-200 mb-1">
                     <span>Overall Performance</span>
                     <span>{processedAnalytics.agents?.average_performance?.toFixed(1) || '0'}/10</span>
                   </div>

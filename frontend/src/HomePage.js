@@ -6,7 +6,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const HomePage = ({ onAuthenticated }) => {
-  const { login, testLogin } = useAuth();
+  const { login } = useAuth(); // Removed testLogin
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -267,31 +267,6 @@ const HomePage = ({ onAuthenticated }) => {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
                 <span>Continue with Google</span>
-              </button>
-              
-              <button
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    console.log('🔍 TEST LOGIN DEBUG: Attempting guest login');
-                    const result = await testLogin();
-                    
-                    if (result.success) {
-                      console.log('✅ TEST LOGIN SUCCESS');
-                      // AuthContext will handle the state update automatically
-                    } else {
-                      console.error('❌ TEST LOGIN ERROR:', result.error);
-                      setError(result.error || 'Guest login failed. Please try again.');
-                    }
-                  } catch (error) {
-                    console.error('❌ TEST LOGIN ERROR:', error);
-                    setError('Guest login failed. Please try again.');
-                  }
-                  setLoading(false);
-                }}
-                className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
-              >
-                <span>🧪 Continue as Guest</span>
               </button>
             </div>
 

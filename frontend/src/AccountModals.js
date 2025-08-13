@@ -270,8 +270,8 @@ export const ProfileSettingsModal = ({ isOpen, onClose, user, analyticsData, tok
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 pt-12">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[85vh] overflow-hidden mt-2">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex justify-between items-center">
@@ -522,8 +522,8 @@ export const PreferencesModal = ({ isOpen, onClose, audioNarrativeEnabled }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 pt-12">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[85vh] overflow-hidden mt-2">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6">
           <div className="flex justify-between items-center">
@@ -738,8 +738,8 @@ export const HelpSupportModal = ({ isOpen, onClose, onOpenFeedback }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 pt-12">
+      <div className="bg-white rounded-lg w-full max-w-6xl max-h-[85vh] overflow-hidden mt-2">
         {/* Header */}
         <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-6">
           <div className="flex justify-between items-center">
@@ -973,8 +973,8 @@ export const FeedbackModal = ({ isOpen, onClose, token }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4 pt-12">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[85vh] overflow-hidden mt-2">
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white p-6">
           <div className="flex justify-between items-center">
