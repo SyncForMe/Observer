@@ -729,33 +729,6 @@ const ConversationViewer = () => {
                   </div>
                 )}
               </div>
-              
-              {/* Individual Delete Button */}
-              <div className="flex justify-end">
-                <button  
-                  onClick={async () => {
-                    if (window.confirm('Are you sure you want to delete this conversation? This action cannot be undone.')) {
-                      setDeleteLoading(true);
-                      try {
-                        await axios.delete(`${API}/conversations/${selectedConversation.id}`, {
-                          headers: { Authorization: `Bearer ${token}` }
-                        });
-                        await fetchConversations();
-                        setSelectedConversation(null);
-                        alert('Conversation deleted successfully');
-                      } catch (error) {
-                        console.error('Failed to delete conversation:', error);
-                        alert('Failed to delete conversation. Please try again.');
-                      }
-                      setDeleteLoading(false);
-                    }
-                  }}
-                  disabled={deleteLoading}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 hover:text-red-100 rounded-lg text-sm transition-all duration-200 disabled:opacity-50"
-                >
-                  {deleteLoading ? 'Deleting...' : 'Delete'}
-                </button>
-              </div>
             </div>
           )}
         </div>
