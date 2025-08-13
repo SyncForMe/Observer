@@ -176,33 +176,40 @@ def print_summary():
     print("="*80)
 
 def step_1_create_test_user_and_initial_profile():
-    """Step 1: Create a test user and save initial profile data"""
+    """Step 1: Login as existing test user and get initial profile data"""
     global auth_token, test_user_id, test_user_email, initial_profile_data
     
     print("\n" + "="*80)
-    print("STEP 1: CREATE TEST USER AND INITIAL PROFILE DATA")
+    print("STEP 1: LOGIN AS EXISTING TEST USER AND GET INITIAL PROFILE DATA")
     print("="*80)
     
-    # First, authenticate as a test user
-    guest_test, guest_response = run_test(
-        "Create Test User (Guest Login)",
-        "/auth/test-login",
+    # Use existing test user credentials
+    test_credentials = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    
+    # Authenticate with existing test user
+    login_test, login_response = run_test(
+        "Login as Existing Test User",
+        "/auth/login",
         method="POST",
+        data=test_credentials,
         expected_keys=["access_token", "token_type", "user"],
         measure_time=True
     )
     
-    if not guest_test or not guest_response:
-        print("❌ Failed to create test user")
+    if not login_test or not login_response:
+        print("❌ Failed to login as test user")
         return False
     
     # Extract authentication details
-    auth_token = guest_response.get("access_token")
-    user_data = guest_response.get("user", {})
+    auth_token = login_response.get("access_token")
+    user_data = login_response.get("user", {})
     test_user_id = user_data.get("id")
     test_user_email = user_data.get("email")
     
-    print(f"✅ Test user created successfully")
+    print(f"✅ Test user login successful")
     print(f"   User ID: {test_user_id}")
     print(f"   Email: {test_user_email}")
     
