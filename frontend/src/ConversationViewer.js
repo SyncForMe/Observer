@@ -839,6 +839,17 @@ const ConversationViewer = () => {
         document={selectedDocument}
         type={documentType}
       />
+
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setConversationToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        conversationTitle={conversationToDelete?.title || ''}
+        isDeleting={deleteLoading}
+      />
     </div>
   );
 };
