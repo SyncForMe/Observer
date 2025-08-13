@@ -102,6 +102,7 @@ class UserResponse(BaseModel):
     email: str
     name: str
     picture: str
+    bio: str = ""  # Add bio field to UserResponse
     created_at: datetime
     last_login: datetime
 
