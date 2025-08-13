@@ -324,7 +324,7 @@ const ConversationViewer = () => {
     const conversationIds = Array.from(selectedConversations);
     
     try {
-      // Delete conversations one by one (backend doesn't have bulk delete endpoint yet)
+      // Delete conversations one by one
       const deletePromises = conversationIds.map(async (conversationId) => {
         try {
           await axios.delete(`${API}/conversations/${conversationId}`, {
@@ -381,14 +381,20 @@ const ConversationViewer = () => {
     return `Conversation ${conversation.id.slice(0, 8)}`;
   };
 
+  const openDocumentModal = (doc, type) => {
+    setSelectedDocument(doc);
+    setDocumentType(type);
+    setShowDocumentModal(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Controls */}
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">💬 My Conversations</h2>
-            <p className="text-white/80">View and manage your conversation history</p>
+            <h2 className="text-2xl font-bold text-white mb-2">💬 My Conversation Archive</h2>
+            <p className="text-white/80">Permanent archive of all your conversations - preserved across Fresh Start</p>
           </div>
           <div className="flex items-center space-x-4">
             <button
@@ -462,7 +468,7 @@ const ConversationViewer = () => {
 
       {/* Conversations Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Conversation List */}
+        {/* Conversation List */}        
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
           <h3 className="text-xl font-bold text-white mb-4">
             {searchQuery 
@@ -482,7 +488,7 @@ const ConversationViewer = () => {
               ) : (
                 <>
                   <p>No conversations yet</p>
-                  <p className="text-sm">Generate a conversation to get started</p>
+                  <p className="text-sm">Start a simulation to create conversations</p>
                 </>
               )}
             </div>
@@ -524,7 +530,7 @@ const ConversationViewer = () => {
                     
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="text-white font-semibold">
+                        <h4 className="text-white font-semibold text-sm">
                           {getConversationTitle(conversation)}
                         </h4>
                         <span className="text-white/40 text-xs">
@@ -532,32 +538,31 @@ const ConversationViewer = () => {
                         </span>
                       </div>
                       
-                      <div className="text-white/70 text-sm mb-2">
-                        {conversation.scenario || 'General Discussion'}
-                      </div>
+                      {/* Expandable Scenario Details */}
+                      {conversation.scenario && (
+                        <div className="mb-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedScenario(expandedScenario === conversation.id ? null : conversation.id);
+                            }}
+                            className="text-white/70 text-xs hover:text-white/90 flex items-center space-x-1"
+                          >
+                            <span>{expandedScenario === conversation.id ? '🔽' : '▶️'}</span>
+                            <span>View Scenario Details</span>
+                          </button>
+                          {expandedScenario === conversation.id && (
+                            <div className="mt-2 p-2 bg-white/5 rounded text-white/80 text-xs">
+                              {conversation.scenario}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
                       <div className="flex justify-between items-center">
                         <span className="text-white/60 text-xs">
                           {conversation.messages?.length || 0} messages • {conversation.time_period || 'Unknown time'}
                         </span>
-                        {conversation.agents && conversation.agents.length > 0 && (
-                          <div className="flex space-x-1">
-                            {conversation.agents.slice(0, 3).map((agent, idx) => (
-                              <div
-                                key={idx}
-                                className="w-6 h-6 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-xs text-white"
-                                title={agent}
-                              >
-                                {agent[0]}
-                              </div>
-                            ))}
-                            {conversation.agents.length > 3 && (
-                              <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs text-white">
-                                +{conversation.agents.length - 3}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
