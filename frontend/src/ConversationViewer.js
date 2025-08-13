@@ -633,7 +633,7 @@ const ConversationViewer = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-hidden hover:overflow-y-auto" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+            <div className="space-y-4 max-h-96 overflow-y-hidden hover:overflow-y-auto p-1" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
               <style jsx>{`
                 div::-webkit-scrollbar {
                   display: none;
@@ -652,8 +652,8 @@ const ConversationViewer = () => {
                           ? ' bg-blue-600/30 border border-blue-400/50'
                           : ' bg-white/5 hover:bg-white/10 border border-white/10')
                   }`}
-                  whileHover={{ scale: bulkDeleteMode ? 1.01 : 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: bulkDeleteMode ? 1.005 : 1.01 }}
+                  whileTap={{ scale: 0.99 }}
                 >
                   <div className="flex items-start space-x-3">
                     {bulkDeleteMode && (
