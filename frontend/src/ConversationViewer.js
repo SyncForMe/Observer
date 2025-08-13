@@ -5,16 +5,199 @@ import { useAuth } from './AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
 
-// Enhanced Conversation Viewer Component with Search and Bulk Delete
+// Conversation View Modal Component
+const ConversationViewModal = ({ isOpen, onClose, conversation }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [highlightedMessage, setHighlightedMessage] = useState(null);
+  
+  if (!isOpen || !conversation) return null;
+
+  // Filter messages based on search query
+  const filteredMessages = conversation.messages?.filter(msg => 
+    msg.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    msg.agent_name.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold">{conversation.scenario_name || 'Conversation'}</h2>
+              <p className="text-white/80 text-sm">{conversation.messages?.length || 0} messages • Round #{conversation.round_number || 1}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="mt-4">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search messages or agent names..."
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-white/30"
+            />
+            {searchQuery && (
+              <p className="text-white/70 text-sm mt-1">
+                Found {filteredMessages.length} message{filteredMessages.length !== 1 ? 's' : ''} matching "{searchQuery}"
+              </p>
+            )}
+          </div>
+        </div>
+        
+        <div className="p-4 overflow-y-auto" style={{maxHeight: 'calc(90vh - 140px)'}}>
+          {filteredMessages.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              {searchQuery ? (
+                <>
+                  <div className="text-4xl mb-2">🔍</div>
+                  <p>No messages found matching "{searchQuery}"</p>
+                </>
+              ) : (
+                <>
+                  <div className="text-4xl mb-2">💬</div>
+                  <p>No messages in this conversation</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredMessages.map((message, index) => (
+                <div key={index} className="flex space-x-3 p-3 rounded-lg bg-gray-50">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium">
+                    {message.agent_name?.[0] || '?'}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="font-semibold text-gray-900">
+                        {message.agent_name || 'Unknown Agent'}
+                      </span>
+                      <span className="text-gray-500 text-sm">
+                        {new Date(message.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-gray-700 leading-relaxed">
+                      {searchQuery ? (
+                        <span dangerouslySetInnerHTML={{
+                          __html: message.message.replace(
+                            new RegExp(`(${searchQuery})`, 'gi'),
+                            '<mark class="bg-yellow-200 px-1 rounded">$1</mark>'
+                          )
+                        }} />
+                      ) : (
+                        message.message
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Document/Report View Modal Component
+const DocumentModal = ({ isOpen, onClose, document, type = 'document' }) => {
+  const { token } = useAuth();
+  const [downloading, setDownloading] = useState(false);
+
+  if (!isOpen || !document) return null;
+
+  const downloadPDF = async () => {
+    setDownloading(true);
+    try {
+      const endpoint = type === 'report' 
+        ? `/reports/${document.id}/download-pdf`
+        : `/documents/${document.id}/download-pdf`;
+      
+      const response = await axios.get(`${API}${endpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${document.title || 'document'}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      alert('Failed to download PDF. Please try again.');
+    }
+    setDownloading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white p-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-bold">{document.title || `Untitled ${type}`}</h2>
+              <p className="text-white/80 text-sm">
+                {type === 'document' ? `Created by ${document.creator_agent || 'Unknown'}` : 'Generated Report'} • 
+                {new Date(document.created_at).toLocaleDateString()}
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={downloadPDF}
+                disabled={downloading}
+                className="px-3 py-1 bg-white/20 hover:bg-white/30 text-white rounded text-sm transition-all duration-200 disabled:opacity-50"
+              >
+                {downloading ? '⏳ Downloading...' : '📥 Download PDF'}
+              </button>
+              <button
+                onClick={onClose}
+                className="text-white/70 hover:text-white text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6 overflow-y-auto" style={{maxHeight: 'calc(90vh - 100px)'}}>
+          <div className="prose max-w-none">
+            <div dangerouslySetInnerHTML={{ __html: document.content || 'No content available' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Enhanced Conversation Viewer Component with Permanent Archive
 const ConversationViewer = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
+  const [conversationReports, setConversationReports] = useState([]);
+  const [conversationDocuments, setConversationDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedConversations, setSelectedConversations] = useState(new Set());
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [expandedScenario, setExpandedScenario] = useState(null);
+  const [showConversationModal, setShowConversationModal] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [documentType, setDocumentType] = useState('document');
   const messagesEndRef = useRef(null);
   const { user, token } = useAuth();
 
@@ -24,7 +207,7 @@ const ConversationViewer = () => {
     
     let interval;
     if (autoRefresh) {
-      interval = setInterval(fetchConversations, 5000); // Increased to 5 seconds for better performance
+      interval = setInterval(fetchConversations, 5000);
     }
     
     return () => {
@@ -32,10 +215,11 @@ const ConversationViewer = () => {
     };
   }, [autoRefresh]);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Fetch related data when conversation is selected
   useEffect(() => {
     if (selectedConversation) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      fetchConversationReports(selectedConversation.id);
+      fetchConversationDocuments(selectedConversation.id);
     }
   }, [selectedConversation]);
 
@@ -61,6 +245,30 @@ const ConversationViewer = () => {
       }
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
+    }
+  };
+
+  const fetchConversationReports = async (conversationId) => {
+    try {
+      const response = await axios.get(`${API}/conversations/${conversationId}/reports`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversationReports(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch conversation reports:', error);
+      setConversationReports([]);
+    }
+  };
+
+  const fetchConversationDocuments = async (conversationId) => {
+    try {
+      const response = await axios.get(`${API}/conversations/${conversationId}/documents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConversationDocuments(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch conversation documents:', error);
+      setConversationDocuments([]);
     }
   };
 
