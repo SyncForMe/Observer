@@ -265,11 +265,11 @@ def create_test_data():
             method="POST",
             data=agent_data,
             auth=True,
-            expected_keys=["message", "agent_id"]
+            expected_keys=["id", "name", "archetype"]
         )
         
         if create_agent_test and create_agent_response:
-            agent_id = create_agent_response.get("agent_id")
+            agent_id = create_agent_response.get("id")
             created_agent_ids.append(agent_id)
             print(f"✅ Created agent {i} with ID: {agent_id}")
         else:
