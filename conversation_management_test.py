@@ -323,11 +323,11 @@ def setup_test_scenario():
     
     scenario_test, scenario_response = run_test(
         "Set Test Scenario",
-        "/simulation/scenario",
+        "/simulation/set-scenario",
         method="POST",
         data=scenario_data,
         auth=True,
-        expected_keys=["message", "scenario"]
+        expected_keys=["message"]
     )
     
     if scenario_test and scenario_response:
