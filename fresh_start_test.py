@@ -407,6 +407,35 @@ def test_fresh_start_and_active_conversations():
             new_agent_id = new_agent_response.get("id")
             test_agent_ids.append(new_agent_id)
         
+        # Create a second agent for conversation generation
+        second_agent_data = {
+            "name": "Second Test Agent Post Fresh Start",
+            "archetype": "scientist",
+            "goal": "Support testing post fresh start functionality",
+            "expertise": "Scientific analysis and testing",
+            "background": "Second agent created after fresh start",
+            "personality": {
+                "extroversion": 6,
+                "optimism": 8,
+                "curiosity": 9,
+                "cooperativeness": 7,
+                "energy": 6
+            }
+        }
+        
+        second_agent_test, second_agent_response = run_test(
+            "Create Second Agent After Fresh Start",
+            "/agents",
+            method="POST",
+            data=second_agent_data,
+            auth=True,
+            expected_keys=["id", "name", "archetype"]
+        )
+        
+        if second_agent_test:
+            second_agent_id = second_agent_response.get("id")
+            test_agent_ids.append(second_agent_id)
+        
         # Generate conversation with new scenario
         new_conversation_test, new_conversation_response = run_test(
             "Generate Conversation with New Scenario",
