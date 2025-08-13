@@ -455,18 +455,6 @@ const ConversationViewer = () => {
           <div>
             <h2 className="text-2xl font-bold text-white mb-2">💬 My Conversation Archive</h2>
           </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setBulkDeleteMode(!bulkDeleteMode)}
-              className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                bulkDeleteMode 
-                  ? 'bg-red-600 hover:bg-red-700 text-white' 
-                  : 'bg-gray-600 hover:bg-gray-700 text-white'
-              }`}
-            >
-              {bulkDeleteMode ? '📝 Select Mode' : '🗑️ Delete Mode'}
-            </button>
-          </div>
         </div>
 
         {/* Search and Bulk Actions */}
