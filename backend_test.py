@@ -1151,6 +1151,7 @@ def main():
         ("Scenario Setting", test_scenario_setting),
         ("Document System", test_document_system),
         ("Report Generation", test_report_generation),
+        ("Emergent Authentication", test_emergent_authentication),
         ("Daily Report Generation", test_daily_report_generation)
     ]
     
