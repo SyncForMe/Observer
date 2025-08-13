@@ -3457,12 +3457,28 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
         
         print(f"✅ Created JWT token for user: {email}")
         
-        # Prepare user response
+        # IMPORTANT: Get saved profile data to preserve user changes
+        profile_data = await db.user_profiles.find_one({"user_id": user_doc["id"]})
+        
+        # Prepare user response with merged profile data
+        response_name = name  # Default to Google name
+        response_picture = picture  # Default to Google picture
+        response_bio = ""
+        
+        if profile_data:
+            # Use saved profile data if available (preserves user changes)
+            response_name = profile_data.get("name", name)
+            response_picture = profile_data.get("picture") or picture
+            response_bio = profile_data.get("bio", "")
+            print(f"✅ Using saved profile data: name='{response_name}'")
+        else:
+            print(f"✅ No saved profile data, using Google data: name='{response_name}'")
+        
         user_response = UserResponse(
             id=user_doc["id"],
             email=email,
-            name=name,
-            picture=picture,
+            name=response_name,  # Use merged name
+            picture=response_picture,  # Use merged picture
             created_at=user_doc["created_at"],
             last_login=datetime.utcnow()
         )
