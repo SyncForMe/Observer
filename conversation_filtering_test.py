@@ -500,7 +500,7 @@ def cleanup_test_data():
     print("CLEANUP: Removing test data")
     print("="*80)
     
-    # Delete created agents
+    # Note: Fresh Start may have already deleted agents, so failures are expected
     for agent_id in created_agent_ids:
         delete_test, delete_response = run_test(
             f"Delete Agent {agent_id}",
@@ -511,7 +511,7 @@ def cleanup_test_data():
         if delete_test:
             print(f"✅ Deleted agent {agent_id}")
         else:
-            print(f"❌ Failed to delete agent {agent_id}")
+            print(f"⚠️ Agent {agent_id} already deleted (likely by Fresh Start)")
     
     print("✅ Cleanup completed")
 
