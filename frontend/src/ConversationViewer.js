@@ -598,24 +598,6 @@ const ConversationViewer = () => {
                 </div>
               </div>
 
-              {/* Expandable Scenario Details */}
-              {selectedConversation.scenario && (
-                <div className="bg-white/5 rounded-lg p-4">
-                  <button
-                    onClick={() => setExpandedScenario(expandedScenario ? null : selectedConversation.id)}
-                    className="flex items-center space-x-2 text-white hover:text-white/80 mb-2"
-                  >
-                    <span>{expandedScenario ? '🔽' : '▶️'}</span>
-                    <span className="font-medium">View Full Scenario Story</span>
-                  </button>
-                  {expandedScenario && (
-                    <div className="mt-2 p-3 bg-white/5 rounded text-white/90 text-sm leading-relaxed">
-                      {selectedConversation.scenario}
-                    </div>
-                  )}
-                </div>
-              )}
-
               {/* View Conversation Button */}
               <div className="bg-white/5 rounded-lg p-4">
                 <button
