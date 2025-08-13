@@ -5881,20 +5881,20 @@ async def check_and_advance_time_automatically(user_id: str):
 
 @api_router.post("/simulation/reset")
 async def reset_simulation(current_user: User = Depends(get_current_user)):
-    """Reset/clear all simulation data for the current user - Start Fresh functionality"""
+    """Reset/clear simulation data for the current user - Start Fresh functionality (PRESERVES conversations, documents, and reports in library)"""
     try:
         import asyncio
         
-        # Perform all delete operations in parallel for better performance
+        # Perform delete operations EXCLUDING conversations, documents, and reports (preserve for library)
         delete_tasks = [
             db.simulation_state.delete_many({"user_id": current_user.id}),
-            db.conversations.delete_many({"user_id": current_user.id}),
+            # db.conversations.delete_many({"user_id": current_user.id}),  # REMOVED - preserve conversations in library
             db.relationships.delete_many({"user_id": current_user.id}),
             db.summaries.delete_many({"user_id": current_user.id}),
             db.agents.delete_many({"user_id": current_user.id}),
             db.observer_messages.delete_many({"user_id": current_user.id}),  # Observer messages
-            db.documents.delete_many({"metadata.user_id": current_user.id}),  # Delete user's documents
-            db.reports.delete_many({"user_id": current_user.id})  # Delete user's reports
+            # db.documents.delete_many({"metadata.user_id": current_user.id}),  # REMOVED - preserve documents in library
+            # db.reports.delete_many({"user_id": current_user.id})  # REMOVED - preserve reports in library
         ]
         
         # Execute all deletions concurrently
@@ -5908,10 +5908,10 @@ async def reset_simulation(current_user: User = Depends(get_current_user)):
         
         # Log deletion summary
         successful_deletions = len([r for r in delete_results if not isinstance(r, Exception)])
-        logging.info(f"Start Fresh: {successful_deletions}/8 collections cleared for user {current_user.id}")
+        logging.info(f"Start Fresh: {successful_deletions}/5 collections cleared for user {current_user.id} (conversations, documents, reports preserved)")
         
         # Log specific deletions for transparency
-        logging.info(f"Fresh Start completed - cleared: simulation state, conversations, relationships, summaries, agents, observer messages, documents, and reports")
+        logging.info(f"Fresh Start completed - cleared: simulation state, relationships, summaries, agents, observer messages (PRESERVED: conversations, documents, reports)")
         
         # Create a clean default simulation state
         default_state = SimulationState(
@@ -5934,10 +5934,11 @@ async def reset_simulation(current_user: User = Depends(get_current_user)):
         await db.simulation_state.insert_one(default_state.dict())
         
         return {
-            "message": "Simulation reset successfully - all data cleared (conversations, agents, documents, reports, and settings)",
+            "message": "Simulation reset successfully - active simulation cleared (conversations, documents, and reports preserved in library)",
             "success": True,
             "state": default_state.dict(),
-            "cleared_collections": ["simulation_state", "conversations", "relationships", "summaries", "agents", "observer_messages", "documents", "reports"]
+            "cleared_collections": ["simulation_state", "relationships", "summaries", "agents", "observer_messages"],
+            "preserved_collections": ["conversations", "documents", "reports"]  # Explicitly show what was preserved
         }
         
     except Exception as e:
