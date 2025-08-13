@@ -193,6 +193,38 @@ def test_fresh_start_and_active_conversations():
         test_agent_id = create_agent_response.get("id")
         test_agent_ids.append(test_agent_id)
         
+        # Create second agent for conversation generation
+        second_agent_data = {
+            "name": "Second Test Agent Fresh Start",
+            "archetype": "leader",
+            "goal": "Support testing fresh start functionality",
+            "expertise": "Leadership and testing",
+            "background": "Second agent for fresh start testing",
+            "personality": {
+                "extroversion": 8,
+                "optimism": 7,
+                "curiosity": 6,
+                "cooperativeness": 8,
+                "energy": 8
+            }
+        }
+        
+        create_second_agent_test, create_second_agent_response = run_test(
+            "Create Second Test Agent for Fresh Start",
+            "/agents",
+            method="POST",
+            data=second_agent_data,
+            auth=True,
+            expected_keys=["id", "name", "archetype"]
+        )
+        
+        if not create_second_agent_test:
+            print("❌ Failed to create second test agent")
+            return False
+            
+        second_test_agent_id = create_second_agent_response.get("id")
+        test_agent_ids.append(second_test_agent_id)
+        
         # Test 1: Set up scenario and create conversations
         print("\n--- Test 1: Setup Scenario and Create Conversations ---")
         
