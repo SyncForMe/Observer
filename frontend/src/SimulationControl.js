@@ -1339,13 +1339,14 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       const scrollTop = conversationContainer ? conversationContainer.scrollTop : 0;
       const scrollLeft = conversationContainer ? conversationContainer.scrollLeft : 0;
 
-      const conversationsResponse = await axios.get(`${API}/conversations`, {
+      // Use /conversations/active endpoint to get only current simulation conversations
+      const conversationsResponse = await axios.get(`${API}/conversations/active`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // Update via global context - with validation to prevent corrupted data
       const conversationsData = conversationsResponse.data || [];
-      console.log('🔄 fetchConversationsOnly: Updating conversations', conversationsData.length);
+      console.log('🔄 fetchConversationsOnly: Updating ACTIVE conversations only', conversationsData.length);
       
       updateSimulationData({
         conversations: conversationsData
