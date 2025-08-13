@@ -299,8 +299,8 @@ def create_test_data():
         )
         
         if conversation_test and conversation_response:
-            conversation = conversation_response.get("conversation", {})
-            conversation_id = conversation.get("id")
+            # The response is the conversation object itself
+            conversation_id = conversation_response.get("id")
             if conversation_id:
                 created_conversation_ids.append(conversation_id)
                 print(f"✅ Created conversation {i+1} with ID: {conversation_id}")
