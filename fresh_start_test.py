@@ -367,7 +367,7 @@ def test_fresh_start_and_active_conversations():
         
         new_scenario_test, new_scenario_response = run_test(
             "Set New Scenario After Fresh Start",
-            "/simulation/scenario",
+            "/simulation/set-scenario",
             method="POST",
             data=new_scenario_data,
             auth=True,
