@@ -5,41 +5,26 @@ import { useAuth } from './AuthContext';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
 
-// Real-time Conversation Viewer Component
+// Enhanced Conversation Viewer Component with Search and Bulk Delete
 const ConversationViewer = () => {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [translationLanguage, setTranslationLanguage] = useState('en');
-  const [translatedMessages, setTranslatedMessages] = useState({});
-  const [relationships, setRelationships] = useState([]);
-  const [filterAgent, setFilterAgent] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedConversations, setSelectedConversations] = useState(new Set());
+  const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const { user, token } = useAuth();
-
-  // Available languages for translation
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ru', name: 'Russian' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' },
-    { code: 'zh', name: 'Chinese' }
-  ];
 
   // Fetch conversations on mount and set up auto-refresh
   useEffect(() => {
     fetchConversations();
-    fetchRelationships();
     
     let interval;
     if (autoRefresh) {
-      interval = setInterval(fetchConversations, 3000);
+      interval = setInterval(fetchConversations, 5000); // Increased to 5 seconds for better performance
     }
     
     return () => {
@@ -60,11 +45,15 @@ const ConversationViewer = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data) {
-        setConversations(response.data);
+        // Sort by created_at in descending order (newest first)
+        const sortedConversations = response.data.sort((a, b) => 
+          new Date(b.created_at) - new Date(a.created_at)
+        );
+        setConversations(sortedConversations);
         
         // Update selected conversation if it exists
         if (selectedConversation) {
-          const updated = response.data.find(c => c.id === selectedConversation.id);
+          const updated = sortedConversations.find(c => c.id === selectedConversation.id);
           if (updated) {
             setSelectedConversation(updated);
           }
@@ -75,70 +64,113 @@ const ConversationViewer = () => {
     }
   };
 
-  const fetchRelationships = async () => {
-    try {
-      const response = await axios.get(`${API}/relationships`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRelationships(response.data || []);
-    } catch (error) {
-      console.error('Failed to fetch relationships:', error);
-    }
-  };
-
-  const translateConversation = async (conversationId) => {
-    if (translationLanguage === 'en') return;
-    
-    setLoading(true);
-    try {
-      const response = await axios.post(`${API}/conversations/translate`, {
-        conversation_id: conversationId,
-        target_language: translationLanguage
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (response.data.success && response.data.translated_messages) {
-        setTranslatedMessages(prev => ({
-          ...prev,
-          [conversationId]: response.data.translated_messages
-        }));
-      }
-    } catch (error) {
-      console.error('Failed to translate conversation:', error);
-      alert('Translation failed. Please try again.');
-    }
-    setLoading(false);
-  };
-
-  const getUniqueAgents = () => {
-    const agents = new Set();
-    conversations.forEach(conv => {
-      conv.messages?.forEach(msg => {
-        if (msg.agent_name) agents.add(msg.agent_name);
-      });
-    });
-    return Array.from(agents).sort();
-  };
-
+  // Filter conversations based on search query
   const filteredConversations = conversations.filter(conv => {
-    if (!filterAgent) return true;
-    return conv.messages?.some(msg => msg.agent_name === filterAgent);
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const scenarioName = (conv.scenario_name || '').toLowerCase();
+    const scenario = (conv.scenario || '').toLowerCase();
+    const timeperiod = (conv.time_period || '').toLowerCase();
+    
+    return scenarioName.includes(query) || 
+           scenario.includes(query) || 
+           timeperiod.includes(query);
   });
 
-  const getRelationshipInfo = (agent1, agent2) => {
-    return relationships.find(rel => 
-      (rel.agent1 === agent1 && rel.agent2 === agent2) ||
-      (rel.agent1 === agent2 && rel.agent2 === agent1)
-    );
+  // Handle conversation selection for bulk delete
+  const toggleConversationSelection = (conversationId) => {
+    const newSelected = new Set(selectedConversations);
+    if (newSelected.has(conversationId)) {
+      newSelected.delete(conversationId);
+    } else {
+      newSelected.add(conversationId);
+    }
+    setSelectedConversations(newSelected);
   };
 
-  const getMessageTranslation = (conversationId, messageIndex) => {
-    return translatedMessages[conversationId]?.[messageIndex];
+  // Select all filtered conversations
+  const selectAllConversations = () => {
+    const allIds = new Set(filteredConversations.map(conv => conv.id));
+    setSelectedConversations(allIds);
+  };
+
+  // Clear all selections
+  const clearAllSelections = () => {
+    setSelectedConversations(new Set());
+  };
+
+  // Bulk delete selected conversations
+  const bulkDeleteConversations = async () => {
+    if (selectedConversations.size === 0) {
+      alert('Please select conversations to delete');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete ${selectedConversations.size} conversation${selectedConversations.size > 1 ? 's' : ''}? This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    const conversationIds = Array.from(selectedConversations);
+    
+    try {
+      // Delete conversations one by one (backend doesn't have bulk delete endpoint yet)
+      const deletePromises = conversationIds.map(async (conversationId) => {
+        try {
+          await axios.delete(`${API}/conversations/${conversationId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          return { id: conversationId, success: true };
+        } catch (error) {
+          console.error(`Failed to delete conversation ${conversationId}:`, error);
+          return { id: conversationId, success: false, error };
+        }
+      });
+
+      const results = await Promise.all(deletePromises);
+      const successful = results.filter(r => r.success).length;
+      const failed = results.filter(r => !r.success).length;
+
+      if (successful > 0) {
+        // Refresh conversations list
+        await fetchConversations();
+        
+        // Clear selections
+        setSelectedConversations(new Set());
+        
+        // Clear selected conversation if it was deleted
+        if (selectedConversation && selectedConversations.has(selectedConversation.id)) {
+          setSelectedConversation(null);
+        }
+      }
+
+      // Show result message
+      if (failed === 0) {
+        alert(`Successfully deleted ${successful} conversation${successful > 1 ? 's' : ''}`);
+      } else {
+        alert(`Deleted ${successful} conversation${successful > 1 ? 's' : ''}, failed to delete ${failed}`);
+      }
+
+    } catch (error) {
+      console.error('Bulk delete failed:', error);
+      alert('Failed to delete conversations. Please try again.');
+    }
+
+    setDeleteLoading(false);
   };
 
   const formatTimestamp = (timestamp) => {
     return new Date(timestamp).toLocaleString();
+  };
+
+  const getConversationTitle = (conversation) => {
+    // Use scenario_name as title if available, otherwise fallback to generic title
+    if (conversation.scenario_name && conversation.scenario_name.trim()) {
+      return conversation.scenario_name;
+    }
+    return `Conversation ${conversation.id.slice(0, 8)}`;
   };
 
   return (
@@ -147,10 +179,20 @@ const ConversationViewer = () => {
       <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">💬 Live Conversations</h2>
-            <p className="text-white/80">Monitor real-time agent interactions and relationships</p>
+            <h2 className="text-2xl font-bold text-white mb-2">💬 My Conversations</h2>
+            <p className="text-white/80">View and manage your conversation history</p>
           </div>
           <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setBulkDeleteMode(!bulkDeleteMode)}
+              className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                bulkDeleteMode 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'bg-gray-600 hover:bg-gray-700 text-white'
+              }`}
+            >
+              {bulkDeleteMode ? '📝 Select Mode' : '🗑️ Delete Mode'}
+            </button>
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
@@ -164,37 +206,50 @@ const ConversationViewer = () => {
           </div>
         </div>
 
-        {/* Filters and Translation */}
-        <div className="flex flex-wrap gap-4">
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">Filter by Agent</label>
-            <select
-              value={filterAgent}
-              onChange={(e) => setFilterAgent(e.target.value)}
-              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="" className="bg-gray-800">All Agents</option>
-              {getUniqueAgents().map(agent => (
-                <option key={agent} value={agent} className="bg-gray-800">{agent}</option>
-              ))}
-            </select>
+        {/* Search and Bulk Actions */}
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex-1 min-w-64">
+            <label className="block text-white text-sm font-medium mb-2">🔍 Search Conversations</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by scenario name or description..."
+              className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:ring-2 focus:ring-blue-500"
+            />
           </div>
           
-          <div>
-            <label className="block text-white text-sm font-medium mb-2">Translation Language</label>
-            <select
-              value={translationLanguage}
-              onChange={(e) => setTranslationLanguage(e.target.value)}
-              className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
-            >
-              {languages.map(lang => (
-                <option key={lang.code} value={lang.code} className="bg-gray-800">
-                  {lang.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {bulkDeleteMode && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={selectAllConversations}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-all duration-200"
+              >
+                Select All ({filteredConversations.length})
+              </button>
+              <button
+                onClick={clearAllSelections}
+                className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm transition-all duration-200"
+              >
+                Clear Selection
+              </button>
+              <button
+                onClick={bulkDeleteConversations}
+                disabled={deleteLoading || selectedConversations.size === 0}
+                className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-all duration-200 disabled:opacity-50"
+              >
+                {deleteLoading ? '⏳ Deleting...' : `Delete (${selectedConversations.size})`}
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Search Results Counter */}
+        {searchQuery && (
+          <div className="mt-4 text-white/70 text-sm">
+            Found {filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''} matching "{searchQuery}"
+          </div>
+        )}
       </div>
 
       {/* Conversations Grid */}
