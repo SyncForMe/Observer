@@ -1493,6 +1493,7 @@ def main():
         ("Document System", test_document_system),
         ("Report Generation", test_report_generation),
         ("Emergent Authentication", test_emergent_authentication),
+        ("Fresh Start and Active Conversations", test_fresh_start_and_active_conversations),
         ("Daily Report Generation", test_daily_report_generation)
     ]
     
