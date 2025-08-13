@@ -256,60 +256,101 @@ const ConversationViewer = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Conversation List */}
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4">Recent Conversations</h3>
+          <h3 className="text-xl font-bold text-white mb-4">
+            {searchQuery 
+              ? `Search Results (${filteredConversations.length})`
+              : `My Conversations (${conversations.length})`
+            }
+          </h3>
           
           {filteredConversations.length === 0 ? (
             <div className="text-center text-white/60 py-8">
               <div className="text-4xl mb-2">💭</div>
-              <p>No conversations yet</p>
-              <p className="text-sm">Generate a conversation to get started</p>
+              {searchQuery ? (
+                <>
+                  <p>No conversations found matching "{searchQuery}"</p>
+                  <p className="text-sm">Try a different search term</p>
+                </>
+              ) : (
+                <>
+                  <p>No conversations yet</p>
+                  <p className="text-sm">Generate a conversation to get started</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {filteredConversations.map((conversation) => (
                 <motion.div
                   key={conversation.id}
-                  onClick={() => setSelectedConversation(conversation)}
-                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                    selectedConversation?.id === conversation.id
-                      ? 'bg-blue-600/30 border border-blue-400/50'
-                      : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                  onClick={() => !bulkDeleteMode && setSelectedConversation(conversation)}
+                  className={`p-4 rounded-lg transition-all duration-200 ${
+                    bulkDeleteMode 
+                      ? 'cursor-pointer border-2' + (selectedConversations.has(conversation.id) 
+                          ? ' border-red-400 bg-red-600/20' 
+                          : ' border-white/20 hover:border-red-300 bg-white/5')
+                      : 'cursor-pointer' + (selectedConversation?.id === conversation.id
+                          ? ' bg-blue-600/30 border border-blue-400/50'
+                          : ' bg-white/5 hover:bg-white/10 border border-white/10')
                   }`}
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{ scale: bulkDeleteMode ? 1.01 : 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-white font-semibold">
-                      {conversation.title || `Conversation ${conversation.id.slice(0, 8)}`}
-                    </h4>
-                    <span className="text-white/40 text-xs">
-                      {formatTimestamp(conversation.created_at)}
-                    </span>
-                  </div>
-                  
-                  <div className="text-white/70 text-sm mb-2">
-                    {conversation.scenario || 'General Discussion'}
-                  </div>
-                  
-                  <div className="flex justify-between items-center">
-                    <span className="text-white/60 text-xs">
-                      {conversation.messages?.length || 0} messages
-                    </span>
-                    <div className="flex space-x-1">
-                      {conversation.agents?.slice(0, 3).map((agent, idx) => (
-                        <div
-                          key={idx}
-                          className="w-6 h-6 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-xs text-white"
-                          title={agent}
-                        >
-                          {agent[0]}
-                        </div>
-                      ))}
-                      {conversation.agents?.length > 3 && (
-                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs text-white">
-                          +{conversation.agents.length - 3}
-                        </div>
-                      )}
+                  <div className="flex items-start space-x-3">
+                    {bulkDeleteMode && (
+                      <div 
+                        className="mt-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleConversationSelection(conversation.id);
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedConversations.has(conversation.id)}
+                          onChange={() => toggleConversationSelection(conversation.id)}
+                          className="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="text-white font-semibold">
+                          {getConversationTitle(conversation)}
+                        </h4>
+                        <span className="text-white/40 text-xs">
+                          {formatTimestamp(conversation.created_at)}
+                        </span>
+                      </div>
+                      
+                      <div className="text-white/70 text-sm mb-2">
+                        {conversation.scenario || 'General Discussion'}
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-xs">
+                          {conversation.messages?.length || 0} messages • {conversation.time_period || 'Unknown time'}
+                        </span>
+                        {conversation.agents && conversation.agents.length > 0 && (
+                          <div className="flex space-x-1">
+                            {conversation.agents.slice(0, 3).map((agent, idx) => (
+                              <div
+                                key={idx}
+                                className="w-6 h-6 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-xs text-white"
+                                title={agent}
+                              >
+                                {agent[0]}
+                              </div>
+                            ))}
+                            {conversation.agents.length > 3 && (
+                              <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs text-white">
+                                +{conversation.agents.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -322,21 +363,15 @@ const ConversationViewer = () => {
         <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl font-bold text-white">Conversation Details</h3>
-            {selectedConversation && translationLanguage !== 'en' && (
-              <button
-                onClick={() => translateConversation(selectedConversation.id)}
-                disabled={loading}
-                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm transition-all duration-200 disabled:opacity-50"
-              >
-                🌐 Translate
-              </button>
-            )}
           </div>
           
           {!selectedConversation ? (
             <div className="text-center text-white/60 py-12">
               <div className="text-4xl mb-2">👆</div>
               <p>Select a conversation to view details</p>
+              {bulkDeleteMode && (
+                <p className="text-sm mt-2">Exit delete mode to view conversations</p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -345,11 +380,19 @@ const ConversationViewer = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-white/60">Scenario:</span>
-                    <div className="text-white">{selectedConversation.scenario || 'General'}</div>
+                    <div className="text-white">{selectedConversation.scenario_name || 'General'}</div>
                   </div>
                   <div>
-                    <span className="text-white/60">Duration:</span>
-                    <div className="text-white">{selectedConversation.duration || 'Ongoing'}</div>
+                    <span className="text-white/60">Time Period:</span>
+                    <div className="text-white">{selectedConversation.time_period || 'Unknown'}</div>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Round:</span>
+                    <div className="text-white">#{selectedConversation.round_number || 1}</div>
+                  </div>
+                  <div>
+                    <span className="text-white/60">Messages:</span>
+                    <div className="text-white">{selectedConversation.messages?.length || 0}</div>
                   </div>
                 </div>
               </div>
@@ -363,22 +406,8 @@ const ConversationViewer = () => {
                 ) : (
                   <div className="space-y-3">
                     {selectedConversation.messages?.map((message, index) => {
-                      const translation = getMessageTranslation(selectedConversation.id, index);
-                      const relationship = index > 0 ? getRelationshipInfo(
-                        message.agent_name,
-                        selectedConversation.messages[index - 1].agent_name
-                      ) : null;
-                      
                       return (
                         <div key={index} className="space-y-2">
-                          {relationship && (
-                            <div className="text-center">
-                              <span className="inline-block px-3 py-1 bg-purple-600/30 rounded-full text-xs text-white/80">
-                                Relationship: {relationship.relationship_type} (Trust: {relationship.trust_level}/10)
-                              </span>
-                            </div>
-                          )}
-                          
                           <div className="flex space-x-3">
                             <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center text-sm text-white">
                               {message.agent_name?.[0] || '?'}
@@ -393,13 +422,8 @@ const ConversationViewer = () => {
                                 </span>
                               </div>
                               <div className="text-white/80 text-sm">
-                                {translation || message.message}
+                                {message.message}
                               </div>
-                              {translation && (
-                                <div className="text-white/50 text-xs mt-1 italic">
-                                  Original: {message.message}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -409,39 +433,37 @@ const ConversationViewer = () => {
                   </div>
                 )}
               </div>
+              
+              {/* Individual Delete Button */}
+              <div className="flex justify-end">
+                <button  
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to delete this conversation? This action cannot be undone.')) {
+                      setDeleteLoading(true);
+                      try {
+                        await axios.delete(`${API}/conversations/${selectedConversation.id}`, {
+                          headers: { Authorization: `Bearer ${token}` }
+                        });
+                        await fetchConversations();
+                        setSelectedConversation(null);
+                        alert('Conversation deleted successfully');
+                      } catch (error) {
+                        console.error('Failed to delete conversation:', error);
+                        alert('Failed to delete conversation. Please try again.');
+                      }
+                      setDeleteLoading(false);
+                    }
+                  }}
+                  disabled={deleteLoading}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-all duration-200 disabled:opacity-50"
+                >
+                  {deleteLoading ? '⏳ Deleting...' : '🗑️ Delete This Conversation'}
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Relationships Overview */}
-      {relationships.length > 0 && (
-        <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4">🤝 Agent Relationships</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {relationships.map((rel, index) => (
-              <div key={index} className="bg-white/5 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs text-white">
-                      {rel.agent1[0]}
-                    </div>
-                    <span className="text-white text-sm">↔️</span>
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-xs text-white">
-                      {rel.agent2[0]}
-                    </div>
-                  </div>
-                  <div className="text-white/60 text-xs">
-                    Trust: {rel.trust_level}/10
-                  </div>
-                </div>
-                <div className="text-white font-medium text-sm">{rel.agent1} & {rel.agent2}</div>
-                <div className="text-white/70 text-xs">{rel.relationship_type}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
