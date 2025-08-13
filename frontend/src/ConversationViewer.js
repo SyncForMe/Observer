@@ -510,7 +510,7 @@ const ConversationViewer = () => {
             <h3 className="text-xl font-bold text-white">
               {searchQuery 
                 ? `Search Results (${filteredConversations.length})`
-                : `Conversation List (${conversations.length})`
+                : `List (${conversations.length})`
               }
             </h3>
             <button
@@ -541,7 +541,12 @@ const ConversationViewer = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div className="space-y-3 max-h-96 overflow-y-hidden hover:overflow-y-auto" style={{scrollbarWidth: 'none', msOverflowStyle: 'none'}}>
+              <style jsx>{`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
               {filteredConversations.map((conversation) => (
                 <motion.div
                   key={conversation.id}
