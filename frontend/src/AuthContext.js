@@ -193,7 +193,7 @@ export const AuthProvider = ({ children }) => {
 
   const googleLogin = () => {
     console.log('🔍 AuthContext: Starting Google OAuth flow...');
-    const redirectUrl = encodeURIComponent(`${PREVIEW_URL}/profile`);
+    const redirectUrl = encodeURIComponent(`${PREVIEW_URL}/`);  // Changed to root path
     const authUrl = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
     console.log('🔍 AuthContext: Redirecting to:', authUrl);
     window.location.href = authUrl;
