@@ -425,65 +425,100 @@ const ConversationViewer = () => {
     setSelectedConversations(new Set());
   };
 
-  // Bulk delete selected conversations
+  // Bulk delete selected conversations with improved modal
   const bulkDeleteConversations = async () => {
     if (selectedConversations.size === 0) {
       alert('Please select conversations to delete');
       return;
     }
 
-    const confirmMessage = `Are you sure you want to delete ${selectedConversations.size} conversation${selectedConversations.size > 1 ? 's' : ''}? This action cannot be undone.`;
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+    const conversationTitles = Array.from(selectedConversations)
+      .map(id => {
+        const conv = conversations.find(c => c.id === id);
+        return getConversationTitle(conv);
+      })
+      .slice(0, 3)
+      .join(', ');
+    
+    const titleText = selectedConversations.size > 3 
+      ? `${conversationTitles} and ${selectedConversations.size - 3} more`
+      : conversationTitles;
 
+    setConversationToDelete({ 
+      title: titleText, 
+      isBulk: true, 
+      count: selectedConversations.size 
+    });
+    setShowDeleteModal(true);
+  };
+
+  // Handle individual conversation delete
+  const handleSingleDelete = (conversation) => {
+    setConversationToDelete({ 
+      title: getConversationTitle(conversation), 
+      isBulk: false, 
+      conversation 
+    });
+    setShowDeleteModal(true);
+  };
+
+  // Confirm deletion
+  const confirmDelete = async () => {
     setDeleteLoading(true);
-    const conversationIds = Array.from(selectedConversations);
     
     try {
-      // Delete conversations one by one
-      const deletePromises = conversationIds.map(async (conversationId) => {
-        try {
-          await axios.delete(`${API}/conversations/${conversationId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          return { id: conversationId, success: true };
-        } catch (error) {
-          console.error(`Failed to delete conversation ${conversationId}:`, error);
-          return { id: conversationId, success: false, error };
+      if (conversationToDelete.isBulk) {
+        // Bulk delete
+        const conversationIds = Array.from(selectedConversations);
+        const deletePromises = conversationIds.map(async (conversationId) => {
+          try {
+            await axios.delete(`${API}/conversations/${conversationId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            return { id: conversationId, success: true };
+          } catch (error) {
+            console.error(`Failed to delete conversation ${conversationId}:`, error);
+            return { id: conversationId, success: false, error };
+          }
+        });
+
+        const results = await Promise.all(deletePromises);
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
+
+        if (successful > 0) {
+          await fetchConversations();
+          setSelectedConversations(new Set());
+          setBulkDeleteMode(false);
+          
+          if (selectedConversation && selectedConversations.has(selectedConversation.id)) {
+            setSelectedConversation(null);
+          }
         }
-      });
 
-      const results = await Promise.all(deletePromises);
-      const successful = results.filter(r => r.success).length;
-      const failed = results.filter(r => !r.success).length;
-
-      if (successful > 0) {
-        // Refresh conversations list
+        if (failed === 0) {
+          // Success - no need for alert as modal provides feedback
+        } else {
+          alert(`Deleted ${successful} conversation${successful > 1 ? 's' : ''}, failed to delete ${failed}`);
+        }
+      } else {
+        // Single delete
+        await axios.delete(`${API}/conversations/${conversationToDelete.conversation.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         await fetchConversations();
-        
-        // Clear selections
-        setSelectedConversations(new Set());
-        
-        // Clear selected conversation if it was deleted
-        if (selectedConversation && selectedConversations.has(selectedConversation.id)) {
+        if (selectedConversation?.id === conversationToDelete.conversation.id) {
           setSelectedConversation(null);
         }
       }
-
-      // Show result message
-      if (failed === 0) {
-        alert(`Successfully deleted ${successful} conversation${successful > 1 ? 's' : ''}`);
-      } else {
-        alert(`Deleted ${successful} conversation${successful > 1 ? 's' : ''}, failed to delete ${failed}`);
-      }
-
     } catch (error) {
-      console.error('Bulk delete failed:', error);
-      alert('Failed to delete conversations. Please try again.');
+      console.error('Delete failed:', error);
+      alert('Failed to delete conversation(s). Please try again.');
     }
 
     setDeleteLoading(false);
+    setShowDeleteModal(false);
+    setConversationToDelete(null);
   };
 
   const formatTimestamp = (timestamp) => {
