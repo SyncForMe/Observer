@@ -182,23 +182,53 @@ def setup_authentication():
     print("SETTING UP AUTHENTICATION")
     print("="*80)
     
-    # Test guest login
-    guest_test, guest_response = run_test(
-        "Guest Login Setup",
-        "/auth/test-login",
+    # Try to login with existing test user first
+    login_data = {
+        "email": "test@conversation.com",
+        "password": "testpassword123"
+    }
+    
+    login_test, login_response = run_test(
+        "Email/Password Login",
+        "/auth/login",
         method="POST",
+        data=login_data,
         expected_keys=["access_token", "token_type", "user"]
     )
     
-    if guest_test and guest_response:
-        auth_token = guest_response.get("access_token")
-        user_data = guest_response.get("user", {})
+    if login_test and login_response:
+        auth_token = login_response.get("access_token")
+        user_data = login_response.get("user", {})
         test_user_id = user_data.get("id")
-        print(f"✅ Authentication setup successful. User ID: {test_user_id}")
+        print(f"✅ Login successful. User ID: {test_user_id}")
         return True
     else:
-        print("❌ Authentication setup failed")
-        return False
+        print("⚠️ Login failed, trying to register new user...")
+        
+        # Try to register a new user
+        register_data = {
+            "email": "test@conversation.com",
+            "password": "testpassword123",
+            "name": "Test Conversation User"
+        }
+        
+        register_test, register_response = run_test(
+            "User Registration",
+            "/auth/register",
+            method="POST",
+            data=register_data,
+            expected_keys=["access_token", "token_type", "user"]
+        )
+        
+        if register_test and register_response:
+            auth_token = register_response.get("access_token")
+            user_data = register_response.get("user", {})
+            test_user_id = user_data.get("id")
+            print(f"✅ Registration successful. User ID: {test_user_id}")
+            return True
+        else:
+            print("❌ Both login and registration failed")
+            return False
 
 def setup_test_agents():
     """Create test agents for conversation generation"""
