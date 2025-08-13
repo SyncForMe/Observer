@@ -315,12 +315,11 @@ def generate_test_conversations():
             method="POST",
             auth=True,
             measure_time=True,
-            expected_keys=["message", "conversation"]
+            expected_keys=["id", "messages"]
         )
         
         if conv_test and conv_response:
-            conversation = conv_response.get("conversation", {})
-            conversation_id = conversation.get("id")
+            conversation_id = conv_response.get("id")
             if conversation_id:
                 created_conversation_ids.append(conversation_id)
                 print(f"✅ Generated conversation {i+1} with ID: {conversation_id}")
