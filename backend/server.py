@@ -37,6 +37,7 @@ import io
 import asyncio
 import re
 import urllib.parse
+import requests  # For emergent auth API calls
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
