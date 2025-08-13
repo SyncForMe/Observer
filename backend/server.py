@@ -7667,6 +7667,98 @@ async def delete_conversation(conversation_id: str, current_user: User = Depends
         logging.error(f"Error deleting conversation {conversation_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete conversation")
 
+@api_router.get("/conversations/{conversation_id}/reports")
+async def get_conversation_reports(conversation_id: str, current_user: User = Depends(get_current_user)):
+    """Get all reports generated from a specific conversation"""
+    try:
+        user_id = current_user.id
+        
+        # Verify conversation belongs to user
+        conversation = await db.conversations.find_one({
+            "id": conversation_id,
+            "user_id": user_id
+        })
+        
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Get reports that reference this conversation
+        reports = await db.reports.find({
+            "user_id": user_id,
+            "$or": [
+                {"metadata.conversation_id": conversation_id},
+                {"conversation_references": conversation_id}
+            ]
+        }).sort("created_at", -1).to_list(100)
+        
+        # Convert to response format
+        report_list = []
+        for report in reports:
+            report_data = {
+                "id": report.get("id", str(report.get("_id", ""))),
+                "title": report.get("title", "Untitled Report"),
+                "type": report.get("type", "general"),
+                "content": report.get("content", ""),
+                "created_at": report.get("created_at", datetime.utcnow()),
+                "metadata": report.get("metadata", {})
+            }
+            report_list.append(report_data)
+        
+        return report_list
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error getting reports for conversation {conversation_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get conversation reports")
+
+@api_router.get("/conversations/{conversation_id}/documents")
+async def get_conversation_documents(conversation_id: str, current_user: User = Depends(get_current_user)):
+    """Get all documents generated from a specific conversation"""
+    try:
+        user_id = current_user.id
+        
+        # Verify conversation belongs to user
+        conversation = await db.conversations.find_one({
+            "id": conversation_id,
+            "user_id": user_id
+        })
+        
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        # Get documents that reference this conversation
+        documents = await db.documents.find({
+            "metadata.user_id": user_id,
+            "$or": [
+                {"metadata.conversation_id": conversation_id},
+                {"conversation_references": conversation_id}
+            ]
+        }).sort("created_at", -1).to_list(100)
+        
+        # Convert to response format
+        document_list = []
+        for doc in documents:
+            document_data = {
+                "id": doc.get("id", str(doc.get("_id", ""))),
+                "title": doc.get("title", "Untitled Document"),
+                "document_type": doc.get("document_type", "general"),
+                "content": doc.get("content", ""),
+                "status": doc.get("status", "completed"),
+                "created_at": doc.get("created_at", datetime.utcnow()),
+                "creator_agent": doc.get("creator_agent", "Unknown"),
+                "metadata": doc.get("metadata", {})
+            }
+            document_list.append(document_data)
+        
+        return document_list
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error getting documents for conversation {conversation_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get conversation documents")
+
 @api_router.get("/relationships")
 async def get_relationships():
     """Get all agent relationships"""
