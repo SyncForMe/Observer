@@ -168,6 +168,37 @@ export const AuthProvider = ({ children }) => {
     console.log('🔍 AuthContext: Cached updated user data to localStorage');
   };
 
+  const handleEmergentAuth = async (sessionId) => {
+    try {
+      console.log('🔍 AuthContext: Processing Emergent session:', sessionId);
+      const response = await axios.post(`${API}/auth/emergent-session`, { 
+        session_id: sessionId 
+      });
+      
+      if (response.data && response.data.access_token) {
+        const newToken = response.data.access_token;
+        localStorage.setItem('auth_token', newToken);
+        localStorage.setItem('auth_user', JSON.stringify(response.data.user));
+        setToken(newToken);
+        setUser(response.data.user);
+        console.log('✅ AuthContext: Emergent auth successful');
+        return { success: true };
+      }
+      return { success: false, error: 'Invalid response from server' };
+    } catch (error) {
+      console.error('Emergent auth failed:', error);
+      return { success: false, error: error.response?.data?.detail || 'Authentication failed' };
+    }
+  };
+
+  const googleLogin = () => {
+    console.log('🔍 AuthContext: Starting Google OAuth flow...');
+    const redirectUrl = encodeURIComponent(`${PREVIEW_URL}/profile`);
+    const authUrl = `https://auth.emergentagent.com/?redirect=${redirectUrl}`;
+    console.log('🔍 AuthContext: Redirecting to:', authUrl);
+    window.location.href = authUrl;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
