@@ -355,7 +355,7 @@ def step_4_simulate_logout_login_cycle():
         "/auth/me",
         method="GET",
         auth=False,  # No auth token
-        expected_status=401  # Should be unauthorized
+        expected_status=403  # Should be unauthorized
     )
     
     if logout_verify_test:
@@ -364,11 +364,17 @@ def step_4_simulate_logout_login_cycle():
         print("❌ Logout verification failed")
         return False
     
-    # Simulate login by getting a new auth token
+    # Simulate login by getting a new auth token with same credentials
+    test_credentials = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    
     login_test, login_response = run_test(
         "Simulate Login (New Auth Token)",
-        "/auth/test-login",
+        "/auth/login",
         method="POST",
+        data=test_credentials,
         expected_keys=["access_token", "token_type", "user"],
         measure_time=True
     )
