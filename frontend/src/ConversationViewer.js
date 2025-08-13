@@ -327,19 +327,10 @@ const ConversationViewer = () => {
   const messagesEndRef = useRef(null);
   const { user, token } = useAuth();
 
-  // Fetch conversations on mount and set up auto-refresh
+  // Fetch conversations on mount
   useEffect(() => {
     fetchConversations();
-    
-    let interval;
-    if (autoRefresh) {
-      interval = setInterval(fetchConversations, 5000);
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [autoRefresh]);
+  }, []);
 
   // Fetch related data when conversation is selected
   useEffect(() => {
