@@ -3368,6 +3368,7 @@ async def login_user(user_credentials: UserLogin):
             email=user_data["email"],
             name=user_data["name"],
             picture=user_data.get("picture", ""),
+            bio=user_data.get("bio", ""),  # Include bio field
             created_at=user_data["created_at"],
             last_login=datetime.utcnow()  # Use current time since we just updated it
         )
