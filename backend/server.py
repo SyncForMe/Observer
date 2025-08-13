@@ -3397,7 +3397,12 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
         emergent_auth_url = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
         headers = {"X-Session-ID": session_id}
         
+        print(f"🔍 Calling Emergent API: {emergent_auth_url} with session: {session_id}")
+        
         response = requests.get(emergent_auth_url, headers=headers, timeout=10)
+        
+        print(f"🔍 Emergent API response status: {response.status_code}")
+        print(f"🔍 Emergent API response text: {response.text}")
         
         if response.status_code != 200:
             print(f"❌ Emergent auth failed: {response.status_code} - {response.text}")
@@ -3414,12 +3419,14 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
         session_token = session_data.get("session_token", "")
         
         if not user_id or not email:
+            print(f"❌ Invalid session data: user_id={user_id}, email={email}")
             raise HTTPException(status_code=401, detail="Invalid session data")
         
         # Check if user exists
         existing_user = await db.users.find_one({"email": email})
         
         if existing_user:
+            print(f"✅ Found existing user: {existing_user['email']}")
             # Update last login
             await db.users.update_one(
                 {"_id": existing_user["_id"]},
@@ -3427,6 +3434,7 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
             )
             user_doc = existing_user
         else:
+            print(f"✅ Creating new user: {email}")
             # Create new user
             new_user = UserWithPassword(
                 id=str(uuid.uuid4()),
@@ -3447,6 +3455,8 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
             data={"sub": email, "user_id": user_doc["id"]}
         )
         
+        print(f"✅ Created JWT token for user: {email}")
+        
         # Prepare user response
         user_response = UserResponse(
             id=user_doc["id"],
@@ -3456,6 +3466,8 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
             created_at=user_doc["created_at"],
             last_login=datetime.utcnow()
         )
+        
+        print(f"✅ Returning successful authentication response")
         
         return TokenResponse(
             access_token=access_token,
@@ -3469,6 +3481,7 @@ async def emergent_session_auth(session_request: EmergentAuthSessionRequest):
         print(f"❌ Network error calling Emergent API: {e}")
         raise HTTPException(status_code=503, detail="Authentication service unavailable")
     except Exception as e:
+        print(f"❌ Error in emergent session auth: {e}")
         logging.error(f"Error in emergent session auth: {e}")
         raise HTTPException(status_code=500, detail="Authentication failed")
 
