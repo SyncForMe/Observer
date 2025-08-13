@@ -485,7 +485,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           axios.get(`${API}/agents`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${API}/conversations`, {
+          axios.get(`${API}/conversations/active`, {  // Changed to active conversations only
             headers: { Authorization: `Bearer ${token}` }
           }),
           axios.get(`${API}/documents`, {
