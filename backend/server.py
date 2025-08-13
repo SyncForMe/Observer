@@ -7629,6 +7629,76 @@ async def get_conversations(current_user: User = Depends(get_current_user)):
     
     return conversation_rounds
 
+@api_router.get("/conversations/active")
+async def get_active_conversations(current_user: User = Depends(get_current_user)):
+    """Get only active/live conversations for the current simulation (Observatory use)"""
+    try:
+        user_id = current_user.id
+        
+        # Get current simulation state to determine what constitutes "active" conversations
+        simulation_state = await db.simulation_state.find_one({"user_id": user_id})
+        
+        if not simulation_state:
+            # No active simulation, return empty list
+            return []
+        
+        # Get the current simulation's scenario and scenario_name to filter conversations
+        current_scenario = simulation_state.get("scenario", "")
+        current_scenario_name = simulation_state.get("scenario_name", "")
+        
+        # If no scenario is set, return conversations from today (current session)
+        if not current_scenario and not current_scenario_name:
+            # Get conversations from today only (active session)
+            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            conversation_filter = {
+                "user_id": {"$eq": user_id},
+                "created_at": {"$gte": today_start}
+            }
+        else:
+            # Filter by current scenario to get only conversations from current simulation
+            conversation_filter = {
+                "user_id": {"$eq": user_id},
+                "$or": [
+                    {"scenario": current_scenario} if current_scenario else {},
+                    {"scenario_name": current_scenario_name} if current_scenario_name else {}
+                ]
+            }
+        
+        # Get active conversations only
+        conversations = await db.conversations.find(conversation_filter).sort("created_at", 1).to_list(1000)
+        
+        logging.info(f"Active conversations filter: {conversation_filter}")
+        logging.info(f"Found {len(conversations)} active conversations for user {user_id}")
+        
+        # Convert to response format
+        conversation_rounds = []
+        for conv in conversations:
+            try:
+                conv_data = {
+                    "id": conv.get("id", str(uuid.uuid4())),
+                    "round_number": conv.get("round_number", 1),
+                    "time_period": conv.get("time_period", "morning"),
+                    "scenario": conv.get("scenario", ""),
+                    "scenario_name": conv.get("scenario_name", ""),
+                    "messages": conv.get("messages", []),
+                    "user_id": conv.get("user_id", ""),
+                    "created_at": conv.get("created_at", datetime.utcnow()),
+                    "language": conv.get("language", "en"),
+                    "original_language": conv.get("original_language"),
+                    "translated_at": conv.get("translated_at"),
+                    "force_translated": conv.get("force_translated", False)
+                }
+                conversation_rounds.append(conv_data)
+            except Exception as e:
+                logging.warning(f"Skipping malformed active conversation: {e}")
+                continue
+        
+        return conversation_rounds
+        
+    except Exception as e:
+        logging.error(f"Error fetching active conversations: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch active conversations")
+
 @api_router.delete("/conversations/{conversation_id}")
 async def delete_conversation(conversation_id: str, current_user: User = Depends(get_current_user)):
     """Delete a specific conversation for the current user"""
