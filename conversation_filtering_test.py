@@ -293,7 +293,7 @@ def test_conversation_filtering_system():
     
     scenario_test_1, scenario_response_1 = run_test(
         "Set First Scenario",
-        "/simulation/scenario",
+        "/simulation/set-scenario",
         method="POST",
         data=scenario_data_1,
         auth=True,
