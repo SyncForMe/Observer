@@ -646,7 +646,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         axios.get(`${API}/agents`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
-        axios.get(`${API}/conversations`, {
+        axios.get(`${API}/conversations/active`, {  // Changed to active conversations only
           headers: { Authorization: `Bearer ${token}` }
         }),
         axios.get(`${API}/documents`, {
@@ -672,7 +672,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         isDataLoaded: true
       });
       
-      console.log('✅ Fetch completed - Conversations:', conversationsResponse.data?.length || 0);
+      console.log('✅ Fetch completed - ACTIVE Conversations only:', conversationsResponse.data?.length || 0);
       console.log('✅ Scenario restored:', stateResponse.data.scenario ? 'Yes' : 'No');
       
     } catch (error) {
