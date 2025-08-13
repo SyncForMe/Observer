@@ -253,7 +253,7 @@ def create_test_agents():
         method="POST",
         data=agent_data_1,
         auth=True,
-        expected_keys=["message", "agent_id"]
+        expected_keys=["id", "name", "archetype"]
     )
     
     create_agent2_test, create_agent2_response = run_test(
@@ -262,12 +262,12 @@ def create_test_agents():
         method="POST",
         data=agent_data_2,
         auth=True,
-        expected_keys=["message", "agent_id"]
+        expected_keys=["id", "name", "archetype"]
     )
     
     if create_agent1_test and create_agent2_test:
-        agent1_id = create_agent1_response.get("agent_id")
-        agent2_id = create_agent2_response.get("agent_id")
+        agent1_id = create_agent1_response.get("id")
+        agent2_id = create_agent2_response.get("id")
         created_agent_ids.extend([agent1_id, agent2_id])
         print(f"✅ Created test agents: {agent1_id}, {agent2_id}")
         return True
