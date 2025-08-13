@@ -732,7 +732,7 @@ const ConversationViewer = () => {
               )}
             </div>
           ) : (
-            <div className="space-y-4 mt-1">
+            <div className="space-y-4 mt-3">
               {/* Conversation Info */}
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="space-y-3">
