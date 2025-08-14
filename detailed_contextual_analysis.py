@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 # Configuration
-BACKEND_URL = "https://7739ef7b-2781-4fb3-8a8b-8d104f76b04c.preview.emergentagent.com/api"
+BACKEND_URL = "https://simulated-agents.preview.emergentagent.com/api"
 
 def analyze_contextual_features():
     """Analyze the contextual conversation features in detail"""

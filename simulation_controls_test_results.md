@@ -5,7 +5,7 @@ This document contains the results of testing the new simulation control buttons
 
 ### **Test Environment**
 - Application: AI Agent Simulation Platform
-- Frontend URL: https://7739ef7b-2781-4fb3-8a8b-8d104f76b04c.preview.emergentagent.com
+- Frontend URL: https://simulated-agents.preview.emergentagent.com
 - Test Credentials: dino@cytonic.com / Observerinho8
 
 ### **Test Results Summary**

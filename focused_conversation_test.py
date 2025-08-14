@@ -17,7 +17,7 @@ import json
 import uuid
 
 # Configuration
-API_URL = "https://7739ef7b-2781-4fb3-8a8b-8d104f76b04c.preview.emergentagent.com/api"
+API_URL = "https://simulated-agents.preview.emergentagent.com/api"
 AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0QGNvbnZlcnNhdGlvbi5jb20iLCJ1c2VyX2lkIjoiMTAzN2QzZTYtMDcxMS00ODk1LThiN2QtM2Q5YjIxZDZmYTJmIiwiZXhwIjoxNzU1MTgxNDE5fQ.P7hQYJe1XHcXepKRybujE77NTOKDt-ukXXgYvq9PkY0"
 USER_ID = "1037d3e6-0711-4895-8b7d-3d9b21d6fa2f"
 

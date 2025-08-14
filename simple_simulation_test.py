@@ -4,7 +4,7 @@ import json
 import time
 
 # Use the external URL from the environment
-BACKEND_URL = "https://7739ef7b-2781-4fb3-8a8b-8d104f76b04c.preview.emergentagent.com"
+BACKEND_URL = "https://simulated-agents.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def run_test(name, endpoint, method="GET", data=None, headers=None):

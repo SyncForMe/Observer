@@ -12,7 +12,7 @@ import sys
 import os
 
 # Configuration
-BACKEND_URL = "https://7739ef7b-2781-4fb3-8a8b-8d104f76b04c.preview.emergentagent.com/api"
+BACKEND_URL = "https://simulated-agents.preview.emergentagent.com/api"
 TEST_USER_EMAIL = "dino@cytonic.com"
 
 class ConversationFlowTester:
