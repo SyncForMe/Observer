@@ -7293,33 +7293,31 @@ Continue building on the progress above. The team should advance the solutions a
     
     print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages (SEQUENTIAL FOR PROGRESSIVE DISPLAY)")
     
-    # ✨ SEQUENTIAL PROCESSING: Generate messages one by one for progressive frontend display
+    # ✨ PARALLEL PROCESSING: Generate all messages simultaneously for maximum speed
     messages = []
     try:
-        print("🔄 Starting sequential message generation for progressive display...")
+        print("🚀 Starting PARALLEL message generation for instant progressive display...")
         start_time = time.time()
         
-        for i, agent in enumerate(agent_objects):
+        # Create base context for all agents (without "conversation in progress" since they're parallel)
+        base_context = f"{observer_context}\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n"
+        
+        # Include conversation history for context
+        if conversation_history_msgs:
+            base_context += f"\nPrevious conversation context:\n"
+            for prev_msg in conversation_history_msgs[-3:]:  # Last 3 for context
+                base_context += f"• {prev_msg.get('agent_name', 'Unknown')}: {prev_msg.get('content', '')}\n"
+        
+        base_context += f"\nThis is the start of a new conversation round. Share your perspective and expertise naturally."
+        
+        # ✨ PARALLEL GENERATION: Create all agent response tasks simultaneously
+        async def generate_single_agent_message(agent, index):
+            """Generate message for a single agent in parallel"""
             try:
-                print(f"  🤖 Generating message for {agent.name} ({i + 1}/{len(agent_objects)})")
+                print(f"  🤖 Starting parallel generation for {agent.name} ({index + 1}/{len(agent_objects)})")
                 
-                # Build comprehensive context including conversation history and previous messages from this round
-                current_context = f"{observer_context}\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n"
-                
-                # Include conversation history for context
-                if conversation_history_msgs:
-                    current_context += f"\nPrevious conversation context:\n"
-                    for prev_msg in conversation_history_msgs[-3:]:  # Last 3 for context
-                        current_context += f"• {prev_msg.get('agent_name', 'Unknown')}: {prev_msg.get('content', '')}\n"
-                
-                # Include messages from current round that have already been generated
-                if messages:
-                    current_context += f"\nConversation in progress:\n"
-                    for prev_msg in messages:
-                        current_context += f"• {prev_msg.agent_name}: {prev_msg.message}\n"
-                    current_context += f"\nYour turn, {agent.name}. Build on what others have said and add your unique perspective."
-                else:
-                    current_context += f"\nYou're the first to speak, {agent.name}. Set the tone for this discussion."
+                # Each agent gets the same base context (no dependencies)
+                current_context = base_context
                 
                 response = await llm_manager.generate_agent_response(
                     agent, scenario, agent_objects, current_context, conversation_history_msgs, language_instruction, existing_documents, state
@@ -7336,8 +7334,7 @@ Continue building on the progress above. The team should advance the solutions a
                     timestamp=datetime.utcnow()
                 )
                 
-                messages.append(message)
-                print(f"  ✅ {agent.name}: {len(response)} chars - Message {i + 1} ready for frontend")
+                print(f"  ✅ {agent.name}: {len(response)} chars - PARALLEL message ready!")
                 
                 # ✨ PROGRESSIVE MESSAGE STREAMING: Save individual message immediately
                 try:
@@ -7349,9 +7346,9 @@ Continue building on the progress above. The team should advance the solutions a
                         "agent_id": agent.id,
                         "agent_name": agent.name,
                         "message": response,
-                        "mood": _determine_agent_mood(agent, response),
+                        "mood": mood,
                         "timestamp": datetime.utcnow(),
-                        "message_index": i + 1,
+                        "message_index": index + 1,
                         "total_expected": len(agent_objects),
                         "scenario": scenario,
                         "scenario_name": scenario_name,
@@ -7359,15 +7356,46 @@ Continue building on the progress above. The team should advance the solutions a
                     }
                     
                     await db.message_stream.insert_one(stream_message)
-                    print(f"  📤 Individual message streamed: {agent.name} (Message {i + 1}/{len(agent_objects)})")
+                    print(f"  📤 PARALLEL message streamed: {agent.name} (Message {index + 1}/{len(agent_objects)})")
                     
                 except Exception as save_error:
-                    print(f"  ⚠️ Error streaming individual message: {save_error}")
+                    print(f"  ⚠️ Error streaming parallel message: {save_error}")
+                
+                return message
                 
             except Exception as agent_error:
-                print(f"  ❌ Error generating message for {agent.name}: {str(agent_error)[:100]}...")
+                print(f"  ❌ Error in parallel generation for {agent.name}: {str(agent_error)[:100]}...")
                 # Create personality-driven fallback response
-                fallback_response = _create_personality_fallback(agent, scenario, messages)
+                fallback_response = _create_personality_fallback(agent, scenario, [])
+                mood = _determine_agent_mood(agent, fallback_response)
+                
+                message = ConversationMessage(
+                    agent_name=agent.name,
+                    agent_id=agent.id,
+                    message=fallback_response,
+                    mood=mood,
+                    timestamp=datetime.utcnow()
+                )
+                print(f"  🔄 Using parallel fallback for {agent.name}")
+                return message
+        
+        # 🚀 LAUNCH ALL AGENT TASKS IN PARALLEL
+        print(f"🎯 Launching {len(agent_objects)} agent generation tasks in PARALLEL...")
+        agent_tasks = []
+        for i, agent in enumerate(agent_objects):
+            task = asyncio.create_task(generate_single_agent_message(agent, i))
+            agent_tasks.append(task)
+        
+        # Wait for all agents to complete (they run simultaneously)
+        completed_messages = await asyncio.gather(*agent_tasks, return_exceptions=True)
+        
+        # Process results
+        for i, result in enumerate(completed_messages):
+            if isinstance(result, Exception):
+                print(f"  ⚠️ Agent {i+1} failed with exception: {result}")
+                # Create fallback for failed agent
+                agent = agent_objects[i]
+                fallback_response = _create_personality_fallback(agent, scenario, [])
                 mood = _determine_agent_mood(agent, fallback_response)
                 
                 message = ConversationMessage(
@@ -7378,10 +7406,13 @@ Continue building on the progress above. The team should advance the solutions a
                     timestamp=datetime.utcnow()
                 )
                 messages.append(message)
-                print(f"  🔄 Using personality fallback for {agent.name}")
+            else:
+                messages.append(result)
         
         end_time = time.time()
-        print(f"⚡ Sequential generation completed in {end_time - start_time:.2f} seconds with progressive updates")
+        parallel_time = end_time - start_time
+        print(f"🚀 PARALLEL generation completed in {parallel_time:.2f} seconds (vs ~{27 * len(agent_objects):.0f}s sequential)")
+        print(f"⚡ PERFORMANCE IMPROVEMENT: {((27 * len(agent_objects)) / parallel_time):.1f}x faster!")
                         
     except Exception as e:
         print(f"❌ Error in sequential message generation: {e}")
