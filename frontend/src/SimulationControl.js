@@ -1474,9 +1474,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const displayProgressiveMessage = (messageData, conversationId) => {
     console.log(`📨 Displaying progressive message from ${messageData.agent_name}: ${messageData.message.substring(0, 50)}...`);
     
-    // ✨ UPDATE LOADING ANIMATIONS: Mark agent as complete
-    markAgentComplete(messageData.agent_name);
-    
     // Create conversation structure for this message
     const progressiveConversation = {
       id: conversationId,
