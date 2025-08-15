@@ -5529,7 +5529,7 @@ async def auto_conversation_loop(user_id: str, delay_first: bool = False):
     
     # If delay_first=True, wait before starting to let immediate generation finish
     if delay_first:
-        await asyncio.sleep(45)  # Wait 45s to let first conversation complete and be visible
+        await asyncio.sleep(15)  # Reduced from 45s to 15s - much faster follow-up!
     
     while True:
         try:
@@ -5544,7 +5544,7 @@ async def auto_conversation_loop(user_id: str, delay_first: bool = False):
             agents = await db.agents.find({"user_id": user_id}).to_list(100)
             if len(agents) < 2:
                 print(f"⚠️ Auto-conversation skipped - not enough agents for user {user_id}")
-                await asyncio.sleep(30)
+                await asyncio.sleep(15)  # Reduced wait time
                 continue
             
             print(f"🎯 Auto-generating follow-up conversation for user {user_id}...")
@@ -5560,12 +5560,12 @@ async def auto_conversation_loop(user_id: str, delay_first: bool = False):
             await generate_conversation(mock_user)
             print(f"✅ Auto-conversation generated successfully for user {user_id}")
             
-            # Wait before next generation (30 seconds for good pacing)
-            await asyncio.sleep(30)
+            # Wait before next generation (reduced from 30s to 15s for faster conversations!)
+            await asyncio.sleep(15)
             
         except Exception as e:
             print(f"⚠️ Error in auto-conversation loop for user {user_id}: {e}")
-            await asyncio.sleep(30)  # Wait before retrying
+            await asyncio.sleep(15)  # Reduced retry wait time
 
 @api_router.get("/simulation/state")
 async def get_simulation_state(current_user: User = Depends(get_current_user)):
