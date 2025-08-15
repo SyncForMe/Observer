@@ -1464,6 +1464,9 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const displayProgressiveMessage = (messageData, conversationId) => {
     console.log(`📨 Displaying progressive message from ${messageData.agent_name}: ${messageData.message.substring(0, 50)}...`);
     
+    // ✨ UPDATE LOADING ANIMATIONS: Mark agent as complete
+    markAgentComplete(messageData.agent_name);
+    
     // Create conversation structure for this message
     const progressiveConversation = {
       id: conversationId,
@@ -1510,6 +1513,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     });
     
     console.log(`✅ Progressive message added to conversation ${conversationId} (${messageData.message_index}/${messageData.total_expected})`);
+    
+    // ✨ STOP ANIMATIONS: If this is the last message
+    if (messageData.message_index >= messageData.total_expected) {
+      setTimeout(() => {
+        stopLoadingAnimations();
+      }, 1000); // Brief delay to show the completion
+    }
   };
 
   const toggleFastForward = async () => {
