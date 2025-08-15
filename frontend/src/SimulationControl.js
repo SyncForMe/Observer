@@ -1296,39 +1296,13 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           stepIndex++;
           if (stepIndex < loadingSteps.length) {
             cycleSteps();
-          } else {
-            // After all steps, show agent thinking states
-            setLoadingAnimations(prev => ({
-              ...prev,
-              currentStep: -1 // Special state for agent thinking
-            }));
           }
+          // Note: Removed agent thinking state transition since we removed that display
         }, loadingSteps[stepIndex].duration);
       }
     };
 
     cycleSteps();
-  };
-
-  const updateAgentThinkingStatus = (agentName) => {
-    setLoadingAnimations(prev => ({
-      ...prev,
-      agentStatuses: {
-        ...prev.agentStatuses,
-        [agentName]: 'thinking'
-      }
-    }));
-  };
-
-  const markAgentComplete = (agentName) => {
-    setLoadingAnimations(prev => ({
-      ...prev,
-      receivedMessages: prev.receivedMessages + 1,
-      agentStatuses: {
-        ...prev.agentStatuses,
-        [agentName]: 'complete'
-      }
-    }));
   };
 
   const stopLoadingAnimations = () => {
