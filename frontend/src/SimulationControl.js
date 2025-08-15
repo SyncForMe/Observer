@@ -1035,7 +1035,10 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       if (endpoint === '/simulation/pause') {
         setIsRunning(targetIsRunning);
         setIsPaused(targetIsPaused);
-        console.log('⏸️ Immediate pause UI update applied');
+        
+        // ✨ IMMEDIATE ANIMATION STOP: Stop loading animations immediately when paused
+        stopLoadingAnimations();
+        console.log('⏸️ Immediate pause UI update applied + animations stopped');
       }
       
       // Make API call
