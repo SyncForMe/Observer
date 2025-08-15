@@ -4,6 +4,8 @@ import axios from 'axios';
 import { useAuth } from './AuthContext';
 import { useSimulation } from './App';
 import AgentCreateModal from './AgentCreateModal';
+import StartButton from './StartButton';
+import SetupFlow from './SetupFlow';
 
 const API = process.env.REACT_APP_BACKEND_URL ? `${process.env.REACT_APP_BACKEND_URL}/api` : 'http://localhost:8001/api';
 
@@ -379,6 +381,70 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
 };
 
 const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
+  // Interactive Loading Messages Component
+  const InteractiveLoadingMessages = () => {
+    const [currentMessage, setCurrentMessage] = useState(0);
+    
+    const messages = [
+      {
+        text: "Agents are entering the room...",
+        icon: "🚪",
+        subtext: "Initializing AI personalities"
+      },
+      {
+        text: "Examining the scenario...",
+        icon: "🔍", 
+        subtext: "Analyzing context and objectives"
+      },
+      {
+        text: "Preparing first responses...",
+        icon: "💭",
+        subtext: "Generating thoughtful dialogue"
+      },
+      {
+        text: "Conversation starting soon...",
+        icon: "💬",
+        subtext: "Final preparations complete"
+      }
+    ];
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setCurrentMessage(prev => (prev + 1) % messages.length);
+      }, 3000); // Change message every 3 seconds
+
+      return () => clearInterval(interval);
+    }, []);
+
+    return (
+      <div className="space-y-4">
+        <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-center space-x-3">
+            <span className="text-2xl animate-pulse">{messages[currentMessage].icon}</span>
+            <p className="text-white/80 text-sm font-medium transition-all duration-500">
+              {messages[currentMessage].text}
+            </p>
+          </div>
+          <p className="text-white/60 text-xs transition-all duration-500">
+            {messages[currentMessage].subtext}
+          </p>
+          
+          {/* Progress dots */}
+          <div className="flex items-center justify-center space-x-2 mt-4">
+            {messages.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === currentMessage ? 'bg-purple-400' : 'bg-white/20'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
   const { user, token } = useAuth();
   const { simulationData, updateSimulationData, clearSimulationData } = useSimulation();
   
@@ -421,8 +487,12 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
   const [showSetScenario, setShowSetScenario] = useState(false);
   const [showObserverChat, setShowObserverChat] = useState(false);
+  const [showSetupFlow, setShowSetupFlow] = useState(false);
   const [showClearAllModal, setShowClearAllModal] = useState(false);
   const [showStartFreshModal, setShowStartFreshModal] = useState(false);
+  const [setupFlowData, setSetupFlowData] = useState(null);
+  const [simulationType, setSimulationType] = useState(null); // business, entertainment, research
+  const [simulationTrack, setSimulationTrack] = useState(null); // fast, research, strategic, etc.
   const [showReports, setShowReports] = useState(false); // New state for Reports section
   const [showDocs, setShowDocs] = useState(false); // New state for Docs section
   const [selectedDocument, setSelectedDocument] = useState(null); // For viewing specific documents
@@ -594,6 +664,157 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       console.log('✅ Simulation data already loaded, showing immediately');
     }
   }, [token, isDataLoaded]);
+
+  // Auto-show setup flow for new users or users without agents/scenario - DISABLED for now
+  useEffect(() => {
+    // Temporarily disabled auto-trigger to fix the immediate popup issue
+    // if (isDataLoaded && token) {
+    //   const needsSetup = (
+    //     (!agents || agents.length === 0) || 
+    //     !scenarioName || 
+    //     scenarioName.trim() === '' ||
+    //     scenarioName === 'General Discussion'
+    //   );
+
+    //   if (needsSetup && !showSetupFlow) {
+    //     console.log('🚀 Auto-showing setup flow for new user or incomplete setup');
+    //     setShowSetupFlow(true);
+    //   }
+    // }
+  }, [isDataLoaded, agents, scenarioName, token, showSetupFlow]);
+
+  // Enhanced cursor tracking for Observer eye - immediate tracking with blinking
+  useEffect(() => {
+    let idleTimer = null;
+    let isIdle = false;
+    let blinkInterval = null;
+
+    const handleMouseMove = (e) => {
+      const pupil = document.getElementById('observer-pupil');
+      if (!pupil) return;
+
+      // IMMEDIATE cursor tracking - no delays
+      const eye = pupil.parentElement;
+      const eyeRect = eye.getBoundingClientRect();
+      const eyeCenterX = eyeRect.left + eyeRect.width / 2;
+      const eyeCenterY = eyeRect.top + eyeRect.height / 2;
+
+      const deltaX = e.clientX - eyeCenterX;
+      const deltaY = e.clientY - eyeCenterY;
+      
+      // Calculate angle and limit movement within eye bounds
+      const angle = Math.atan2(deltaY, deltaX);
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const maxDistance = 8; // Maximum pupil movement from center
+      
+      const pupilX = Math.cos(angle) * Math.min(maxDistance, distance * 0.3);
+      const pupilY = Math.sin(angle) * Math.min(maxDistance, distance * 0.3);
+
+      // Apply immediate tracking
+      pupil.style.transform = `translate(${pupilX}px, ${pupilY}px)`;
+      
+      // Stop natural animation when tracking
+      if (!isIdle) {
+        pupil.classList.remove('animate-observer-eye');
+      }
+
+      // Clear and reset idle timer
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+      }
+      
+      isIdle = false;
+
+      // Set new idle timer (3 seconds)
+      idleTimer = setTimeout(() => {
+        if (pupil) {
+          isIdle = true;
+          pupil.classList.add('animate-observer-eye');
+          pupil.style.transform = 'translate(0px, 0px)';
+        }
+      }, 3000);
+    };
+
+    const handleMouseLeave = () => {
+      const pupil = document.getElementById('observer-pupil');
+      if (pupil) {
+        isIdle = true;
+        pupil.classList.add('animate-observer-eye');
+        pupil.style.transform = 'translate(0px, 0px)';
+      }
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+      }
+    };
+
+    // Enhanced blinking functionality
+    const startBlinking = () => {
+      const pupil = document.getElementById('observer-pupil');
+      const eyeContainer = pupil?.parentElement;
+      if (!pupil || !eyeContainer) return;
+
+      const blink = () => {
+        // Create smooth blink effect with natural easing
+        const blinkOverlay = document.createElement('div');
+        blinkOverlay.className = 'absolute inset-0 bg-white rounded-full';
+        blinkOverlay.style.transform = 'scaleY(0)';
+        blinkOverlay.style.transformOrigin = 'center center';
+        blinkOverlay.style.transition = 'transform 0.08s cubic-bezier(0.4, 0.0, 1, 1)'; // Fast close
+        blinkOverlay.style.zIndex = '10';
+        blinkOverlay.style.willChange = 'transform';
+        
+        eyeContainer.appendChild(blinkOverlay);
+        
+        // Animate smooth blink with natural timing
+        requestAnimationFrame(() => {
+          // Fast close (like real eyes)
+          blinkOverlay.style.transform = 'scaleY(1)';
+          
+          setTimeout(() => {
+            // Slower open (more natural)
+            blinkOverlay.style.transition = 'transform 0.12s cubic-bezier(0.0, 0.0, 0.2, 1)';
+            blinkOverlay.style.transform = 'scaleY(0)';
+          }, 80); // Eye closed for 80ms
+          
+          setTimeout(() => {
+            if (blinkOverlay.parentElement) {
+              blinkOverlay.parentElement.removeChild(blinkOverlay);
+            }
+          }, 220); // Total animation: 80ms + 120ms + cleanup
+        });
+      };
+
+      // Blink every 3-7.5 seconds (50% slower intervals)
+      const scheduleNextBlink = () => {
+        const randomDelay = 3000 + Math.random() * 4500; // 3-7.5 seconds (was 2-5 seconds)
+        blinkInterval = setTimeout(() => {
+          blink();
+          scheduleNextBlink();
+        }, randomDelay);
+      };
+
+      // Start first blink after 3 seconds (50% slower)
+      setTimeout(() => {
+        blink();
+        scheduleNextBlink();
+      }, 3000);
+    };
+
+    // Start tracking immediately
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+    document.addEventListener('mouseleave', handleMouseLeave);
+    
+    // Start blinking
+    startBlinking();
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      if (idleTimer) clearTimeout(idleTimer);
+      if (blinkInterval) clearTimeout(blinkInterval);
+    };
+  }, []);
 
   // Simple fetch function for use by other functions (non-debounced to avoid hoisting issues)
   // Handle PDF download with authentication
@@ -777,13 +998,18 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     console.log('🎯 Play/Pause button clicked - playPauseSimulation started');
     console.log('🎯 Current state:', { isRunning, isPaused, simulationLoading, agentsCount: agents.length });
     
+    if (simulationLoading) {
+      console.log('⚠️ Simulation already loading, preventing double-click');
+      return;
+    }
+    
+    // Determine the correct endpoint based on current state
+    let endpoint;
+    let targetIsRunning;
+    let targetIsPaused;
+    
     try {
       setSimulationLoading(true);
-      
-      // Determine the correct endpoint based on current state
-      let endpoint;
-      let targetIsRunning;
-      let targetIsPaused;
       
       if (isRunning && !isPaused) {
         // Currently running -> pause
@@ -805,38 +1031,88 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       console.log(`🎯 Using endpoint: ${endpoint}`);
       console.log(`🎯 Target state: running=${targetIsRunning}, paused=${targetIsPaused}`);
       
-      // Optimistic update: Update UI immediately for better perceived performance
-      setIsRunning(targetIsRunning);
-      setIsPaused(targetIsPaused);
+      // IMMEDIATE UI UPDATE for pause actions (instant feedback)
+      if (endpoint === '/simulation/pause') {
+        setIsRunning(targetIsRunning);
+        setIsPaused(targetIsPaused);
+        console.log('⏸️ Immediate pause UI update applied');
+      }
       
       // Make API call
       const response = await axios.post(`${API}${endpoint}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: endpoint === '/simulation/pause' ? 5000 : 90000 // Fast timeout for pause, longer for start
       });
       
       console.log(`✅ ${endpoint} successful:`, response.data);
       
-      // For resume operations, explicitly refresh conversations to ensure they're restored
-      if (endpoint === '/simulation/resume') {
-        console.log('🔄 Resuming - refreshing conversations to ensure data restoration');
+      // Update state for non-pause operations (pause already updated above)
+      if (endpoint !== '/simulation/pause') {
+        setIsRunning(targetIsRunning);
+        setIsPaused(targetIsPaused);
+      }
+      
+      // Handle post-operation actions
+      if (endpoint === '/simulation/start') {
+        console.log('🔄 Starting - beginning rapid polling for new conversations');
+        
+        // Start immediate polling for conversations
+        const pollForConversations = async () => {
+          let pollCount = 0;
+          const maxPolls = 30; // Poll for up to 90 seconds (30 * 3 seconds)
+          
+          const poll = async () => {
+            try {
+              await fetchConversationsOnly();
+              pollCount++;
+              
+              // Continue polling if we haven't exceeded max polls
+              if (pollCount < maxPolls) {
+                setTimeout(poll, 2000); // Poll every 2 seconds for faster updates
+              } else {
+                console.log('🔄 Polling completed after 60 seconds');
+              }
+            } catch (error) {
+              console.error('❌ Error during conversation polling:', error);
+              // Continue polling even if there's an error
+              if (pollCount < maxPolls) {
+                setTimeout(poll, 2000);
+              }
+            }
+          };
+          
+          // Start first poll immediately
+          poll();
+        };
+        
+        pollForConversations();
+        fetchSimulationState();
+        
+      } else if (endpoint === '/simulation/resume') {
+        console.log('🔄 Resuming - refreshing conversations to ensure they are restored');
         setTimeout(() => {
           fetchSimulationState();
           fetchConversationsOnly();
         }, 200);
-      } else if (endpoint === '/simulation/start') {
-        console.log('🔄 Starting - refreshing all simulation data');
-        setTimeout(() => fetchSimulationState(), 200);
+      } else if (endpoint === '/simulation/pause') {
+        console.log('⏸️ Paused - UI already updated immediately');
+        // No additional actions needed for pause
       }
       
     } catch (error) {
-      console.error('❌ Error controlling simulation:', error);
-      console.log('❌ Full error details:', error.response?.data || error.message);
-      // Revert optimistic update on error
-      setIsRunning(isRunning);
-      setIsPaused(isPaused);
+      console.error(`❌ Error with ${endpoint || 'simulation'}:`, error.response?.data || error.message);
+      
+      // Revert state on error
+      setIsRunning(simulationData?.is_active || false);
+      setIsPaused(simulationData?.is_paused || false);
+      
+      // Show user-friendly error message
+      const errorMsg = error.response?.data?.detail || error.message || 'Failed to update simulation';
+      showNotification(`❌ Simulation Error: ${errorMsg}`);
+      
     } finally {
       setSimulationLoading(false);
-      console.log('🎯 playPauseSimulation completed');
+      console.log('🎯 Play/Pause operation completed');
     }
   };
 
@@ -1018,6 +1294,174 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     } catch (error) {
       console.error('Error fast forwarding:', error);
     }
+  };
+
+  const handleSetupFlowComplete = async (setupData) => {
+    console.log('🚀 SETUP FLOW COMPLETE - Function called with data:', setupData);
+    console.log('🔍 Setup data structure:', JSON.stringify(setupData, null, 2));
+    
+    try {
+      // Show loading state
+      alert('Setup completed! Creating agents and saving scenario...');
+      
+      setSetupFlowData(setupData);
+      setSimulationType(setupData.category);
+      setSimulationTrack(setupData.track);
+      
+      // CRITICAL FIX: Check if setupData contains scenario
+      if (!setupData.scenario || !setupData.scenario.trim()) {
+        console.error('❌ SETUP FLOW ERROR: No scenario provided in setupData');
+        console.log('🔍 setupData.scenario:', setupData.scenario);
+        alert('Error: No scenario was provided during setup. Please try again.');
+        setShowSetupFlow(false);
+        return;
+      }
+      
+      // Set scenario from setup flow using the global simulation context
+      console.log('📝 Setting scenario:', setupData.scenario);
+      console.log('📝 Current scenario before update:', scenario);
+      console.log('📝 Current customScenario before update:', customScenario);
+      
+      // Update scenario states using global context for consistency
+      updateSimulationData({
+        scenario: setupData.scenario,
+        customScenario: setupData.scenario,
+        scenarioName: `${setupData.category} - ${setupData.track} Simulation`
+      });
+      
+      console.log('📝 Scenario state updated via global context');
+      
+      // Update simulation state in backend with new scenario
+      console.log('💾 Saving scenario to backend...');
+      console.log('🔍 Auth token available:', !!token);
+      console.log('🔍 Token preview:', token ? token.substring(0, 20) + '...' : 'No token');
+      
+      try {
+        // Prepare scenario data
+        const scenarioText = setupData.scenario;
+        const scenarioNameText = `${setupData.category} - ${setupData.track} Simulation`;
+        
+        // Update states needed for handleSetScenario
+        setCustomScenario(scenarioText);
+        setScenarioName(scenarioNameText);
+        
+        // Make direct API call with proper token
+        const response = await axios.post(`${API}/simulation/set-scenario`, {
+          scenario: scenarioText,
+          scenario_name: scenarioNameText
+        }, {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('✅ Scenario saved to backend successfully:', response.data);
+        
+      } catch (error) {
+        console.error('❌ Error saving scenario:', error);
+        // Continue anyway - we have the scenario in frontend state
+        console.log('⚠️ Continuing with frontend scenario state despite backend error');
+      }
+      
+      // Create agents from setup flow using the existing agent creation system
+      if (setupData.agents && setupData.agents.length > 0) {
+        console.log(`🤖 Creating ${setupData.agents.length} agents from setup flow...`);
+        
+        let agentsCreated = 0;
+        const newAgents = []; // Collect created agents
+        
+        try {
+          // Create each agent using the existing handleCreateAgent function
+          for (const agentRequest of setupData.agents) {
+            if (agentRequest.status === 'completed') {
+              console.log('🔄 Creating agent from prompt:', agentRequest.prompt);
+              
+              // Extract a better name from the prompt
+              const promptWords = agentRequest.prompt.split(' ');
+              const possibleName = promptWords.find(word => 
+                word.toLowerCase().includes('doctor') || 
+                word.toLowerCase().includes('manager') || 
+                word.toLowerCase().includes('expert') ||
+                word.toLowerCase().includes('analyst') ||
+                word.toLowerCase().includes('director') ||
+                word.toLowerCase().includes('specialist')
+              ) || 'Professional';
+              
+              const agentData = {
+                name: `${possibleName} ${Math.floor(Math.random() * 100)}`,
+                archetype: setupData.category === 'business' ? 'leader' : 
+                          setupData.category === 'entertainment' ? 'entertainer' : 'researcher',
+                goal: agentRequest.prompt.substring(0, 100),
+                expertise: agentRequest.prompt.substring(0, 100),
+                background: agentRequest.prompt,
+                personality: {
+                  extroversion: 7,
+                  optimism: 8,
+                  curiosity: 8,
+                  cooperativeness: 8,
+                  energy: 7
+                }
+              };
+              
+              console.log('📤 Sending agent data to backend:', agentData);
+              
+              // Use the existing handleCreateAgent function that's already working
+              const createdAgent = await handleCreateAgent(agentData);
+              if (createdAgent) {
+                newAgents.push(createdAgent);
+              }
+              agentsCreated++;
+              console.log(`✅ Created agent ${agentsCreated}: ${agentData.name}`);
+            }
+          }
+          
+          // CRITICAL: Update the main agents state with the new agents
+          console.log('🔄 Updating main agents state with new agents...');
+          
+          // Use updateSimulationData to ensure global state consistency
+          updateSimulationData({
+            agents: [...(agents || []), ...newAgents]
+          });
+          
+          console.log(`✅ Main agents state updated via global context: ${[...(agents || []), ...newAgents].length} total agents`);
+          
+          console.log(`🎉 Successfully created ${agentsCreated} agents!`);
+          
+        } catch (error) {
+          console.error('❌ Error creating agents from setup flow:', error);
+        }
+      } else {
+        console.log('⚠️ No agents to create from setup flow');
+      }
+      
+      // Close setup flow
+      setShowSetupFlow(false);
+      
+      // Refresh simulation state to ensure all data is properly loaded and UI updates
+      console.log('🔄 Refreshing simulation state to ensure UI update...');
+      setTimeout(() => {
+        fetchSimulationState();
+      }, 500);
+      
+      console.log('✅ Setup completed - should now show Live Conversations');
+      console.log('🔍 Final setup state - agents:', agents?.length || 0, 'scenario:', !!setupData.scenario);
+      
+      // Show success message
+      setTimeout(() => {
+        alert('Setup completed successfully! Your agents and scenario are ready.');
+      }, 1000);
+      
+      console.log('✨ Setup flow integration completed successfully');
+      
+    } catch (error) {
+      console.error('💥 SETUP FLOW ERROR:', error);
+      alert('Error completing setup: ' + error.message);
+    }
+  };
+
+  const handleSetupFlowCancel = () => {
+    setShowSetupFlow(false);
   };
 
   const startFreshSimulation = async () => {
@@ -1643,17 +2087,21 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       <div className="relative">
         {/* Notification Bar - Enhanced with Scenario Display */}
         <div className="mb-1 h-[2rem] flex items-center justify-center -mt-1">
-          <AnimatePresence>
+          <AnimatePresence mode="wait">
             {/* Show scenario info when scenario is set */}
             {scenarioName && (
               <motion.div
-                initial={{ opacity: 0, x: 400 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -400 }}
+                key="scenario-notification"
+                initial={{ opacity: 0, x: 300, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -300, scale: 0.95 }}
                 transition={{
-                  duration: 1.2,
-                  ease: "easeOut"
+                  type: "spring",
+                  stiffness: 120,
+                  damping: 25,
+                  mass: 1.2
                 }}
+                style={{ willChange: 'transform, opacity' }}
                 className="flex items-center space-x-2 text-white text-lg font-semibold"
               >
                 <span>📋 {scenarioName}</span>
@@ -1669,14 +2117,15 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                       setScenarioExpanded(true);
                     }
                   }}
-                  className="text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+                  className="text-white/80 hover:text-white transition-colors duration-150 p-1 rounded-full hover:bg-white/10"
                   title={scenarioExpanded ? "Collapse scenario details" : "Expand scenario details"}
                 >
                   <svg 
-                    className={`w-4 h-4 transition-transform duration-200 ${scenarioExpanded ? 'rotate-180' : ''}`}
+                    className={`w-4 h-4 transition-transform duration-300 ease-out ${scenarioExpanded ? 'rotate-180' : ''}`}
                     fill="none" 
                     stroke="currentColor" 
                     viewBox="0 0 24 24"
+                    style={{ willChange: 'transform' }}
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1687,13 +2136,17 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
             {/* Show welcome message when no scenario is set */}
             {!scenarioName && notificationVisible && (
               <motion.div
-                initial={{ opacity: 0, x: 400 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -400 }}
+                key="welcome-notification"
+                initial={{ opacity: 0, x: 300, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -300, scale: 0.95 }}
                 transition={{
-                  duration: 1.2,
-                  ease: "easeOut"
+                  type: "spring",
+                  stiffness: 120,
+                  damping: 25,
+                  mass: 1.2
                 }}
+                style={{ willChange: 'transform, opacity' }}
                 className="text-white text-lg font-semibold"
               >
                 {notificationText}
@@ -1706,11 +2159,17 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         <AnimatePresence>
           {scenarioExpanded && scenarioName && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
-              className="mb-4 bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 shadow-lg"
+              initial={{ opacity: 0, scaleY: 0, transformOrigin: 'top' }}
+              animate={{ opacity: 1, scaleY: 1, transformOrigin: 'top' }}
+              exit={{ opacity: 0, scaleY: 0, transformOrigin: 'top' }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 35,
+                mass: 0.6
+              }}
+              style={{ willChange: 'transform, opacity' }}
+              className="mb-4 bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 shadow-lg overflow-hidden"
             >
               <div className="flex items-start space-x-4">
                 <div className="text-3xl flex-shrink-0">📋</div>
@@ -1858,390 +2317,291 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           </div>
         </div>
 
-        {/* Live Conversations Section - 50% width on large screens (Middle Position) */}
+        {/* Live Conversations Section OR Setup Card - 50% width on large screens (Middle Position) */}
         <div className="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2 2xl:col-span-2">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col overflow-hidden">
-            <div className="flex justify-between items-center mb-4 flex-shrink-0">
-              <h3 className="text-lg font-bold text-white">💬 Live Conversations</h3>
-              <div className="flex items-center space-x-1">
-                <div className={`w-2 h-2 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
-                {autoGenerating && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></div>
-                )}
-                <span className="text-white/60 text-sm">
-                  {(() => {
-                    // Read time from simulation state instead of calculating from conversation count
-                    if (simulationData?.simulationState) {
-                      const day = simulationData.simulationState.current_day || 1;
-                      const period = simulationData.simulationState.current_time_period || 'morning';
-                      console.log(`🕐 Time display from simulation state: Day ${day}, ${period}`);
-                      return `Day ${day}, ${period.charAt(0).toUpperCase() + period.slice(1)}`;
-                    } else {
-                      // Improved fallback calculation using total messages and agent count
-                      const totalMessages = Array.isArray(conversations) ? 
-                        conversations.reduce((total, conv) => total + (conv.messages?.length || 0), 0) : 0;
-                      const agentCount = Array.isArray(agents) ? agents.length : 3; // Default to 3 if unknown
-                      
-                      const { day, period } = calculateDayAndTime(totalMessages, agentCount);
-                      console.log(`🕐 Time display from calculation (fallback): Day ${day}, ${period} (${totalMessages} msgs, ${agentCount} agents)`);
-                      return `Day ${day}, ${period}`;
-                    }
-                  })()}
-                </span>
+          {/* Show Setup Card if user needs setup, otherwise show Live Conversations */}
+          {(!agents || agents.length === 0) || !scenarioName || scenarioName.trim() === '' || scenarioName === 'General Discussion' ? (
+            /* Setup Card - Simple & Beautiful */
+            <div className="relative bg-gradient-to-br from-purple-600/20 to-blue-600/20 backdrop-blur-lg rounded-xl h-[600px] flex items-center justify-center border border-purple-500/30 overflow-hidden">
+              
+              {/* Simple Background Glow */}
+              <div className="absolute inset-0">
+                <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
+              </div>
+
+              {/* Main Content */}
+              <div className="relative z-10 text-center">
                 
-                {/* Manual refresh button for time display */}
-                <button
-                  onClick={() => {
-                    console.log('🔄 Manual time refresh triggered');
-                    fetchSimulationState();
-                    setTimeout(() => fetchSimulationState(), 1000);
-                  }}
-                  className="ml-2 p-1 rounded hover:bg-white/10 transition-colors"
-                  title="Refresh time display"
-                >
-                  <svg className="w-3 h-3 text-white/40 hover:text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Compact Search Bar */}
-            <div className="mb-3">
-              <div className="flex space-x-2">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      performSearch(e.target.value);
-                    }}
-                    placeholder="Search conversations..."
-                    className="w-full bg-white/10 border border-white/20 rounded-2xl px-2 py-1 pl-8 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                  <svg className="absolute left-2 top-2 w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                {searchResults.length > 0 && (
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => navigateSearch('prev')}
-                      className="w-6 h-6 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs flex items-center justify-center"
-                    >
-                      ↑
-                    </button>
-                    <span className="px-2 py-1 text-white/60 text-xs">
-                      {currentSearchIndex + 1}/{searchResults.length}
-                    </span>
-                    <button
-                      onClick={() => navigateSearch('next')}
-                      className="w-6 h-6 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs flex items-center justify-center"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Conversations Display */}
-            <div 
-              className="flex-1 overflow-y-auto space-y-3" 
-              data-conversation-container="true"
-              style={{ scrollBehavior: 'auto' }}
-            >
-              {(Array.isArray(conversations) ? conversations : []).length === 0 ? (
-                <div className="text-center py-8 space-y-4">
-                  <div>
-                    <p className="text-white/60 text-sm mb-2">No conversations yet</p>
-                    <div className="text-white/40 text-xs space-y-1">
-                      <p>1. add agents</p>
-                      <p>2. set scenario</p>
-                      <p>3. observe</p>
+                {/* Beautiful Observer Eye Icon */}
+                <div className="mb-12">
+                  {/* Just the Eye - Proper 30% size reduction (32->22, closest is w-20 h-20 = 80px) */}
+                  <div className="relative w-20 h-20 mx-auto">
+                    {/* Eye circle */}
+                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl">
+                      {/* Cursor-tracking pupil with default animation */}
+                      <div 
+                        id="observer-pupil"
+                        className="w-5 h-5 bg-black rounded-full transition-transform duration-100 ease-out animate-observer-eye"
+                      ></div>
                     </div>
                   </div>
                 </div>
-              ) : (
-                <>
-                  {/* Display Regular Conversations */}
-                  {(Array.isArray(conversations) ? conversations : []).map((conversation, conversationIndex) => {
-                    // Calculate the time period this conversation should display based on total messages up to this point
-                    let messagesUpToThisConversation = 0;
-                    for (let i = 0; i <= conversationIndex; i++) {
-                      if (conversations[i] && conversations[i].messages) {
-                        messagesUpToThisConversation += conversations[i].messages.length;
-                      }
-                    }
-                    
-                    // Use the conversation's stored time_period if available, otherwise calculate it
-                    let timePeriodDisplay = conversation.time_period;
-                    
-                    // If no stored time_period, calculate it based on position in conversation flow
-                    if (!timePeriodDisplay) {
-                      const agentCount = Array.isArray(agents) ? agents.length : 3;
-                      const messagesPerPeriod = agentCount * 9;
-                      const timePeriodNumber = Math.floor((messagesUpToThisConversation - 1) / messagesPerPeriod);
-                      const day = Math.floor(timePeriodNumber / 3) + 1;
-                      const periods = ["Morning", "Afternoon", "Evening"];
-                      const period = periods[timePeriodNumber % 3];
-                      timePeriodDisplay = `Day ${day} - ${period}`;
-                    }
-                    
-                    return (
-                      <div key={conversation.id || conversationIndex} className="space-y-2">
-                        {/* Time Period Header - Shows progression through time */}
-                        <div className="flex justify-center mb-2">
-                          <div className="bg-white/5 rounded-full px-3 py-1 border border-white/10">
-                            <span className="text-white/70 text-xs font-medium">
-                              {conversation.scenario_name === "Observer Guidance" ? 
-                                "Observer Message" : 
-                                timePeriodDisplay
-                              }
-                            </span>
-                          </div>
+
+                {/* Simple Message */}
+                <div className="mb-12">
+                  <h2 className="text-3xl font-light text-white mb-4">
+                    Ready to observe?
+                  </h2>
+                  <p className="text-white/60 text-lg">
+                    Create your simulation
+                  </p>
+                </div>
+
+                {/* Beautiful Button */}
+                <button
+                  onClick={() => setShowSetupFlow(true)}
+                  className="group relative bg-white/5 hover:bg-white/10 backdrop-blur border border-white/20 hover:border-white/40 text-white px-16 py-5 rounded-full text-lg font-medium transition-all duration-500 hover:scale-105"
+                >
+                  <span className="flex items-center space-x-3">
+                    <span>Start</span>
+                    <div className="w-2 h-2 bg-white rounded-full group-hover:w-6 group-hover:h-6 transition-all duration-500 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-black opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Original Live Conversations Card */
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
+              <h3 className="text-lg font-bold text-white mb-4">💬 Live Conversations</h3>
+              <div className="flex-1 overflow-y-auto" data-conversation-container="true">
+                {conversations && conversations.length > 0 ? (
+                  <div className="space-y-3">
+                    {conversations.map((conversation, index) => (
+                      <div key={conversation.id || index}>
+                        {/* Round Header */}
+                        <div className="text-center mb-3">
+                          <span className="bg-white/10 text-white/70 text-xs px-3 py-1 rounded-full">
+                            Day {conversation.round || index + 1} - {conversation.time_period || 'Morning'}
+                          </span>
                         </div>
                         
-                        {conversation.messages?.map((message, messageIndex) => {
-                        const isCurrentSearch = searchResults.length > 0 && 
-                          searchResults[currentSearchIndex]?.conversationIndex === conversationIndex && 
-                          searchResults[currentSearchIndex]?.messageIndex === messageIndex;
-                        const isHighlighted = searchResults.some(result => 
-                          result.conversationIndex === conversationIndex && result.messageIndex === messageIndex
-                        );
-
-                        return (
-                          <div
-                            key={message.id || messageIndex}
-                            ref={isCurrentSearch ? (el) => searchRefs.current[currentSearchIndex] = el : null}
-                            className={`rounded-2xl p-3 border-l-4 ${
-                              message.agent_name === "Observer (You)"
-                                ? 'bg-blue-500/20 border-blue-500 shadow-lg'
-                                : isCurrentSearch 
-                                  ? 'border-yellow-400 bg-yellow-400/10' 
-                                  : isHighlighted 
-                                    ? 'border-blue-400 bg-blue-400/10' 
-                                    : 'bg-white/5 border-white/20'
-                            } transition-all duration-200`}
-                          >
-                        <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold overflow-hidden ${
-                              message.agent_name === "Observer (You)"
-                                ? 'bg-blue-600'
-                                : `bg-gradient-to-br from-purple-500 to-pink-500`
-                            }`}>
-                              {message.agent_name === "Observer (You)" ? (
-                                user && user.picture ? (
-                                  <img 
-                                    src={user.picture} 
-                                    alt="Observer" 
-                                    className="w-full h-full object-cover"
-                                    loading="eager"
-                                    style={{
-                                      imageRendering: 'crisp-edges',
-                                      minWidth: '100%',
-                                      minHeight: '100%'
-                                    }}
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      e.target.nextSibling.style.display = 'flex';
-                                    }}
-                                  />
-                                ) : '👁️'
-                              ) : (
-                                (() => {
-                                  const agent = agents.find(a => a.name === message.agent_name);
-                                  return agent && agent.avatar_url ? (
-                                    <img 
-                                      src={agent.avatar_url} 
-                                      alt={agent.name} 
-                                      className="w-full h-full object-cover"
-                                      loading="eager"
-                                      style={{
-                                        imageRendering: 'crisp-edges',
-                                        minWidth: '100%',
-                                        minHeight: '100%'
-                                      }}
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.nextSibling.style.display = 'flex';
-                                      }}
-                                    />
-                                  ) : null;
-                                })()
-                              )}
-                              {message.agent_name === "Observer (You)" ? (
-                                <span 
-                                  className="text-white text-xs font-bold"
-                                  style={{
-                                    display: user && user.picture ? 'none' : 'flex',
-                                    position: 'relative'
-                                  }}
-                                >
-                                  👁️
-                                </span>
-                              ) : (
-                                <span 
-                                  className="text-white text-xs font-bold absolute"
-                                  style={{
-                                    display: (() => {
-                                      const agent = agents.find(a => a.name === message.agent_name);
-                                      return agent && agent.avatar_url ? 'none' : 'flex';
-                                    })()
-                                  }}
-                                >
-                                  {message.agent_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className={`font-bold ${
-                                message.agent_name === "Observer (You)"
-                                  ? 'text-blue-300'
-                                  : 'text-white'
-                              }`}>
-                                {message.agent_name}
-                              </span>
-                              <span className="text-white/40 text-xs">
-                                {message.timestamp ? new Date(message.timestamp).toLocaleTimeString() : 'Now'}
-                              </span>
-                            </div>
-                            <p className={`text-sm leading-relaxed ${
-                              message.agent_name === "Observer (You)"
-                                ? 'text-blue-100 font-medium'
-                                : 'text-white/90'
-                            }`}>
-                              {renderMarkdownBoldWithSearch(message.message, searchTerm)}
-                            </p>
-                          </div>
+                        {/* Messages */}
+                        <div className="space-y-3">
+                          {conversation.messages && conversation.messages.map((message, msgIndex) => {
+                            // Find the agent data for this message to get avatar
+                            const agent = agents.find(a => a.name === message.agent_name || a.id === message.agent_id);
+                            
+                            return (
+                              <div key={msgIndex} className="bg-white/5 backdrop-blur-sm rounded-lg border-l-4 border-purple-400 p-4 hover:bg-white/8 transition-colors duration-200">
+                                <div className="flex items-start space-x-3">
+                                  {/* Agent Avatar */}
+                                  <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 shadow-lg">
+                                    {agent && agent.avatar_url ? (
+                                      <img 
+                                        src={agent.avatar_url} 
+                                        alt={message.agent_name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          // Fallback to gradient circle if image fails to load
+                                          e.target.style.display = 'none';
+                                          e.target.nextSibling.style.display = 'flex';
+                                        }}
+                                      />
+                                    ) : null}
+                                    {/* Fallback gradient circle */}
+                                    <div 
+                                      className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-400 flex items-center justify-center"
+                                      style={{display: agent && agent.avatar_url ? 'none' : 'flex'}}
+                                    >
+                                      <span className="text-white text-sm font-semibold">
+                                        {message.agent_name ? message.agent_name.charAt(0) : 'A'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Message Content */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="text-white font-semibold text-sm">
+                                          {message.agent_name || 'Agent'}
+                                        </span>
+                                        {message.mood && (
+                                          <span className="text-white/60 text-xs px-2 py-1 bg-white/10 rounded-full">
+                                            {message.mood}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-white/50 text-xs flex-shrink-0">
+                                        {message.timestamp ? 
+                                          new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}) : 
+                                          new Date().toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+                                        }
+                                      </span>
+                                    </div>
+                                    <p className="text-white/90 text-sm leading-relaxed">
+                                      {message.message || message.content}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                      })}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    {simulationLoading ? (
+                      <InteractiveLoadingMessages />
+                    ) : isRunning ? (
+                      <div className="space-y-4">
+                        <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
+                        <p className="text-white/60 text-sm">Conversations in progress...</p>
+                      </div>
+                    ) : (
+                      <p className="text-white/60 text-sm">Live conversations will appear here</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Observer Chat Interface - Inside Live Conversations card */}
+              {showObserverChat && (
+                <div className="mt-4 pt-4 border-t border-white/20">
+                  {/* Observer Header */}
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
                     </div>
-                  )
-                  })}
-                  <div ref={messagesEndRef} />
-                </>
+                    <div className="flex-1">
+                      <h4 className="text-white font-semibold text-sm">Observer Control</h4>
+                      <p className="text-white/60 text-xs">Guide the conversation</p>
+                    </div>
+                  </div>
+                  
+                  {/* Observer Input */}
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={observerMessage}
+                      onChange={(e) => setObserverMessage(e.target.value)}
+                      placeholder="Type your guidance..."
+                      className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 text-sm focus:outline-none focus:border-yellow-400/50 focus:bg-white/15"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !isObserverLoading) {
+                          handleSendObserverMessage();
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={handleSendObserverMessage}
+                      disabled={isObserverLoading || !observerMessage.trim()}
+                      className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 disabled:from-gray-600 disabled:to-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:cursor-not-allowed flex items-center space-x-1"
+                    >
+                      {isObserverLoading ? (
+                        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  
+                  <div className="mt-2 text-xs text-white/40">
+                    Press Enter to send • Guides agent responses
+                  </div>
+                </div>
               )}
             </div>
+          )}
 
-            {/* Observer Input Section */}
-            {showObserverChat && (
-              <div className="mt-2 p-3 bg-white/5 rounded-2xl border border-purple-500/30">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={observerMessage}
-                    onChange={(e) => setObserverMessage(e.target.value)}
-                    placeholder="Talk to your agents, observer..."
-                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSendObserverMessage();
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={handleSendObserverMessage}
-                    disabled={!observerMessage.trim() || isObserverLoading}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-xl transition-colors disabled:cursor-not-allowed text-sm"
-                  >
-                    {isObserverLoading ? 'Sending...' : 'Send'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Control Buttons - Outside of Live Conversations card but in same column */}
-          <div className="mt-1.5">
-            <div className="grid grid-cols-4 gap-1 py-3 max-w-xs mx-auto">
-              {/* Play/Pause Button */}
-              <div className="flex flex-col items-center group">
+          {/* Control Buttons - Only show when properly set up */}
+          {scenarioName && scenarioName !== 'General Discussion' && agents && agents.length >= 2 && (
+            <div className="flex justify-center mt-5">
+              <div className="flex items-center space-x-7">
+                {/* Play/Pause Button */}
                 <button
                   onClick={playPauseSimulation}
-                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-white text-sm ${
-                    isRunning && !isPaused
-                      ? 'bg-orange-600 hover:bg-orange-700' 
-                      : 'bg-emerald-600 hover:bg-emerald-700'
-                  }`}
-                  title={isRunning && !isPaused ? 'Pause' : 'Play'}
+                  disabled={simulationLoading || !scenarioName || agents.length < 2}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 shadow-xl ${
+                    simulationLoading 
+                      ? 'bg-gray-500 cursor-not-allowed'
+                      : isRunning
+                      ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/30' 
+                      : 'bg-green-500 hover:bg-green-600 shadow-green-500/30'
+                  } text-white disabled:bg-gray-500 disabled:cursor-not-allowed`}
+                  title={simulationLoading ? 'Generating conversations... (30-60 seconds)' : isRunning ? 'Pause Simulation' : 'Start Simulation'}
                 >
-                  {isRunning && !isPaused ? '⏸' : '▶'}
-                </button>
-                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  {isRunning && !isPaused ? 'Pause' : 'Play'}
-                </span>
-              </div>
-
-              {/* Observer Button */}
-              <div className="flex flex-col items-center group">
-                <button
-                  onClick={() => setShowObserverChat(!showObserverChat)}
-                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-white text-sm ${
-                    showObserverChat 
-                      ? 'bg-blue-600 hover:bg-blue-700' 
-                      : 'bg-gray-600 hover:bg-gray-700'
-                  }`}
-                  title="Observer"
-                >
-                  👁
-                </button>
-                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Observer
-                </span>
-              </div>
-
-              {/* Fast Forward Button */}
-              <div className="flex flex-col items-center group">
-                <button
-                  onClick={toggleFastForward}
-                  disabled={!isRunning || isPaused}
-                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-white text-sm ${
-                    isRunning && !isPaused
-                      ? 'bg-purple-600 hover:bg-purple-700' 
-                      : 'bg-gray-600 cursor-not-allowed text-gray-400'
-                  }`}
-                  title="Fast Forward"
-                >
-                  »
-                </button>
-                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Fast Forward
-                </span>
-              </div>
-
-              {/* Start Fresh Button */}
-              <div className="flex flex-col items-center group">
-                <button
-                  onClick={startFreshSimulation}
-                  disabled={startFreshLoading}
-                  className={`w-8 h-8 rounded-full transition-all duration-200 flex items-center justify-center text-sm ${
-                    startFreshLoading 
-                      ? 'bg-gray-600 cursor-not-allowed text-gray-400' 
-                      : 'bg-red-600 hover:bg-red-700 text-white'
-                  }`}
-                  title={startFreshLoading ? "Clearing data..." : "Start Fresh"}
-                >
-                  {startFreshLoading ? (
-                    <div className="animate-spin w-4 h-4 border border-white/30 border-t-white rounded-full"></div>
+                  {simulationLoading ? (
+                    <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : isRunning ? (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                    </svg>
                   ) : (
-                    '↻'
+                    <svg className="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
                   )}
                 </button>
-                <span className="text-white/60 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  {startFreshLoading ? 'Clearing...' : 'Fresh Start'}
-                </span>
+
+                {/* Observer Button */}
+                <button
+                  onClick={() => setShowObserverChat(!showObserverChat)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 shadow-xl ${
+                    showObserverChat
+                      ? 'bg-yellow-600 hover:bg-yellow-700 shadow-yellow-500/30' 
+                      : 'bg-yellow-500 hover:bg-yellow-600 shadow-yellow-500/30'
+                  } text-white`}
+                  title={showObserverChat ? 'Hide Observer Chat' : 'Show Observer Chat'}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 616 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+
+                {/* Fast Forward Button */}
+                <button
+                  onClick={toggleFastForward}
+                  disabled={simulationLoading || !scenarioName || agents.length < 2}
+                  className="w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-all duration-300 transform hover:scale-110 shadow-xl shadow-blue-500/30 disabled:bg-gray-500 disabled:cursor-not-allowed"
+                  title="Fast Forward (Generate Next Round)"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+                  </svg>
+                </button>
+
+                {/* Fresh Start Button */}
+                <button
+                  onClick={startFreshSimulation}
+                  disabled={simulationLoading}
+                  className="w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all duration-300 transform hover:scale-110 shadow-xl shadow-red-500/30 disabled:bg-gray-500 disabled:cursor-not-allowed"
+                  title="Start Fresh (Clear All Data)"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
-
+        
         {/* Scenario Setup Section - 25% width on large screens (Right Position) */}
         <div className="lg:col-span-1">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
@@ -2841,8 +3201,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 </div>
               )}
             </div>
-
-          </div>
+            
         </div>
       </div>
 
@@ -3209,6 +3568,20 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           }
         }
       `}</style>
+
+      {/* Setup Flow Modal */}
+      <AnimatePresence>
+        {showSetupFlow && (
+          <SetupFlow
+            onComplete={handleSetupFlowComplete}
+            onCancel={handleSetupFlowCancel}
+            existingAgents={agents}
+            onAddAgent={handleAddAgent}
+          />
+        )}
+      </AnimatePresence>
+
+      </div> {/* Close main container div */}
     </>
   );
 };

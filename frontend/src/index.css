@@ -2,6 +2,111 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animations for the setup card */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewX(-12deg);
+  }
+}
+
+/* Observer Eye Animation - Pupil moves in bottom half */
+@keyframes observer-eye {
+  0% {
+    transform: translate(0px, 2px);
+  }
+  25% {
+    transform: translate(-4px, 6px);
+  }
+  50% {
+    transform: translate(0px, 8px);
+  }
+  75% {
+    transform: translate(4px, 6px);
+  }
+  100% {
+    transform: translate(0px, 2px);
+  }
+}
+
+/* Enhanced blinking animation */
+@keyframes eye-blink {
+  0%, 90%, 100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out forwards;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-out infinite;
+}
+
+.animate-observer-eye {
+  animation: observer-eye 4s ease-in-out infinite;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-300 {
+  animation-delay: 0.3s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-700 {
+  animation-delay: 0.7s;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+.delay-1500 {
+  animation-delay: 1.5s;
+}
+
 /* Ensure full background coverage for all content */
 html, body {
     margin: 0;

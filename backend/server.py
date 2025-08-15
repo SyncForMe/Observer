@@ -19,6 +19,7 @@ import asyncio
 import uuid
 import logging
 import os
+import time
 from pathlib import Path
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
@@ -4975,6 +4976,146 @@ async def create_agent(agent_data: AgentCreate, current_user: User = Depends(get
     await db.agents.insert_one(agent.dict())
     return agent
 
+# New model for AI-powered agent generation
+class AgentGenerationRequest(BaseModel):
+    description: str  # Simple description like "CEO of Facebook"
+
+@api_router.post("/agents/ai-generate", response_model=Agent)
+async def ai_generate_agent(request: AgentGenerationRequest, current_user: User = Depends(get_current_user)):
+    """Generate a comprehensive agent using AI from a simple description"""
+    try:
+        # Initialize Gemini chat for agent generation
+        gemini_api_key = os.environ.get('GEMINI_API_KEY')
+        if not gemini_api_key:
+            raise HTTPException(status_code=500, detail="Gemini API key not configured")
+        
+        chat = LlmChat(
+            api_key=gemini_api_key,
+            session_id=f"agent-gen-{uuid.uuid4()}",
+            system_message="""You are an expert at creating detailed AI agent profiles. 
+            Generate comprehensive agent profiles including ALL required fields based on simple descriptions.
+            
+            CRITICAL: Return your response in EXACTLY this JSON format with NO additional text or markdown:
+            {
+                "name": "Full professional name",
+                "archetype": "one of: optimist, pessimist, analyst, leader, creative, supporter, challenger, observer",
+                "goal": "Primary professional goal or mission",
+                "expertise": "Detailed areas of expertise and skills",
+                "background": "Professional background, experience, and qualifications",
+                "avatar_prompt": "Detailed visual description for avatar generation (appearance, clothing, setting)",
+                "personality_traits": {
+                    "confidence": 8,
+                    "curiosity": 7,
+                    "empathy": 6,
+                    "assertiveness": 8,
+                    "optimism": 7,
+                    "analytical": 9,
+                    "creativity": 6,
+                    "patience": 7
+                }
+            }
+            
+            All personality traits should be integers from 1-10.
+            Make the agent realistic and comprehensive based on the role described."""
+        ).with_model("gemini", "gemini-2.0-flash")
+        
+        # Generate agent profile
+        user_message = UserMessage(
+            text=f"Generate a detailed agent profile for: {request.description}"
+        )
+        
+        response = await chat.send_message(user_message)
+        
+        # Parse the JSON response - handle markdown code blocks
+        import json
+        import re
+        try:
+            # Extract JSON from markdown code blocks if present
+            response_text = response.strip()
+            
+            # Check if response is wrapped in markdown code blocks
+            if response_text.startswith("```json") and response_text.endswith("```"):
+                # Extract JSON content from markdown
+                json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+                if json_match:
+                    response_text = json_match.group(1).strip()
+            elif response_text.startswith("```") and response_text.endswith("```"):
+                # Handle generic code blocks
+                json_match = re.search(r'```\s*(.*?)\s*```', response_text, re.DOTALL)
+                if json_match:
+                    response_text = json_match.group(1).strip()
+            
+            agent_data = json.loads(response_text)
+        except json.JSONDecodeError as e:
+            logging.error(f"Failed to parse Gemini response: {response}")
+            raise HTTPException(status_code=500, detail="Failed to parse AI response")
+        
+        # Create personality object - map AI traits to existing personality model
+        personality_data = agent_data.get("personality_traits", {})
+        personality = AgentPersonality(
+            extroversion=personality_data.get("assertiveness", 7),  # Map assertiveness to extroversion
+            optimism=personality_data.get("optimism", 7),
+            curiosity=personality_data.get("curiosity", 7), 
+            cooperativeness=personality_data.get("empathy", 7),  # Map empathy to cooperativeness
+            energy=personality_data.get("confidence", 7)  # Map confidence to energy
+        )
+        
+        # Generate avatar using fal.ai
+        avatar_url = ""
+        avatar_prompt = agent_data.get("avatar_prompt", "")
+        
+        if avatar_prompt:
+            try:
+                # Enhanced prompt for better avatar results
+                enhanced_prompt = f"professional portrait, headshot, detailed face, {avatar_prompt}, high quality, photorealistic, studio lighting, neutral background"
+                
+                # Submit to fal.ai
+                handler = await fal_client.submit_async(
+                    "fal-ai/flux/schnell",
+                    arguments={
+                        "prompt": enhanced_prompt,
+                        "image_size": "portrait_4_3",
+                        "num_images": 1,
+                        "enable_safety_checker": True
+                    }
+                )
+                
+                result = await handler.get()
+                
+                if result and result.get("images") and len(result["images"]) > 0:
+                    avatar_url = result["images"][0]["url"]
+                    logging.info(f"Avatar generated successfully for {agent_data.get('name')}")
+                else:
+                    logging.warning(f"No avatar generated for {agent_data.get('name')}")
+                    
+            except Exception as e:
+                logging.error(f"Avatar generation error: {e}")
+                # Continue without avatar if generation fails
+        
+        # Create the agent
+        agent = Agent(
+            name=agent_data.get("name", "Unknown Agent"),
+            archetype=agent_data.get("archetype", "analyst"),
+            personality=personality,
+            goal=agent_data.get("goal", ""),
+            expertise=agent_data.get("expertise", ""),
+            background=agent_data.get("background", ""),
+            memory_summary="",
+            avatar_url=avatar_url,
+            avatar_prompt=avatar_prompt,
+            user_id=current_user.id
+        )
+        
+        # Save to database
+        await db.agents.insert_one(agent.dict())
+        
+        logging.info(f"AI-generated agent created: {agent.name} for user {current_user.id}")
+        return agent
+        
+    except Exception as e:
+        logging.error(f"AI agent generation error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate agent: {str(e)}")
+
 @api_router.get("/agents", response_model=List[Agent])
 async def get_agents(current_user: User = Depends(get_current_user)):
     """Get all agents for the current user (requires authentication)"""
@@ -5338,6 +5479,13 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None, cur
     
     # Log the simulation start with time limit info
     time_limit_msg = f" with {time_limit_display} time limit" if time_limit_display else " with no time limit"
+    print(f"✅ Simulation started for user {current_user.id}{time_limit_msg}")
+    
+    # ✨ PERFORMANCE IMPROVEMENT: Start conversation generation in background
+    print("🚀 Starting automatic conversation generation in background...")
+    
+    # Return immediately for better UX, generate conversations asynchronously
+    asyncio.create_task(generate_initial_conversation_background(current_user.id, existing_scenario))
     
     return {
         "message": f"Simulation started{time_limit_msg}", 
@@ -5383,18 +5531,40 @@ async def get_simulation_state(current_user: User = Depends(get_current_user)):
             {"$set": {"time_remaining_hours": remaining_hours}}
         )
     
-    # Fetch and include reports for this user
+    # Fetch and include reports for CURRENT ACTIVE SIMULATION ONLY
+    # Old reports should only be accessible from Library, not Observatory
     try:
-        reports_cursor = db.reports.find({"user_id": current_user.id}).sort("created_at", -1)
-        reports = []
+        # Only include reports if there's an active scenario and simulation start time
+        current_scenario = state.get('scenario', '')
+        simulation_start_time = state.get('simulation_start_time')
         
-        async for report in reports_cursor:
-            # Convert ObjectId to string for JSON serialization
-            if '_id' in report:
-                report['_id'] = str(report['_id'])
-            reports.append(report)
-        
-        state['reports'] = reports
+        if current_scenario and simulation_start_time:
+            # Parse simulation start time to filter reports from current session
+            start_time = simulation_start_time
+            if isinstance(start_time, str):
+                start_time = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+            elif isinstance(start_time, dict):
+                start_time = datetime.fromisoformat(start_time.get('$date', str(datetime.utcnow())))
+            
+            # Only include reports created after the current simulation started
+            reports_cursor = db.reports.find({
+                "user_id": current_user.id,
+                "created_at": {"$gte": start_time}
+            }).sort("created_at", -1)
+            
+            reports = []
+            async for report in reports_cursor:
+                # Convert ObjectId to string for JSON serialization
+                if '_id' in report:
+                    report['_id'] = str(report['_id'])
+                reports.append(report)
+            
+            state['reports'] = reports
+            print(f"📊 Observatory reports: {len(reports)} from current simulation session")
+        else:
+            # No active scenario or simulation not started - no reports in Observatory
+            state['reports'] = []
+            print("📊 Observatory reports: 0 (no active simulation)")
         
     except Exception as e:
         logging.error(f"Error fetching reports for simulation state: {e}")
@@ -6538,6 +6708,42 @@ REQUIREMENTS:
     
     return document
 
+async def generate_initial_conversation_background(user_id: str, scenario: str):
+    """Generate initial conversation in background for better UX performance"""
+    try:
+        print(f"🚀 Background conversation generation started for user {user_id}")
+        
+        # Get user's agents to ensure we have enough for conversation
+        agents = await db.agents.find({"user_id": user_id}).to_list(100)
+        
+        if len(agents) >= 2:
+            print(f"🤖 Found {len(agents)} agents, generating initial conversation...")
+            
+            # Create LLM manager for conversation generation
+            llm_manager = LLMManager()
+            
+            # Get the latest summary for context (if any)
+            latest_summary = await llm_manager.get_latest_conversation_summary(user_id, scenario)
+            
+            # Create a mock user object for the generate_conversation function
+            class MockUser:
+                def __init__(self, user_id):
+                    self.id = user_id
+            
+            mock_user = MockUser(user_id)
+            
+            # Generate first conversation to kickstart the simulation
+            # Call the conversation generation function directly
+            first_conversation = await generate_conversation(mock_user)
+            print(f"✅ Initial conversation generated successfully in background")
+            
+        else:
+            print(f"⚠️ Only {len(agents)} agents found, skipping initial conversation generation (need at least 2)")
+            
+    except Exception as e:
+        print(f"⚠️ Failed to generate initial conversation in background: {e}")
+        # Don't fail - this is background processing
+
 @api_router.post("/conversation/generate")
 async def generate_conversation(current_user: User = Depends(get_current_user)):
     """Generate a conversation round between agents with sequential responses and progression tracking"""
@@ -7085,23 +7291,35 @@ Continue building on the progress above. The team should advance the solutions a
     messages = []
     conversation_so_far = ""
     
-    print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages (SIMPLIFIED SYSTEM)")
+    print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages (SEQUENTIAL FOR PROGRESSIVE DISPLAY)")
     
-    # Generate 1 message per agent for clean, simple conversations
+    # ✨ SEQUENTIAL PROCESSING: Generate messages one by one for progressive frontend display
+    messages = []
     try:
+        print("🔄 Starting sequential message generation for progressive display...")
+        start_time = time.time()
+        
         for i, agent in enumerate(agent_objects):
             try:
                 print(f"  🤖 Generating message for {agent.name} ({i + 1}/{len(agent_objects)})")
                 
-                # Build comprehensive context including conversation history
+                # Build comprehensive context including conversation history and previous messages from this round
                 current_context = f"{observer_context}\n🎯 TEAM PROBLEM-SOLVING MISSION:\nYou're working together to solve: {scenario}\n"
                 
-                # Include previous messages from this conversation for context
+                # Include conversation history for context
+                if conversation_history_msgs:
+                    current_context += f"\nPrevious conversation context:\n"
+                    for prev_msg in conversation_history_msgs[-3:]:  # Last 3 for context
+                        current_context += f"• {prev_msg.get('agent_name', 'Unknown')}: {prev_msg.get('content', '')}\n"
+                
+                # Include messages from current round that have already been generated
                 if messages:
-                    current_context += f"\nConversation so far:\n"
+                    current_context += f"\nConversation in progress:\n"
                     for prev_msg in messages:
                         current_context += f"• {prev_msg.agent_name}: {prev_msg.message}\n"
-                    current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
+                    current_context += f"\nYour turn, {agent.name}. Build on what others have said and add your unique perspective."
+                else:
+                    current_context += f"\nYou're the first to speak, {agent.name}. Set the tone for this discussion."
                 
                 response = await llm_manager.generate_agent_response(
                     agent, scenario, agent_objects, current_context, conversation_history_msgs, language_instruction, existing_documents, state
@@ -7117,12 +7335,47 @@ Continue building on the progress above. The team should advance the solutions a
                     mood=mood,
                     timestamp=datetime.utcnow()
                 )
+                
                 messages.append(message)
+                print(f"  ✅ {agent.name}: {len(response)} chars - Message {i + 1} ready for frontend")
                 
-                # Update conversation_so_far for next agent
-                conversation_so_far += f"{agent.name}: {response}\n"
-                
-                print(f"  ✅ {agent.name}: {len(response)} chars")
+                # Save conversation immediately after each message for progressive display
+                if messages:
+                    try:
+                        # Calculate day and time period based on TOTAL MESSAGES (simplified)
+                        all_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", 1).to_list(None)
+                        total_messages_before_this = sum(len(conv.get("messages", [])) for conv in all_conversations)
+                        total_messages_including_this = total_messages_before_this + len(messages)
+                        
+                        # Simple time calculation: 9 messages per agent per time period
+                        agent_count = len(agent_objects)
+                        messages_per_time_period = agent_count * 9  # Each agent sends 9 messages per time period
+                        time_period_number = total_messages_including_this // messages_per_time_period
+                        
+                        # Determine time period
+                        time_periods = ["Morning", "Afternoon", "Evening"]
+                        period_index = time_period_number % 3
+                        day_number = (time_period_number // 3) + 1
+                        time_period = time_periods[period_index]
+                        
+                        time_period_display = f"Day {day_number} - {time_period}"
+                        
+                        conversation = ConversationRound(
+                            id=str(uuid.uuid4()),
+                            round_number=conversation_count + 1,
+                            time_period=time_period_display,
+                            scenario=scenario,
+                            scenario_name=scenario_name,
+                            messages=[msg.dict() for msg in messages],
+                            user_id=current_user.id,
+                            created_at=datetime.utcnow()
+                        )
+                        
+                        await db.conversations.insert_one(conversation.dict())
+                        print(f"  💾 Conversation saved with {len(messages)} messages for progressive display")
+                        
+                    except Exception as save_error:
+                        print(f"  ⚠️ Error saving progressive conversation: {save_error}")
                 
             except Exception as agent_error:
                 print(f"  ❌ Error generating message for {agent.name}: {str(agent_error)[:100]}...")
@@ -7139,11 +7392,13 @@ Continue building on the progress above. The team should advance the solutions a
                 )
                 messages.append(message)
                 print(f"  🔄 Using personality fallback for {agent.name}")
-                continue
+        
+        end_time = time.time()
+        print(f"⚡ Sequential generation completed in {end_time - start_time:.2f} seconds with progressive updates")
                         
     except Exception as e:
-        print(f"❌ Error in message generation: {e}")
-        # Ensure we have at least some messages
+        print(f"❌ Error in sequential message generation: {e}")
+        # Fallback to ensure we have messages
         if not messages:
             for agent in agent_objects:
                 fallback_response = _create_personality_fallback(agent, scenario, [])
@@ -7213,382 +7468,6 @@ Continue building on the progress above. The team should advance the solutions a
     except Exception as e:
         print(f"Document auto-generation failed: {e}")
         # Don't let document generation failure break conversation generation
-    
-    return conversation_round
-    agent_objects = [Agent(**agent) for agent in agents]
-    
-    # Get simulation state including language setting
-    state = await db.simulation_state.find_one()
-    if not state:
-        raise HTTPException(status_code=404, detail="Simulation not started")
-    
-    # Generate conversation context
-    time_period = state["current_time_period"]
-    day = state["current_day"]
-    scenario = state["scenario"]
-    scenario_name = state.get("scenario_name", "")  # Default to empty if not set
-    language = state.get("language", "en")  # Default to English if not set
-    
-    # Language settings for conversation generation
-    language_instructions = {
-        "en": "Respond in English.",
-        "es": "Responde en español de manera natural y fluida.",
-        "fr": "Répondez en français de manière naturelle et fluide.",
-        "de": "Antworten Sie auf Deutsch in natürlicher und fließender Weise.",
-        "it": "Rispondi in italiano in modo naturale e fluido.",
-        "pt": "Responda em português de forma natural e fluente.",
-        "ru": "Отвечайте на русском языке естественно и бегло.",
-        "ja": "自然で流暢な日本語で答えてください。",
-        "ko": "자연스럽고 유창한 한국어로 대답해주세요.",
-        "zh": "请用自然流利的中文回答。",
-        "hi": "प्राकृतिक और प्रवाहपूर्ण हिंदी में उत्तर दें।",
-        "ar": "أجب باللغة العربية بطريقة طبيعية وطلقة."
-    }
-    
-    language_instruction = language_instructions.get(language, language_instructions["en"])
-    
-    # Get recent conversation history for better context and progression tracking
-    recent_conversations = await db.conversations.find().sort("created_at", -1).limit(10).to_list(10)
-    
-    # Get existing documents for agent reference (limit to recent/relevant docs)
-    existing_documents = []
-    try:
-        # For now, get the most recent 5 documents - in production, this could be filtered by relevance
-        docs_cursor = await db.documents.find().sort("metadata.updated_at", -1).limit(5).to_list(5)
-        existing_documents = [
-            {
-                "id": doc["id"],
-                "title": doc["metadata"]["title"],
-                "category": doc["metadata"]["category"],
-                "description": doc["metadata"]["description"],
-                "authors": doc["metadata"]["authors"],
-                "keywords": doc["metadata"]["keywords"]
-            }
-            for doc in docs_cursor
-        ]
-    except Exception as e:
-        logging.warning(f"Could not fetch existing documents: {e}")
-        existing_documents = []
-    
-    # Analyze recent topics to avoid repetition
-    recent_topics = []
-    if recent_conversations:
-        for conv in recent_conversations[-5:]:  # Last 5 conversations
-            for msg in conv.get('messages', []):
-                if len(msg.get('message', '')) > 50:  # Substantial messages only
-                    recent_topics.append(msg['message'][:100])
-    
-    # Determine conversation progression state
-    conversation_count = await db.conversations.count_documents({})
-    progression_prompts = {
-        "early": "You're in early discussions. Focus on understanding the problem and initial ideas.",
-        "middle": "You've been discussing this for a while. Start narrowing down options and making decisions.", 
-        "advanced": "Time to make concrete decisions and action plans. Avoid rehashing old points."
-    }
-    
-    if conversation_count < 5:
-        progression_stage = "early"
-    elif conversation_count < 15:
-        progression_stage = "middle"
-    else:
-        progression_stage = "advanced"
-    
-    progression_guidance = progression_prompts[progression_stage]
-    
-    # ===== ENHANCED CROSS-ROUND REFERENCE SYSTEM =====
-    # Build comprehensive historical context from ALL previous conversations
-    historical_context = ""
-    if recent_conversations:
-        # Create searchable conversation history for cross-round references
-        conversation_history = []
-        for conv_idx, conv in enumerate(recent_conversations[-10:]):  # Last 10 conversations for reference
-            round_number = conv.get('round_number', conv_idx + 1)
-            time_period = conv.get('time_period', f'Round {round_number}')
-            
-            for msg in conv.get('messages', []):
-                conversation_history.append({
-                    'round': round_number,
-                    'time_period': time_period,
-                    'agent_name': msg.get('agent_name'),
-                    'message': msg.get('message'),
-                    'content_preview': msg.get('message', '')[:150] + '...' if len(msg.get('message', '')) > 150 else msg.get('message', '')
-                })
-        
-        # Add cross-round reference context
-        if conversation_history:
-            historical_context = f"\n\n===== CONVERSATION HISTORY FOR REFERENCE =====\n"
-            historical_context += "You can reference specific points made in previous rounds:\n\n"
-            
-            # Group by rounds for easier reference
-            rounds_dict = {}
-            for entry in conversation_history:
-                round_key = f"Round {entry['round']} ({entry['time_period']})"
-                if round_key not in rounds_dict:
-                    rounds_dict[round_key] = []
-                rounds_dict[round_key].append(entry)
-            
-            # Show last 3 rounds for reference
-            round_keys = list(rounds_dict.keys())[-3:]
-            for round_key in round_keys:
-                historical_context += f"\n{round_key}:\n"
-                for entry in rounds_dict[round_key]:
-                    historical_context += f"• {entry['agent_name']}: {entry['content_preview']}\n"
-            
-            historical_context += f"\nREFERENCE INSTRUCTIONS:\n"
-            historical_context += f"- When relevant, reference specific points made in previous rounds\n"
-            historical_context += f"- Use phrases like 'As [Agent Name] mentioned in Round X' or 'Building on the point from earlier about...'\n"
-            historical_context += f"- Show how discussions have evolved and what new insights you have\n"
-            historical_context += f"- Don't just repeat - ADVANCE the conversation based on what was previously discussed\n"
-    
-    # Build conversation context with progression awareness and cross-round references
-    context = f"Day {day}, {time_period}. {progression_guidance}{historical_context}"
-    
-    if recent_conversations:
-        # Add context about recent discussions to build upon
-        context += f"\n\nRECENT DISCUSSION THEMES (build upon these, don't repeat):\n"
-        for i, topic in enumerate(recent_topics[-3:], 1):
-            context += f"- Theme {i}: {topic}...\n"
-    # ===== ENHANCED DOCUMENT-FOCUSED CONVERSATION SYSTEM =====
-    # Add document creation focus to the conversation context
-    context += f"\n\n===== DOCUMENT CREATION FOCUS =====\n"
-    context += f"IMPORTANT: Your team's goal is to work towards creating helpful documents that capture your decisions, analysis, and plans.\n"
-    context += f"As you discuss, consider what documents would be valuable:\n"
-    context += f"- Protocols for repeatable processes\n"
-    context += f"- Implementation plans for actions\n" 
-    context += f"- Risk assessments for important decisions\n"
-    context += f"- Technical specifications for solutions\n"
-    context += f"- Training guides for new procedures\n"
-    context += f"- Budget proposals for resource allocation\n"
-    context += f"- Timeline documents for project planning\n"
-    context += f"\nWhen you reach consensus or make important decisions, suggest creating a document to formalize it.\n"
-    
-    # ===== SIMPLIFIED SINGLE MESSAGE STRUCTURE =====
-    messages = []
-    conversation_so_far = ""
-    
-    print(f"🎯 TARGET: {len(agent_objects)} agents × 1 message = {len(agent_objects)} total messages")
-    
-    # Generate 1 message per agent for faster processing
-    try:
-        print(f"🔄 Starting conversation with {len(agent_objects)} agents...")
-        
-        for i, agent in enumerate(agent_objects):
-            try:
-                print(f"  🤖 Generating message for {agent.name} (Agent {i + 1}/{len(agent_objects)})")
-                
-                # Simplified guidance for single message per agent
-                agent_guidance = f"Share your perspective on solving this challenge. Be specific about your approach and focus area."
-                
-                # Build simple context for faster processing
-                current_context = f"{context}\n\n{agent_guidance}\n"
-                
-                # Include previous messages for context
-                if messages:
-                    current_context += f"\nConversation so far:\n"
-                    # Group messages by agent to show conversation flow clearly
-                    agent_messages = {}
-                    for prev_msg in messages:
-                        if prev_msg.agent_name not in agent_messages:
-                            agent_messages[prev_msg.agent_name] = []
-                        agent_messages[prev_msg.agent_name].append(prev_msg.message)
-                    
-                    for agent_name, agent_msgs in agent_messages.items():
-                        if agent_name != agent.name:  # Don't show current agent's own messages
-                            for j, msg in enumerate(agent_msgs, 1):
-                                current_context += f"• {agent_name} (Message {j}): {msg}\n"
-                    
-                    current_context += f"\nYour turn, {agent.name}. Reference specific points made above and add your unique perspective."
-                
-                # Minimal delay to prevent rate limiting (optimized for speed)
-                if len(messages) > 0:
-                    await asyncio.sleep(0.1)  # Reduced to 0.1s for faster generation
-                
-                response = await llm_manager.generate_agent_response(
-                    agent, scenario, agent_objects, current_context, recent_conversations, language_instruction, existing_documents, state
-                )
-                
-                message = ConversationMessage(
-                    agent_id=agent.id,
-                    agent_name=agent.name,
-                    message=response,
-                    mood=agent.current_mood
-                )
-                messages.append(message)
-                
-                # Update conversation_so_far for next agent
-                conversation_so_far += f"{agent.name}: {response}\n"
-                
-                print(f"    ✅ Generated message for {agent.name} (Agent {i + 1}/{len(agent_objects)})")
-                
-            except Exception as agent_error:
-                print(f"    ❌ Error generating message for {agent.name}: {agent_error}")
-                # Continue with next agent instead of breaking
-                continue
-            
-            print(f"✅ Generated message for agent {i + 1}/{len(agent_objects)}. Messages so far: {len(messages)}")
-    
-    except Exception as e:
-        print(f"❌ Error in conversation generation loop: {e}")
-        # Continue with whatever messages we have
-    
-    print(f"🎯 Completed conversation generation: {len(messages)} total messages from {len(agent_objects)} agents")
-    
-    # Verify we got the expected number of messages
-    expected_messages = len(agent_objects) * 3
-    if len(messages) == expected_messages:
-        print(f"✅ Perfect! Got exactly {expected_messages} messages as expected")
-    else:
-        print(f"⚠️ Expected {expected_messages} messages, got {len(messages)}")
-        
-        # Show distribution
-        agent_message_count = {}
-        for msg in messages:
-            agent_name = msg.agent_name
-            agent_message_count[agent_name] = agent_message_count.get(agent_name, 0) + 1
-        
-        for agent_name, count in sorted(agent_message_count.items()):
-            status = "✅" if count == 3 else "❌"
-            print(f"  {status} {agent_name}: {count} messages")
-    
-    
-    
-    # Create conversation round  
-    conversation_round = ConversationRound(
-        round_number=conversation_count + 1,
-        time_period=f"Day {day} - {time_period}",
-        scenario=scenario,
-        scenario_name=scenario_name,
-        messages=messages,
-        user_id=current_user.id  # Use current user's ID for proper association
-    )
-    
-    await db.conversations.insert_one(conversation_round.dict())
-    
-    # Check for automatic time advancement after saving conversation
-    await check_and_advance_time_automatically(current_user.id)
-    
-    # Update agent relationships based on interactions
-    await update_relationships(agent_objects, messages)
-    
-    # ENHANCED: Action-Oriented Behavior - Analyze for document creation triggers
-    try:
-        # Build full conversation text for analysis
-        conversation_text = ""
-        for msg in messages:
-            conversation_text += f"{msg.agent_name}: {msg.message}\n"
-        
-        # Analyze for action triggers with conversation round
-        trigger_result = await llm_manager.analyze_conversation_for_action_triggers(
-            conversation_text, agent_objects, conversation_round=conversation_count + 1
-        )
-        
-        # If document should be created, get team consensus first
-        if trigger_result.should_create_document:
-            logging.info(f"Action trigger detected: {trigger_result.trigger_phrase}")
-            logging.info(f"Requesting team vote for: {trigger_result.document_title}")
-            
-            # Get team vote on document creation
-            voting_results = await llm_manager.check_agent_voting_consensus(
-                agent_objects, 
-                f"Create {trigger_result.document_type} titled '{trigger_result.document_title}'",
-                conversation_text
-            )
-            
-            if voting_results["consensus"]:
-                logging.info(f"Team voted YES - Creating {trigger_result.document_type}: {trigger_result.document_title}")
-                
-                # Find the agent who should create the document (choose one who volunteered or is most relevant)
-                creating_agent = agent_objects[0]  # Default to first agent
-                for agent in agent_objects:
-                    # Look for commitment phrases in their messages
-                    for msg in messages:
-                        if msg.agent_name == agent.name:
-                            commitment_phrases = ["i'll create", "let me create", "i'll develop", "i'll draft", "i'm creating"]
-                            if any(phrase in msg.message.lower() for phrase in commitment_phrases):
-                                creating_agent = agent
-                                break
-                    if creating_agent.id != agent_objects[0].id:
-                        break
-                
-                # Generate document content
-                document_content = await llm_manager.generate_document_content(
-                    trigger_result.document_type,
-                    trigger_result.document_title,
-                    conversation_text,
-                    creating_agent
-                )
-                
-                # Create document metadata
-                safe_title = re.sub(r'[^a-zA-Z0-9\s\-_]', '', trigger_result.document_title)
-                safe_title = re.sub(r'\s+', '_', safe_title)
-                filename = f"{safe_title}_{datetime.now().strftime('%Y%m%d')}.md"
-                
-                # Get user_id from conversation round (this is tricky - we need to find current user)
-                # For now, we'll store it without user_id and let the frontend associate it
-                metadata = DocumentMetadata(
-                    title=trigger_result.document_title,
-                    filename=filename,
-                    authors=[creating_agent.name],
-                    category=trigger_result.document_type.title(),
-                    description=f"Team-approved creation from discussion - {trigger_result.document_title}",
-                    keywords=[trigger_result.document_type, "team-generated", "action-oriented", "voted-approved"],
-                    simulation_id=str(conversation_round.id),
-                    conversation_round=conversation_round.round_number,
-                    scenario_name=scenario_name,  # Add scenario name for organization
-                    user_id=""  # Will be set by frontend when user is available
-                )
-                
-                document = Document(
-                    metadata=metadata,
-                    content=document_content,
-                    created_by_agents=[creating_agent.id],
-                    conversation_context=conversation_text[:500],
-                    action_trigger=trigger_result.trigger_phrase
-                )
-                
-                # Save document to database
-                await db.documents.insert_one(document.dict())
-                
-                # Add voting results and document creation notification to conversation round
-                voting_summary = f"Team Vote: {voting_results['summary']}"
-                
-                doc_notification = ConversationMessage(
-                    agent_id=creating_agent.id,
-                    agent_name=creating_agent.name,
-                    message=f"📋 **Document Created: {trigger_result.document_title}**\n\n{voting_summary} - The team has approved this creation!\n\nI've created and uploaded the {trigger_result.document_type} to our File Center. It's ready for review and implementation.\n\n*Filename: {filename}*\n*Category: {metadata.category}*",
-                    mood="productive"
-                )
-                
-                # Update the conversation round with the document creation message
-                conversation_round.messages.append(doc_notification)
-                await db.conversations.update_one(
-                    {"id": conversation_round.id},
-                    {"$set": {"messages": [msg.dict() for msg in conversation_round.messages]}}
-                )
-                
-                logging.info(f"Document created successfully with team approval: {document.id}")
-            else:
-                logging.info(f"Team voted NO - Document creation rejected: {voting_results['summary']}")
-                
-                # Add voting results notification showing the rejection
-                rejection_notification = ConversationMessage(
-                    agent_id=agent_objects[0].id,  # Use first agent as messenger
-                    agent_name=agent_objects[0].name,
-                    message=f"📊 **Team Vote Results**: {voting_results['summary']}\n\nThe proposal to create '{trigger_result.document_title}' was not approved by the team. We'll continue the discussion.",
-                    mood="neutral"
-                )
-                
-                # Update the conversation round with the voting results
-                conversation_round.messages.append(rejection_notification)
-                await db.conversations.update_one(
-                    {"id": conversation_round.id},
-                    {"$set": {"messages": [msg.dict() for msg in conversation_round.messages]}}
-                )
-            
-    except Exception as e:
-        logging.error(f"Error in action-oriented document creation: {e}")
-        # Don't fail the conversation if document creation fails
-        pass
     
     return conversation_round
 
@@ -8913,8 +8792,18 @@ async def add_contextual_message(current_user: User = Depends(get_current_user))
     conversation_messages = current_conversation.get("messages", [])
     conversation_state = current_conversation.get("conversation_state", {})
     
-    # Select next agent using enhanced context-aware selection
-    selected_agent = await select_contextual_agent(all_agents, conversation_messages, scenario)
+    # Select next agent using enhanced context-aware selection with global coordination
+    # Convert agent documents to Agent objects for processing
+    agent_objects = [Agent(**agent) for agent in all_agents]
+    
+    # Add user context to conversation messages for global coordination
+    enhanced_conversation_messages = []
+    for msg in conversation_messages:
+        enhanced_msg = dict(msg)
+        enhanced_msg['user_id'] = current_user.id  # Add user context
+        enhanced_conversation_messages.append(enhanced_msg)
+    
+    selected_agent = await select_contextual_agent(all_agents, enhanced_conversation_messages, scenario, current_user.id)
     
     print(f"🤖 Selected {selected_agent.name} for contextual message generation")
     
@@ -9203,8 +9092,8 @@ def update_conversation_state(current_state, new_message, all_messages):
     
     return updated_state
 
-async def select_contextual_agent(all_agents, conversation_messages, scenario):
-    """Select agent using STRICT ROUND-ROBIN rotation to ensure equal participation"""
+async def select_contextual_agent(all_agents, conversation_messages, scenario, user_id=None):
+    """Select agent using COORDINATED GLOBAL ROUND-ROBIN to prevent consecutive speaking across ALL conversation systems"""
     if not conversation_messages:
         # First message - select the first agent alphabetically for consistency
         sorted_agents = sorted(all_agents, key=lambda x: x.get("name", ""))
@@ -9229,11 +9118,64 @@ async def select_contextual_agent(all_agents, conversation_messages, scenario):
     print(f"📊 Message counts: {agent_message_counts}")
     print(f"🗣️ Speaking order: {speaking_order[-5:] if len(speaking_order) > 5 else speaking_order}")
     
-    # STRICT ROUND-ROBIN LOGIC
+    # CRITICAL: Get the most recent speaker from ALL recent conversations to prevent cross-system consecutive speaking
+    if not user_id:
+        # Try to extract user_id from conversation messages
+        for msg in conversation_messages[-1:]:
+            if isinstance(msg, dict) and 'user_id' in msg:
+                user_id = msg['user_id']
+                break
+    
+    # Get GLOBAL recent messages from ALL conversation systems to prevent consecutive speaking
+    global_last_speaker = None
+    if user_id:
+        try:
+            # Check the most recent messages across ALL conversations from last 2 minutes
+            from datetime import datetime, timedelta
+            recent_time = datetime.utcnow() - timedelta(minutes=2)
+            
+            # Get all recent conversations
+            recent_conversations = await db.conversations.find({
+                "user_id": user_id, 
+                "created_at": {"$gte": recent_time}
+            }).sort("created_at", -1).limit(5).to_list(5)
+            
+            # Find the most recent message across ALL conversations
+            all_recent_messages = []
+            for conv in recent_conversations:
+                for msg in conv.get('messages', []):
+                    all_recent_messages.append({
+                        'agent_name': msg.get('agent_name'),
+                        'timestamp': msg.get('timestamp', conv.get('created_at')),
+                        'conversation_id': conv.get('id')
+                    })
+            
+            # Sort by timestamp to get the absolute most recent speaker
+            all_recent_messages.sort(key=lambda x: x['timestamp'], reverse=True)
+            
+            if all_recent_messages:
+                global_last_speaker = all_recent_messages[0]['agent_name']
+                print(f"🌐 GLOBAL last speaker across all systems: {global_last_speaker}")
+                
+                # Show recent speaking pattern
+                recent_speakers = [msg['agent_name'] for msg in all_recent_messages[:5]]
+                print(f"🌐 Global recent speakers: {recent_speakers}")
+                
+        except Exception as e:
+            print(f"⚠️ Could not check global conversation history: {e}")
+    
+    # ENHANCED ROUND-ROBIN LOGIC WITH GLOBAL COORDINATION
     if len(conversation_messages) == 0:
-        # First message
-        next_agent_name = sorted_agent_names[0]
-        print(f"🎯 First message - selecting: {next_agent_name}")
+        # First message in this conversation - but check global context
+        if global_last_speaker and global_last_speaker in sorted_agent_names:
+            # Someone spoke recently in another system - pick the next agent
+            current_index = sorted_agent_names.index(global_last_speaker)
+            next_index = (current_index + 1) % len(sorted_agent_names)
+            next_agent_name = sorted_agent_names[next_index]
+            print(f"🎯 First message but considering global context: {global_last_speaker} → {next_agent_name}")
+        else:
+            next_agent_name = sorted_agent_names[0]
+            print(f"🎯 First message - selecting: {next_agent_name}")
     else:
         # Determine next agent in round-robin order
         last_speaker = speaking_order[-1] if speaking_order else None
@@ -9249,14 +9191,42 @@ async def select_contextual_agent(all_agents, conversation_messages, scenario):
             next_agent_name = sorted_agent_names[0]
             print(f"🔄 Fallback: selecting {next_agent_name}")
     
-    # Verify the selected agent doesn't speak consecutively (safety check)
-    if len(speaking_order) > 0 and speaking_order[-1] == next_agent_name:
-        # Emergency fallback - find different agent
-        for name in sorted_agent_names:
-            if name != next_agent_name:
-                next_agent_name = name
-                print(f"⚠️ Emergency fallback to prevent consecutive: {next_agent_name}")
-                break
+    # CRITICAL SAFETY CHECK: Prevent consecutive speaking across ALL systems
+    consecutive_prevention_attempts = 0
+    max_attempts = len(sorted_agent_names)
+    
+    while consecutive_prevention_attempts < max_attempts:
+        # Check local conversation consecutive speaking
+        local_consecutive = len(speaking_order) > 0 and speaking_order[-1] == next_agent_name
+        
+        # Check global consecutive speaking
+        global_consecutive = global_last_speaker == next_agent_name
+        
+        if local_consecutive or global_consecutive:
+            print(f"🚨 PREVENTING CONSECUTIVE SPEAKING:")
+            print(f"   Local consecutive: {local_consecutive} (last local: {speaking_order[-1] if speaking_order else 'None'})")
+            print(f"   Global consecutive: {global_consecutive} (last global: {global_last_speaker})")
+            
+            # Find next different agent
+            current_index = sorted_agent_names.index(next_agent_name)
+            next_index = (current_index + 1) % len(sorted_agent_names)
+            next_agent_name = sorted_agent_names[next_index]
+            consecutive_prevention_attempts += 1
+            
+            print(f"   Trying next agent: {next_agent_name} (attempt {consecutive_prevention_attempts})")
+        else:
+            # Found a good agent - no consecutive speaking
+            break
+    
+    if consecutive_prevention_attempts >= max_attempts:
+        print(f"⚠️ Could not avoid consecutive speaking after {max_attempts} attempts - using fallback")
+        # Ultimate fallback: pick agent with least recent messages
+        if agent_message_counts:
+            min_count = min(agent_message_counts.values())
+            candidates = [name for name, count in agent_message_counts.items() if count == min_count]
+            next_agent_name = candidates[0]
+        else:
+            next_agent_name = sorted_agent_names[0]
     
     # Find and return the selected agent
     for agent_doc in all_agents:

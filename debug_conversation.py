@@ -19,7 +19,11 @@ def debug_conversation_generation():
     
     # Step 1: Get auth token
     print("1. Getting auth token...")
-    auth_response = requests.post(f"{API_URL}/auth/test-login")
+    login_data = {
+        "email": "dino@cytonic.com",
+        "password": "Observerinho8"
+    }
+    auth_response = requests.post(f"{API_URL}/auth/login", json=login_data)
     if auth_response.status_code != 200:
         print(f"❌ Auth failed: {auth_response.status_code} - {auth_response.text}")
         return
