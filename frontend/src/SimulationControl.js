@@ -1266,10 +1266,10 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   });
 
   const loadingSteps = [
-    { icon: '🚪', text: 'Agents are entering the room...', duration: 2000 },
-    { icon: '🔍', text: 'Examining the scenario...', duration: 3000 },
-    { icon: '💭', text: 'Agents are preparing responses...', duration: 4000 },
-    { icon: '💬', text: 'Conversation starting...', duration: 3000 }
+    { icon: '🚪', text: 'Agents are entering the room...', duration: 2500 },
+    { icon: '🔍', text: 'Examining the scenario...', duration: 2500 },
+    { icon: '💭', text: 'Agents are preparing responses...', duration: 2500 },
+    { icon: '💬', text: 'Conversation starting...', duration: 2500 }
   ];
 
   const startInteractiveLoadingAnimations = (expectedMessageCount = 3) => {
