@@ -5481,11 +5481,8 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None, cur
     time_limit_msg = f" with {time_limit_display} time limit" if time_limit_display else " with no time limit"
     print(f"✅ Simulation started for user {current_user.id}{time_limit_msg}")
     
-    # ✨ PERFORMANCE IMPROVEMENT: Start conversation generation in background
-    print("🚀 Starting automatic conversation generation in background...")
-    
-    # Return immediately for better UX, generate conversations asynchronously
-    asyncio.create_task(generate_initial_conversation_background(current_user.id, existing_scenario))
+    # ✨ FRONTEND HANDLES CONVERSATION GENERATION: Let frontend trigger progressive generation
+    print("🎯 Simulation state ready - frontend will handle progressive conversation generation with animations")
     
     return {
         "message": f"Simulation started{time_limit_msg}", 
