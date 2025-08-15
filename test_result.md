@@ -1947,10 +1947,10 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Play/Pause System Breakdown Investigation"
     - "AI-Powered Agent Generation API Endpoint Testing"
   stuck_tasks: []
   test_all: false
-  test_priority: "high_first"
   test_priority: "high_first"
 
 agent_communication:
