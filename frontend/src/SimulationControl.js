@@ -1220,6 +1220,92 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
+  // ✨ INTERACTIVE LOADING ANIMATION SYSTEM
+  const [loadingAnimations, setLoadingAnimations] = useState({
+    active: false,
+    currentStep: 0,
+    expectedMessages: 0,
+    receivedMessages: 0,
+    agentStatuses: {}
+  });
+
+  const loadingSteps = [
+    { icon: '🚪', text: 'Agents are entering the room...', duration: 2000 },
+    { icon: '🔍', text: 'Examining the scenario...', duration: 3000 },
+    { icon: '💭', text: 'Agents are preparing responses...', duration: 4000 },
+    { icon: '💬', text: 'Conversation starting...', duration: 3000 }
+  ];
+
+  const startInteractiveLoadingAnimations = (expectedMessageCount = 3) => {
+    console.log('🎭 Starting interactive loading animations...');
+    
+    setLoadingAnimations({
+      active: true,
+      currentStep: 0,
+      expectedMessages: expectedMessageCount,
+      receivedMessages: 0,
+      agentStatuses: {}
+    });
+
+    // Cycle through loading steps
+    let stepIndex = 0;
+    const cycleSteps = () => {
+      if (stepIndex < loadingSteps.length) {
+        setLoadingAnimations(prev => ({
+          ...prev,
+          currentStep: stepIndex
+        }));
+        
+        setTimeout(() => {
+          stepIndex++;
+          if (stepIndex < loadingSteps.length) {
+            cycleSteps();
+          } else {
+            // After all steps, show agent thinking states
+            setLoadingAnimations(prev => ({
+              ...prev,
+              currentStep: -1 // Special state for agent thinking
+            }));
+          }
+        }, loadingSteps[stepIndex].duration);
+      }
+    };
+
+    cycleSteps();
+  };
+
+  const updateAgentThinkingStatus = (agentName) => {
+    setLoadingAnimations(prev => ({
+      ...prev,
+      agentStatuses: {
+        ...prev.agentStatuses,
+        [agentName]: 'thinking'
+      }
+    }));
+  };
+
+  const markAgentComplete = (agentName) => {
+    setLoadingAnimations(prev => ({
+      ...prev,
+      receivedMessages: prev.receivedMessages + 1,
+      agentStatuses: {
+        ...prev.agentStatuses,
+        [agentName]: 'complete'
+      }
+    }));
+  };
+
+  const stopLoadingAnimations = () => {
+    console.log('🎭 Stopping loading animations...');
+    setLoadingAnimations({
+      active: false,
+      currentStep: 0,
+      expectedMessages: 0,
+      receivedMessages: 0,
+      agentStatuses: {}
+    });
+  };
+
   // ✨ PROGRESSIVE MESSAGE STREAMING: Generate conversation with real-time message display
   const generateNewConversation = async (isAuto = false) => {
     // Prevent overlapping conversation generations
