@@ -7339,43 +7339,30 @@ Continue building on the progress above. The team should advance the solutions a
                 messages.append(message)
                 print(f"  ✅ {agent.name}: {len(response)} chars - Message {i + 1} ready for frontend")
                 
-                # Save conversation immediately after each message for progressive display
-                if messages:
-                    try:
-                        # Calculate day and time period based on TOTAL MESSAGES (simplified)
-                        all_conversations = await db.conversations.find({"user_id": current_user.id}).sort("created_at", 1).to_list(None)
-                        total_messages_before_this = sum(len(conv.get("messages", [])) for conv in all_conversations)
-                        total_messages_including_this = total_messages_before_this + len(messages)
-                        
-                        # Simple time calculation: 9 messages per agent per time period
-                        agent_count = len(agent_objects)
-                        messages_per_time_period = agent_count * 9  # Each agent sends 9 messages per time period
-                        time_period_number = total_messages_including_this // messages_per_time_period
-                        
-                        # Determine time period
-                        time_periods = ["Morning", "Afternoon", "Evening"]
-                        period_index = time_period_number % 3
-                        day_number = (time_period_number // 3) + 1
-                        time_period = time_periods[period_index]
-                        
-                        time_period_display = f"Day {day_number} - {time_period}"
-                        
-                        conversation = ConversationRound(
-                            id=str(uuid.uuid4()),
-                            round_number=conversation_count + 1,
-                            time_period=time_period_display,
-                            scenario=scenario,
-                            scenario_name=scenario_name,
-                            messages=[msg.dict() for msg in messages],
-                            user_id=current_user.id,
-                            created_at=datetime.utcnow()
-                        )
-                        
-                        await db.conversations.insert_one(conversation.dict())
-                        print(f"  💾 Conversation saved with {len(messages)} messages for progressive display")
-                        
-                    except Exception as save_error:
-                        print(f"  ⚠️ Error saving progressive conversation: {save_error}")
+                # ✨ PROGRESSIVE MESSAGE STREAMING: Save individual message immediately
+                try:
+                    # Save the individual message to streaming collection for progressive display
+                    stream_message = {
+                        "id": str(uuid.uuid4()),
+                        "conversation_id": f"stream_{conversation_count + 1}_{current_user.id}",
+                        "user_id": current_user.id,
+                        "agent_id": agent.id,
+                        "agent_name": agent.name,
+                        "message": response,
+                        "mood": _determine_agent_mood(agent, response),
+                        "timestamp": datetime.utcnow(),
+                        "message_index": i + 1,
+                        "total_expected": len(agent_objects),
+                        "scenario": scenario,
+                        "scenario_name": scenario_name,
+                        "status": "streaming"  # Mark as streaming message
+                    }
+                    
+                    await db.message_stream.insert_one(stream_message)
+                    print(f"  📤 Individual message streamed: {agent.name} (Message {i + 1}/{len(agent_objects)})")
+                    
+                except Exception as save_error:
+                    print(f"  ⚠️ Error streaming individual message: {save_error}")
                 
             except Exception as agent_error:
                 print(f"  ❌ Error generating message for {agent.name}: {str(agent_error)[:100]}...")
