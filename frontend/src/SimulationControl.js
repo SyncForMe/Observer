@@ -1220,6 +1220,22 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
+  // Helper function to get archetype colors
+  const getArchetypeColor = (archetype) => {
+    const colors = {
+      scientist: 'from-blue-500 to-cyan-500',
+      artist: 'from-purple-500 to-pink-500',
+      leader: 'from-red-500 to-orange-500',
+      skeptic: 'from-gray-500 to-slate-500',
+      optimist: 'from-yellow-500 to-amber-500',
+      introvert: 'from-indigo-500 to-blue-500',
+      adventurer: 'from-green-500 to-emerald-500',
+      mediator: 'from-teal-500 to-cyan-500',
+      researcher: 'from-violet-500 to-purple-500'
+    };
+    return colors[archetype] || 'from-gray-500 to-gray-600';
+  };
+
   // ✨ INTERACTIVE LOADING ANIMATION SYSTEM
   const [loadingAnimations, setLoadingAnimations] = useState({
     active: false,
