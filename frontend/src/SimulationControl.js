@@ -1054,42 +1054,56 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       // Handle post-operation actions
       if (endpoint === '/simulation/start') {
-        console.log('🔄 Starting - simulation activated with auto-conversation system');
+        console.log('🔄 Starting - with immediate first conversation generation');
         
-        // ✨ AUTO-CONVERSATION SYSTEM: Backend now handles automatic generation
-        console.log('🤖 Auto-conversation system activated - backend will generate conversations automatically');
-        
-        // Just refresh state to show the simulation is active
-        fetchSimulationState();
-        
-        // Light polling to detect automatically generated conversations
-        const pollForAutoConversations = async () => {
-          let pollCount = 0;
-          const maxPolls = 120; // Poll for 4 minutes to catch auto-generated conversations
+        // ✨ IMMEDIATE CONVERSATION: Backend triggers immediate generation, show loading animations
+        if (response.data && response.data.immediate_generation) {
+          console.log('🎬 Starting loading animations for immediate conversation generation...');
           
-          const poll = async () => {
-            try {
-              await fetchConversationsOnly();
-              pollCount++;
-              
-              if (pollCount < maxPolls) {
-                setTimeout(poll, 2000); // Poll every 2 seconds to catch auto-conversations
-              } else {
-                console.log('🔄 Auto-conversation polling completed');
+          // Start interactive loading animations immediately
+          startInteractiveLoadingAnimations(3); // Expect 3 messages from agents
+          
+          // Start aggressive polling for immediate conversation (faster polling)
+          const pollForImmediateConversation = async () => {
+            let pollCount = 0;
+            const maxPolls = 60; // Poll for 2 minutes to catch immediate conversation
+            
+            const poll = async () => {
+              try {
+                await fetchConversationsOnly();
+                pollCount++;
+                
+                // Also poll for streaming messages
+                const streamResponse = await axios.get(`${API}/messages/stream`, {
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                
+                if (streamResponse.data && streamResponse.data.count > 0) {
+                  console.log(`📨 Found ${streamResponse.data.count} streaming messages`);
+                }
+                
+                if (pollCount < maxPolls) {
+                  setTimeout(poll, 1000); // Poll every 1 second for immediate response
+                } else {
+                  console.log('🔄 Immediate conversation polling completed');
+                  stopLoadingAnimations(); // Stop animations if nothing found
+                }
+              } catch (error) {
+                console.error('❌ Error during immediate conversation polling:', error);
+                if (pollCount < maxPolls) {
+                  setTimeout(poll, 1500);
+                }
               }
-            } catch (error) {
-              console.error('❌ Error during auto-conversation polling:', error);
-              if (pollCount < maxPolls) {
-                setTimeout(poll, 3000);
-              }
-            }
+            };
+            
+            // Start polling immediately
+            poll();
           };
           
-          // Start polling immediately
-          poll();
-        };
+          pollForImmediateConversation();
+        }
         
-        pollForAutoConversations();
+        fetchSimulationState();
         
       } else if (endpoint === '/simulation/resume') {
         console.log('🔄 Resuming - refreshing conversations to ensure they are restored');
