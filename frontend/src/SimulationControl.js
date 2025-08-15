@@ -1054,35 +1054,37 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       // Handle post-operation actions
       if (endpoint === '/simulation/start') {
-        console.log('🔄 Starting - beginning rapid polling for new conversations');
+        console.log('🔄 Starting - triggering progressive conversation generation with animations');
         
-        // Start immediate polling for conversations
+        // ✨ TRIGGER PROGRESSIVE CONVERSATION GENERATION with loading animations
+        console.log('🎬 Starting progressive conversation generation with interactive animations...');
+        
+        // Trigger the proper progressive conversation generation (not just polling)
+        generateNewConversation(false); // Manual generation with full progressive system
+        
+        // Also do light polling for any background changes
         const pollForConversations = async () => {
           let pollCount = 0;
-          const maxPolls = 30; // Poll for up to 90 seconds (30 * 3 seconds)
+          const maxPolls = 15; // Reduced since we're doing progressive generation
           
           const poll = async () => {
             try {
               await fetchConversationsOnly();
               pollCount++;
               
-              // Continue polling if we haven't exceeded max polls
               if (pollCount < maxPolls) {
-                setTimeout(poll, 2000); // Poll every 2 seconds for faster updates
-              } else {
-                console.log('🔄 Polling completed after 60 seconds');
+                setTimeout(poll, 4000); // Slower polling since progressive generation handles the main flow
               }
             } catch (error) {
-              console.error('❌ Error during conversation polling:', error);
-              // Continue polling even if there's an error
+              console.error('❌ Error during background polling:', error);
               if (pollCount < maxPolls) {
-                setTimeout(poll, 2000);
+                setTimeout(poll, 4000);
               }
             }
           };
           
-          // Start first poll immediately
-          poll();
+          // Start first poll after a delay to let progressive generation start
+          setTimeout(poll, 5000);
         };
         
         pollForConversations();
