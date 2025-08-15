@@ -1163,7 +1163,7 @@ QUESTION TYPES (when you do ask):
 • Ask questions that move the discussion forward
 • Identify concrete next steps and implementation approaches
 
-WORD LIMIT: 60-80 words MAX. Be concise and focused - complete your thought quickly.
+WORD LIMIT: 45-60 words MAX. Be concise and focused - complete your thought quickly and efficiently.
 
 {document_context}
 
