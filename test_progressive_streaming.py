@@ -68,6 +68,9 @@ def make_request(method, endpoint, data=None, timeout=30):
             return requests.get(url, headers=headers, timeout=timeout)
         elif method == 'POST':
             return requests.post(url, headers=headers, json=data, timeout=timeout)
+    except requests.exceptions.Timeout:
+        print(f"⏰ Request timeout after {timeout}s")
+        return None
     except Exception as e:
         print(f"❌ Request error: {e}")
         return None
