@@ -2616,6 +2616,117 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
               <h3 className="text-lg font-bold text-white mb-4">💬 Live Conversations</h3>
               <div className="flex-1 overflow-y-auto" data-conversation-container="true">
+                {/* ✨ INTERACTIVE LOADING ANIMATIONS */}
+                {loadingAnimations.active && (
+                  <div className="space-y-4 mb-6">
+                    {/* Main Loading Step */}
+                    {loadingAnimations.currentStep >= 0 && loadingAnimations.currentStep < loadingSteps.length && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-sm rounded-lg border border-purple-400/30 p-4"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl animate-pulse">
+                            {loadingSteps[loadingAnimations.currentStep].icon}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-white font-medium">
+                              {loadingSteps[loadingAnimations.currentStep].text}
+                            </div>
+                            <div className="flex space-x-1 mt-2">
+                              {[...Array(3)].map((_, i) => (
+                                <div
+                                  key={i}
+                                  className={`w-2 h-2 bg-purple-400 rounded-full animate-pulse`}
+                                  style={{
+                                    animationDelay: `${i * 0.2}s`,
+                                    animationDuration: '0.8s'
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Agent Thinking States */}
+                    {loadingAnimations.currentStep === -1 && agents && agents.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-white/70 text-sm mb-3">🧠 Agents are thinking...</div>
+                        {agents.slice(0, loadingAnimations.expectedMessages).map((agent, index) => {
+                          const status = loadingAnimations.agentStatuses[agent.name] || 'waiting';
+                          return (
+                            <motion.div
+                              key={agent.id}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.2 }}
+                              className={`flex items-center space-x-3 p-2 rounded-lg ${
+                                status === 'complete' 
+                                  ? 'bg-green-500/20 border-green-400/30' 
+                                  : status === 'thinking'
+                                  ? 'bg-yellow-500/20 border-yellow-400/30'
+                                  : 'bg-gray-500/20 border-gray-400/30'
+                              } border backdrop-blur-sm`}
+                            >
+                              {/* Agent Avatar */}
+                              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                                {agent.avatar_url ? (
+                                  <img src={agent.avatar_url} alt={agent.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className={`w-full h-full bg-gradient-to-br ${getArchetypeColor(agent.archetype)} flex items-center justify-center text-white text-xs font-bold`}>
+                                    {agent.name.charAt(0)}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Agent Status */}
+                              <div className="flex-1">
+                                <div className="text-white text-sm font-medium">{agent.name}</div>
+                                <div className="text-white/60 text-xs">
+                                  {status === 'complete' && '✅ Response ready'}
+                                  {status === 'thinking' && (
+                                    <span className="flex items-center">
+                                      <span className="animate-pulse mr-1">💭</span>
+                                      Crafting response...
+                                    </span>
+                                  )}
+                                  {status === 'waiting' && '⏳ Waiting to start...'}
+                                </div>
+                              </div>
+                              
+                              {/* Status Icon */}
+                              <div className="text-lg">
+                                {status === 'complete' && '✅'}
+                                {status === 'thinking' && (
+                                  <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                                )}
+                                {status === 'waiting' && '⏸️'}
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                        
+                        {/* Progress Bar */}
+                        <div className="mt-4 bg-gray-600/30 rounded-full h-2 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-purple-400 to-blue-400 h-full transition-all duration-500 ease-out"
+                            style={{ 
+                              width: `${(loadingAnimations.receivedMessages / loadingAnimations.expectedMessages) * 100}%` 
+                            }}
+                          />
+                        </div>
+                        <div className="text-white/60 text-xs text-center">
+                          {loadingAnimations.receivedMessages} of {loadingAnimations.expectedMessages} responses received
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {conversations && conversations.length > 0 ? (
                   <div className="space-y-3">
                     {conversations.map((conversation, index) => (
