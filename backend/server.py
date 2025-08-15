@@ -7430,18 +7430,27 @@ Continue building on the progress above. The team should advance the solutions a
     print(f"  - Messages per time period: {messages_per_time_period}")
     print(f"  - Time period: {time_period_display}")
     
-    # Create conversation round (without complex round numbers)
-    conversation_round = ConversationRound(
-        round_number=conversation_number,  # Simple conversation counter
-        time_period=time_period_display,
-        scenario=scenario,
-        scenario_name=scenario_name,
-        messages=messages,
-        user_id=current_user.id
-    )
+    # ✨ PROGRESSIVE STREAMING: Instead of saving final conversation, create streaming session
+    conversation_id = f"stream_{conversation_number}_{current_user.id}"
     
-    # Save conversation
-    await db.conversations.insert_one(conversation_round.dict())
+    print(f"🎯 PROGRESSIVE STREAMING COMPLETE:")
+    print(f"  - Conversation ID: {conversation_id}")
+    print(f"  - {len(messages)} messages streamed individually")
+    print(f"  - Frontend can fetch messages progressively via /api/messages/stream")
+    
+    # Return streaming session info instead of full conversation
+    streaming_response = {
+        "id": conversation_id,
+        "type": "streaming",
+        "message_count": len(messages),
+        "messages": [msg.dict() for msg in messages],  # Still include for compatibility
+        "scenario": scenario,
+        "scenario_name": scenario_name,
+        "time_period": time_period_display,
+        "user_id": current_user.id,
+        "status": "streaming_complete",
+        "created_at": datetime.utcnow()
+    }
     
     # Sync simulation state with conversation time progression
     await sync_simulation_state_time(current_user.id, conversation_number)
@@ -7449,14 +7458,31 @@ Continue building on the progress above. The team should advance the solutions a
     # Check for automatic time advancement after saving conversation
     await check_and_advance_time_automatically(current_user.id)
     
+    # Mark all streaming messages as ready for final conversion
+    await db.message_stream.update_many(
+        {"conversation_id": conversation_id, "user_id": current_user.id},
+        {"$set": {"status": "ready_for_conversion"}}
+    )
+    
+    print(f"✅ Streaming session marked ready for conversion to final conversation")
+    
     # AUTO-GENERATE HELPFUL DOCUMENTS based on conversation content
     try:
-        await auto_generate_documents_from_conversation(conversation_round, agent_objects, scenario, scenario_name, llm_manager)
+        # Create a mock conversation round for document generation
+        mock_conversation_round = ConversationRound(
+            round_number=conversation_number,
+            time_period=time_period_display,
+            scenario=scenario,
+            scenario_name=scenario_name,
+            messages=messages,
+            user_id=current_user.id
+        )
+        await auto_generate_documents_from_conversation(mock_conversation_round, agent_objects, scenario, scenario_name, llm_manager)
     except Exception as e:
         print(f"Document auto-generation failed: {e}")
         # Don't let document generation failure break conversation generation
     
-    return conversation_round
+    return streaming_response
 
 @api_router.get("/conversations")
 async def get_conversations(current_user: User = Depends(get_current_user)):
