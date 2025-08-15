@@ -1054,18 +1054,18 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       // Handle post-operation actions
       if (endpoint === '/simulation/start') {
-        console.log('🔄 Starting - triggering progressive conversation generation with animations');
+        console.log('🔄 Starting - simulation activated with auto-conversation system');
         
-        // ✨ TRIGGER PROGRESSIVE CONVERSATION GENERATION with loading animations
-        console.log('🎬 Starting progressive conversation generation with interactive animations...');
+        // ✨ AUTO-CONVERSATION SYSTEM: Backend now handles automatic generation
+        console.log('🤖 Auto-conversation system activated - backend will generate conversations automatically');
         
-        // Trigger the proper progressive conversation generation (not just polling)
-        generateNewConversation(false); // Manual generation with full progressive system
+        // Just refresh state to show the simulation is active
+        fetchSimulationState();
         
-        // Also do light polling for any background changes
-        const pollForConversations = async () => {
+        // Light polling to detect automatically generated conversations
+        const pollForAutoConversations = async () => {
           let pollCount = 0;
-          const maxPolls = 15; // Reduced since we're doing progressive generation
+          const maxPolls = 120; // Poll for 4 minutes to catch auto-generated conversations
           
           const poll = async () => {
             try {
@@ -1073,22 +1073,23 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
               pollCount++;
               
               if (pollCount < maxPolls) {
-                setTimeout(poll, 4000); // Slower polling since progressive generation handles the main flow
+                setTimeout(poll, 2000); // Poll every 2 seconds to catch auto-conversations
+              } else {
+                console.log('🔄 Auto-conversation polling completed');
               }
             } catch (error) {
-              console.error('❌ Error during background polling:', error);
+              console.error('❌ Error during auto-conversation polling:', error);
               if (pollCount < maxPolls) {
-                setTimeout(poll, 4000);
+                setTimeout(poll, 3000);
               }
             }
           };
           
-          // Start first poll after a delay to let progressive generation start
-          setTimeout(poll, 5000);
+          // Start polling immediately
+          poll();
         };
         
-        pollForConversations();
-        fetchSimulationState();
+        pollForAutoConversations();
         
       } else if (endpoint === '/simulation/resume') {
         console.log('🔄 Resuming - refreshing conversations to ensure they are restored');
