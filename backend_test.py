@@ -59,31 +59,37 @@ class BackendTester:
         print("=" * 60)
         
         try:
-            # Test guest login (as mentioned in test_result.md)
-            response = self.session.post(f"{API_BASE}/auth/test-login", 
-                                       json={}, 
+            # Test email/password login (as mentioned in test_result.md)
+            login_data = {
+                "email": "dino@cytonic.com",
+                "password": "Observerinho8"
+            }
+            
+            response = self.session.post(f"{API_BASE}/auth/login", 
+                                       json=login_data, 
                                        timeout=10)
             
             if response.status_code == 200:
                 data = response.json()
                 self.auth_token = data.get('access_token')
-                self.user_id = data.get('user', {}).get('id')
+                user_data = data.get('user', {})
+                self.user_id = user_data.get('id')
                 
                 # Set authorization header for future requests
                 self.session.headers.update({
                     'Authorization': f'Bearer {self.auth_token}'
                 })
                 
-                self.log_result("Guest Authentication", True, 
-                              f"Successfully authenticated. User ID: {self.user_id}", critical=True)
+                self.log_result("Email/Password Authentication", True, 
+                              f"Successfully authenticated as {user_data.get('name', 'Unknown')}. User ID: {self.user_id}", critical=True)
                 return True
             else:
-                self.log_result("Guest Authentication", False, 
+                self.log_result("Email/Password Authentication", False, 
                               f"Auth failed with status {response.status_code}: {response.text}", critical=True)
                 return False
                 
         except Exception as e:
-            self.log_result("Guest Authentication", False, 
+            self.log_result("Email/Password Authentication", False, 
                           f"Auth exception: {str(e)}", critical=True)
             return False
 
