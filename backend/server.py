@@ -7693,6 +7693,127 @@ async def get_conversation_documents(conversation_id: str, current_user: User = 
         logging.error(f"Error getting documents for conversation {conversation_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to get conversation documents")
 
+@api_router.get("/messages/stream")
+async def get_streaming_messages(since: Optional[str] = None, current_user: User = Depends(get_current_user)):
+    """Get streaming messages for progressive display - only new messages since timestamp"""
+    try:
+        user_id = current_user.id
+        
+        # Parse since timestamp if provided
+        since_timestamp = None
+        if since:
+            try:
+                since_timestamp = datetime.fromisoformat(since.replace('Z', '+00:00'))
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid timestamp format")
+        
+        # Build query to get new streaming messages
+        query = {"user_id": user_id, "status": "streaming"}
+        
+        if since_timestamp:
+            query["timestamp"] = {"$gt": since_timestamp}
+        
+        # Get streaming messages sorted by timestamp
+        stream_messages = await db.message_stream.find(query).sort("timestamp", 1).to_list(100)
+        
+        # Convert to response format
+        messages = []
+        for msg in stream_messages:
+            message_data = {
+                "id": msg.get("id", str(msg.get("_id", ""))),
+                "conversation_id": msg.get("conversation_id", ""),
+                "agent_id": msg.get("agent_id", ""),
+                "agent_name": msg.get("agent_name", ""),
+                "message": msg.get("message", ""),
+                "mood": msg.get("mood", "neutral"),
+                "timestamp": msg.get("timestamp", datetime.utcnow()),
+                "message_index": msg.get("message_index", 0),
+                "total_expected": msg.get("total_expected", 0),
+                "scenario": msg.get("scenario", ""),
+                "scenario_name": msg.get("scenario_name", ""),
+                "status": msg.get("status", "streaming")
+            }
+            messages.append(message_data)
+        
+        print(f"📤 Streaming {len(messages)} new messages for user {user_id}")
+        
+        return {
+            "messages": messages,
+            "count": len(messages),
+            "since": since,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error getting streaming messages: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get streaming messages")
+
+@api_router.post("/messages/stream/complete")
+async def complete_message_stream(conversation_id: str, current_user: User = Depends(get_current_user)):
+    """Mark a message stream as complete and create final conversation record"""
+    try:
+        user_id = current_user.id
+        
+        # Get all streaming messages for this conversation
+        stream_messages = await db.message_stream.find({
+            "conversation_id": conversation_id,
+            "user_id": user_id,
+            "status": "streaming"
+        }).sort("timestamp", 1).to_list(100)
+        
+        if not stream_messages:
+            return {"message": "No streaming messages found", "success": False}
+        
+        # Convert streaming messages to conversation messages
+        conversation_messages = []
+        for msg in stream_messages:
+            conv_msg = ConversationMessage(
+                agent_id=msg.get("agent_id", ""),
+                agent_name=msg.get("agent_name", ""),
+                message=msg.get("message", ""),
+                mood=msg.get("mood", "neutral"),
+                timestamp=msg.get("timestamp", datetime.utcnow())
+            )
+            conversation_messages.append(conv_msg)
+        
+        # Calculate time period
+        conversation_count = await db.conversations.count_documents({"user_id": user_id})
+        time_period_display = f"Day 1 - Morning"  # Simplified for now
+        
+        # Create final conversation record
+        final_conversation = ConversationRound(
+            round_number=conversation_count + 1,
+            time_period=time_period_display,
+            scenario=stream_messages[0].get("scenario", ""),
+            scenario_name=stream_messages[0].get("scenario_name", ""),
+            messages=conversation_messages,
+            user_id=user_id
+        )
+        
+        # Save final conversation
+        await db.conversations.insert_one(final_conversation.dict())
+        
+        # Mark streaming messages as complete
+        await db.message_stream.update_many(
+            {"conversation_id": conversation_id, "user_id": user_id},
+            {"$set": {"status": "completed"}}
+        )
+        
+        print(f"✅ Message stream completed: {conversation_id} with {len(conversation_messages)} messages")
+        
+        return {
+            "success": True,
+            "message": "Message stream completed",
+            "conversation_id": final_conversation.id,
+            "message_count": len(conversation_messages)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error completing message stream: {e}")
+        raise HTTPException(status_code=500, detail="Failed to complete message stream")
+
 @api_router.get("/relationships")
 async def get_relationships():
     """Get all agent relationships"""
