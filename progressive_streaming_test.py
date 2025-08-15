@@ -1,15 +1,25 @@
 #!/usr/bin/env python3
 """
-PROGRESSIVE MESSAGE STREAMING SYSTEM TESTING
-Testing the new progressive message streaming implementation to fix "10 messages appearing at once" issue.
+PROGRESSIVE MESSAGE DISPLAY BREAKDOWN INVESTIGATION
+Testing the end-to-end flow to identify where the progressive streaming system breaks down.
 
-Focus Areas:
-1. Test /api/messages/stream endpoint (GET) - verify streaming messages correctly
-2. Test /api/messages/stream/complete endpoint (POST) - verify stream completion
-3. Test modified /api/conversation/generate endpoint with streaming functionality
-4. Verify message_stream collection is created and populated
-5. Test end-to-end streaming flow
-6. Verify user isolation and data integrity
+CRITICAL ISSUE TO INVESTIGATE:
+- Backend parallel processing works (19-22s total)
+- BUT frontend experience is broken:
+  * First message: Takes 27 seconds to appear (should be under 10s)
+  * Second message: Takes 50+ seconds (should be progressive)
+
+CRITICAL TESTS NEEDED:
+1. Real-Time Message Stream Monitoring - poll /api/messages/stream every 2 seconds during generation
+2. Message Stream Timeline Analysis - test at 5s, 10s, 15s, 20s, 25s intervals
+3. Database Message_Stream Collection Monitoring - check if messages save progressively or in batch
+4. Parallel Processing vs Streaming Integration - verify parallel processing didn't break streaming
+5. Frontend Polling Verification - simulate frontend polling behavior
+
+EXPECTED FINDINGS:
+- If progressive: Messages should appear in stream as each agent completes (~7-10s intervals)
+- If broken: All messages appear together after full 20s completion
+- Root cause: Likely parallel processing fix broke progressive streaming
 """
 
 import requests
