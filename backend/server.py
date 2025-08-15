@@ -7589,13 +7589,21 @@ Continue building on the progress above. The team should advance the solutions a
         "id": conversation_id,
         "type": "streaming",
         "message_count": len(messages),
-        "messages": [msg.dict() for msg in messages],  # Still include for compatibility
+        "messages": [
+            {
+                "agent_id": msg.agent_id,
+                "agent_name": msg.agent_name,
+                "message": msg.message,
+                "mood": msg.mood,
+                "timestamp": msg.timestamp.isoformat() if hasattr(msg.timestamp, 'isoformat') else str(msg.timestamp)
+            } for msg in messages
+        ],  # JSON-safe message serialization
         "scenario": scenario,
         "scenario_name": scenario_name,
         "time_period": time_period_display,
         "user_id": current_user.id,
         "status": "streaming_complete",
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow().isoformat()
     }
     
     # Sync simulation state with conversation time progression
