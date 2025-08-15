@@ -2684,7 +2684,10 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
                 ) : (
                   <div className="text-center py-8">
                     {simulationLoading ? (
-                      <InteractiveLoadingMessages />
+                      <div className="space-y-4">
+                        <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
+                        <p className="text-white/60 text-sm">Starting simulation...</p>
+                      </div>
                     ) : isRunning ? (
                       <div className="space-y-4">
                         <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
