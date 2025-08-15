@@ -1251,6 +1251,9 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         const conversationId = generateResponse.data.id;
         console.log(`🎯 Starting progressive message polling for conversation: ${conversationId}`);
         
+        // ✨ START INTERACTIVE LOADING ANIMATION SYSTEM
+        startInteractiveLoadingAnimations(generateResponse.data.message_count || 3);
+        
         // Start progressive message polling
         await pollForProgressiveMessages(conversationId, logPrefix);
       } else {
