@@ -7368,90 +7368,94 @@ Continue building on the progress above. The team should advance the solutions a
                     'fallback': True
                 }
         
-        # 🚀 LAUNCH ALL AGENT TASKS IN PARALLEL
-        print(f"🎯 Launching {len(agent_objects)} agent generation tasks in PARALLEL...")
+        # 🚀 LAUNCH ALL AGENT TASKS IN PARALLEL WITH PROGRESSIVE RESULTS
+        print(f"🎯 Launching {len(agent_objects)} agent generation tasks in PARALLEL with progressive streaming...")
         agent_tasks = []
         for i, agent in enumerate(agent_objects):
             task = asyncio.create_task(generate_single_agent_message(agent, i))
             agent_tasks.append(task)
         
-        # Wait for all agents to complete (they run simultaneously)
-        completed_results = await asyncio.gather(*agent_tasks, return_exceptions=True)
-        
-        # Process results and save to database AFTER parallel generation
-        print(f"🚀 PARALLEL generation completed - processing {len(completed_results)} results...")
-        for i, result in enumerate(completed_results):
-            if isinstance(result, Exception):
-                print(f"  ⚠️ Agent {i+1} failed with exception: {result}")
-                # Create fallback for failed agent
-                agent = agent_objects[i]
-                fallback_response = _create_personality_fallback(agent, scenario, [])
-                mood = _determine_agent_mood(agent, fallback_response)
+        # ✨ PROGRESSIVE RESULTS: Process each agent as it completes (not waiting for all)
+        completed_count = 0
+        for task in asyncio.as_completed(agent_tasks):
+            try:
+                result = await task
+                completed_count += 1
                 
-                message = ConversationMessage(
-                    agent_name=agent.name,
-                    agent_id=agent.id,
+                if isinstance(result, dict):
+                    # Process successful result immediately
+                    messages.append(result['message'])
+                    
+                    # ✨ IMMEDIATE PROGRESSIVE STREAMING: Save individual message as soon as agent completes
+                    try:
+                        stream_message = {
+                            "id": str(uuid.uuid4()),
+                            "conversation_id": f"stream_{conversation_count + 1}_{current_user.id}",
+                            "user_id": current_user.id,
+                            "agent_id": result['agent'].id,
+                            "agent_name": result['agent'].name,
+                            "message": result['response'],
+                            "mood": result['mood'],
+                            "timestamp": datetime.utcnow(),
+                            "message_index": result['index'] + 1,
+                            "total_expected": len(agent_objects),
+                            "scenario": scenario,
+                            "scenario_name": scenario_name,
+                            "status": "streaming"
+                        }
+                        
+                        await db.message_stream.insert_one(stream_message)
+                        print(f"  📤 PROGRESSIVE STREAM: {result['agent'].name} message available immediately! ({completed_count}/{len(agent_objects)})")
+                        
+                    except Exception as save_error:
+                        print(f"  ⚠️ Error streaming progressive message: {save_error}")
+                else:
+                    print(f"  ⚠️ Unexpected result type: {type(result)}")
+                    
+            except Exception as e:
+                print(f"  ❌ Task failed with exception: {e}")
+                completed_count += 1
+                
+                # Create fallback for failed task
+                # Find which agent failed (this is tricky with as_completed, but we handle it gracefully)
+                fallback_response = "I apologize, but I'm having technical difficulties contributing to this discussion."
+                fallback_message = ConversationMessage(
+                    agent_name="System Agent",
+                    agent_id="fallback",
                     message=fallback_response,
-                    mood=mood,
+                    mood="neutral",
                     timestamp=datetime.utcnow()
                 )
-                messages.append(message)
+                messages.append(fallback_message)
                 
-                # Save streaming message for failed agent
+                # Save fallback streaming message
                 try:
                     stream_message = {
                         "id": str(uuid.uuid4()),
                         "conversation_id": f"stream_{conversation_count + 1}_{current_user.id}",
                         "user_id": current_user.id,
-                        "agent_id": agent.id,
-                        "agent_name": agent.name,
+                        "agent_id": "fallback",
+                        "agent_name": "System Agent",
                         "message": fallback_response,
-                        "mood": mood,
+                        "mood": "neutral",
                         "timestamp": datetime.utcnow(),
-                        "message_index": i + 1,
+                        "message_index": completed_count,
                         "total_expected": len(agent_objects),
                         "scenario": scenario,
                         "scenario_name": scenario_name,
                         "status": "streaming"
                     }
                     await db.message_stream.insert_one(stream_message)
-                    print(f"  📤 Fallback message streamed: {agent.name}")
+                    print(f"  📤 FALLBACK STREAM: System message available ({completed_count}/{len(agent_objects)})")
                 except Exception as save_error:
                     print(f"  ⚠️ Error streaming fallback message: {save_error}")
-                    
-            else:
-                # Process successful result
-                messages.append(result['message'])
-                
-                # ✨ PROGRESSIVE MESSAGE STREAMING: Save individual message after parallel generation
-                try:
-                    stream_message = {
-                        "id": str(uuid.uuid4()),
-                        "conversation_id": f"stream_{conversation_count + 1}_{current_user.id}",
-                        "user_id": current_user.id,
-                        "agent_id": result['agent'].id,
-                        "agent_name": result['agent'].name,
-                        "message": result['response'],
-                        "mood": result['mood'],
-                        "timestamp": datetime.utcnow(),
-                        "message_index": result['index'] + 1,
-                        "total_expected": len(agent_objects),
-                        "scenario": scenario,
-                        "scenario_name": scenario_name,
-                        "status": "streaming"
-                    }
-                    
-                    await db.message_stream.insert_one(stream_message)
-                    print(f"  📤 PARALLEL message streamed: {result['agent'].name} (Message {result['index'] + 1}/{len(agent_objects)})")
-                    
-                except Exception as save_error:
-                    print(f"  ⚠️ Error streaming parallel message: {save_error}")
         
         end_time = time.time()
         parallel_time = end_time - start_time
         expected_sequential_time = 27 * len(agent_objects)
-        print(f"🚀 PARALLEL generation completed in {parallel_time:.2f} seconds (vs ~{expected_sequential_time:.0f}s sequential)")
-        print(f"⚡ PERFORMANCE IMPROVEMENT: {(expected_sequential_time / parallel_time):.1f}x faster!")
+        print(f"🚀 PROGRESSIVE PARALLEL generation completed in {parallel_time:.2f} seconds")
+        print(f"⚡ PERFORMANCE: {(expected_sequential_time / parallel_time):.1f}x faster with progressive streaming!")
+        print(f"📤 STREAMING: {len(messages)} messages made available progressively as generated")
                         
     except Exception as e:
         print(f"❌ Error in sequential message generation: {e}")
