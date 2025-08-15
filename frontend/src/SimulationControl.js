@@ -1381,13 +1381,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     
     console.log(`${logPrefix} - Starting progressive message polling...`);
     
-    // ✨ MARK ALL AGENTS AS THINKING initially
-    if (agents && agents.length > 0) {
-      agents.slice(0, loadingAnimations.expectedMessages).forEach(agent => {
-        updateAgentThinkingStatus(agent.name);
-      });
-    }
-    
     const pollForMessages = async () => {
       try {
         pollCount++;
