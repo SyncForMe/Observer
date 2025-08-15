@@ -382,69 +382,6 @@ const AgentEditModal = ({ isOpen, onClose, agent, onSave }) => {
 
 const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   // Interactive Loading Messages Component
-  const InteractiveLoadingMessages = () => {
-    const [currentMessage, setCurrentMessage] = useState(0);
-    
-    const messages = [
-      {
-        text: "Agents are entering the room...",
-        icon: "🚪",
-        subtext: "Initializing AI personalities"
-      },
-      {
-        text: "Examining the scenario...",
-        icon: "🔍", 
-        subtext: "Analyzing context and objectives"
-      },
-      {
-        text: "Preparing first responses...",
-        icon: "💭",
-        subtext: "Generating thoughtful dialogue"
-      },
-      {
-        text: "Conversation starting soon...",
-        icon: "💬",
-        subtext: "Final preparations complete"
-      }
-    ];
-
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setCurrentMessage(prev => (prev + 1) % messages.length);
-      }, 3000); // Change message every 3 seconds
-
-      return () => clearInterval(interval);
-    }, []);
-
-    return (
-      <div className="space-y-4">
-        <div className="w-12 h-12 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto"></div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-center space-x-3">
-            <span className="text-2xl animate-pulse">{messages[currentMessage].icon}</span>
-            <p className="text-white/80 text-sm font-medium transition-all duration-500">
-              {messages[currentMessage].text}
-            </p>
-          </div>
-          <p className="text-white/60 text-xs transition-all duration-500">
-            {messages[currentMessage].subtext}
-          </p>
-          
-          {/* Progress dots */}
-          <div className="flex items-center justify-center space-x-2 mt-4">
-            {messages.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentMessage ? 'bg-purple-400' : 'bg-white/20'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
   const { user, token } = useAuth();
   const { simulationData, updateSimulationData, clearSimulationData } = useSimulation();
   
