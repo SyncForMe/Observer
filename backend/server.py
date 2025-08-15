@@ -5481,8 +5481,9 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None, cur
     time_limit_msg = f" with {time_limit_display} time limit" if time_limit_display else " with no time limit"
     print(f"✅ Simulation started for user {current_user.id}{time_limit_msg}")
     
-    # ✨ FRONTEND HANDLES CONVERSATION GENERATION: Let frontend trigger progressive generation
-    print("🎯 Simulation state ready - frontend will handle progressive conversation generation with animations")
+    # ✨ AUTO-CONVERSATION SYSTEM: Start automatic conversation generation loop
+    print("🚀 Starting automatic conversation generation system...")
+    asyncio.create_task(auto_conversation_loop(current_user.id))
     
     return {
         "message": f"Simulation started{time_limit_msg}", 
@@ -5491,6 +5492,46 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None, cur
         "time_limit_active": time_limit_hours is not None,
         "time_limit_display": time_limit_display
     }
+
+async def auto_conversation_loop(user_id: str):
+    """Automatic conversation generation loop when simulation is active"""
+    print(f"🔄 Auto-conversation loop started for user {user_id}")
+    
+    while True:
+        try:
+            # Check if simulation is still active
+            simulation_state = await db.simulation_state.find_one({"user_id": user_id})
+            
+            if not simulation_state or not simulation_state.get("is_active", False):
+                print(f"🛑 Auto-conversation loop stopped - simulation inactive for user {user_id}")
+                break
+            
+            # Check if we have enough agents
+            agents = await db.agents.find({"user_id": user_id}).to_list(100)
+            if len(agents) < 2:
+                print(f"⚠️ Auto-conversation skipped - not enough agents for user {user_id}")
+                await asyncio.sleep(30)  # Wait 30 seconds before checking again
+                continue
+            
+            print(f"🎯 Auto-generating conversation for user {user_id}...")
+            
+            # Create mock user object for conversation generation
+            class MockUser:
+                def __init__(self, user_id):
+                    self.id = user_id
+            
+            mock_user = MockUser(user_id)
+            
+            # Generate conversation automatically
+            await generate_conversation(mock_user)
+            print(f"✅ Auto-conversation generated successfully for user {user_id}")
+            
+            # Wait before next generation (30 seconds for good pacing)
+            await asyncio.sleep(30)
+            
+        except Exception as e:
+            print(f"⚠️ Error in auto-conversation loop for user {user_id}: {e}")
+            await asyncio.sleep(30)  # Wait before retrying
 
 @api_router.get("/simulation/state")
 async def get_simulation_state(current_user: User = Depends(get_current_user)):
