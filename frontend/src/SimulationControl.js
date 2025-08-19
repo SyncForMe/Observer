@@ -1066,6 +1066,18 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     
     console.log('📝 Displaying conversation directly:', conversationData.id);
     
+    // ✨ IMMEDIATE ANIMATION STOP: Stop animations immediately when displaying conversation
+    if (loadingAnimations.active) {
+      console.log('🛑 IMMEDIATE STOP: Stopping animations because conversation is being displayed');
+      setLoadingAnimations({
+        active: false,
+        currentStep: 0,
+        expectedMessages: 0,
+        receivedMessages: 0,
+        agentStatuses: {}
+      });
+    }
+    
     // Simply add the conversation to the list
     const currentConversations = Array.isArray(conversations) ? [...conversations] : [];
     const existingIndex = currentConversations.findIndex(conv => conv.id === conversationData.id);
