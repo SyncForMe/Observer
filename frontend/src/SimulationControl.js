@@ -930,69 +930,53 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
-  // Optimized simulation control with proper pause/resume and conversation preservation
+  // Play/Pause simulation function with immediate visual feedback
   const playPauseSimulation = async () => {
-    console.log('🎯 Play/Pause button clicked - playPauseSimulation started');
     console.log('🎯 Current state:', { isRunning, isPaused, simulationLoading, agentsCount: agents.length });
     
     if (simulationLoading) {
-      console.log('⚠️ Simulation already loading, preventing double-click');
+      console.log('🚫 Simulation operation already in progress, ignoring click');
       return;
     }
     
-    // Determine the correct endpoint based on current state
-    let endpoint;
-    let targetIsRunning;
-    let targetIsPaused;
+    // ✨ IMMEDIATE VISUAL FEEDBACK: Update button state instantly
+    const targetIsRunning = !isRunning;
+    const targetIsPaused = !targetIsRunning;
+    
+    console.log(`🎯 Target state: isRunning=${targetIsRunning}, isPaused=${targetIsPaused}`);
+    
+    // Show loading state briefly
+    setSimulationLoading(true);
+    
+    // ✨ IMMEDIATE UI UPDATE: Provide instant visual feedback
+    setTimeout(() => {
+      setIsRunning(targetIsRunning);
+      setIsPaused(targetIsPaused);
+      console.log('⚡ Immediate UI feedback applied - user sees button change instantly');
+    }, 100); // 100ms delay for smooth transition
     
     try {
-      setSimulationLoading(true);
-      
-      if (isRunning && !isPaused) {
-        // Currently running -> pause
+      // Determine the correct endpoint
+      let endpoint, targetState;
+      if (isRunning) {
         endpoint = '/simulation/pause';
-        targetIsRunning = true;
-        targetIsPaused = true;
-      } else if (isRunning && isPaused) {
-        // Currently paused -> resume
-        endpoint = '/simulation/resume';
-        targetIsRunning = true;
-        targetIsPaused = false;
+        targetState = 'pause';
       } else {
-        // Currently stopped -> start
         endpoint = '/simulation/start';
-        targetIsRunning = true;
-        targetIsPaused = false;
+        targetState = 'start';
       }
       
-      console.log(`🎯 Using endpoint: ${endpoint}`);
-      console.log(`🎯 Target state: running=${targetIsRunning}, paused=${targetIsPaused}`);
+      console.log(`📡 API Call: ${endpoint}`);
       
-      // IMMEDIATE UI UPDATE for pause actions (instant feedback)
-      if (endpoint === '/simulation/pause') {
-        setIsRunning(targetIsRunning);
-        setIsPaused(targetIsPaused);
-        
-        // ✨ IMMEDIATE ANIMATION STOP: Stop loading animations immediately when paused
-        stopLoadingAnimations();
-        console.log('⏸️ Immediate pause UI update applied + animations stopped');
-      }
-      
-      // Make API call
+      // Make API call with shorter timeout
       const response = await axios.post(`${API}${endpoint}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
-        timeout: endpoint === '/simulation/pause' ? 5000 : 90000 // Fast timeout for pause, longer for start
+        timeout: 8000 // Reduced timeout for faster failure detection
       });
       
-      console.log(`✅ ${endpoint} successful:`, response.data);
+      console.log(`✅ ${targetState} operation completed:`, response.data);
       
-      // Update state for non-pause operations (pause already updated above)
-      if (endpoint !== '/simulation/pause') {
-        setIsRunning(targetIsRunning);
-        setIsPaused(targetIsPaused);
-      }
-      
-      // Handle post-operation actions
+      // Handle post-operation actions based on endpoint
       if (endpoint === '/simulation/start') {
         console.log('🔄 Starting - with manual conversation control for proper alternation');
         
@@ -1035,30 +1019,42 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         fetchSimulationState();
         
       } else if (endpoint === '/simulation/resume') {
-        console.log('🔄 Resuming - refreshing conversations to ensure they are restored');
-        setTimeout(() => {
-          fetchSimulationState();
-          fetchConversationsOnly();
-        }, 200);
+        console.log('🔄 Resuming - continuing conversation generation');
+        fetchSimulationState();
+        
       } else if (endpoint === '/simulation/pause') {
-        console.log('⏸️ Paused - UI already updated immediately');
-        // No additional actions needed for pause
+        console.log('⏸️ Paused - stopping all conversation generation');
+        
+        // ✨ STOP ALL ANIMATIONS: Pause should stop everything
+        setLoadingAnimations({
+          active: false,
+          currentStep: 0,
+          expectedMessages: 0,
+          receivedMessages: 0,
+          agentStatuses: {}
+        });
+        
+        fetchSimulationState();
       }
       
     } catch (error) {
-      console.error(`❌ Error with ${endpoint || 'simulation'}:`, error.response?.data || error.message);
+      console.error(`❌ Error during ${endpoint}:`, error);
       
-      // Revert state on error
-      setIsRunning(simulationData?.is_active || false);
-      setIsPaused(simulationData?.is_paused || false);
+      // ✨ REVERT UI STATE: If API fails, revert to original state
+      setIsRunning(isRunning);
+      setIsPaused(isPaused);
+      console.log('🔄 Reverted UI state due to API failure');
       
       // Show user-friendly error message
       const errorMsg = error.response?.data?.detail || error.message || 'Failed to update simulation';
       showNotification(`❌ Simulation Error: ${errorMsg}`);
       
     } finally {
-      setSimulationLoading(false);
-      console.log('🎯 Play/Pause operation completed');
+      // ✨ QUICK LOADING RESET: Stop loading state quickly for responsiveness
+      setTimeout(() => {
+        setSimulationLoading(false);
+        console.log('🎯 Play/Pause loading state cleared');
+      }, 500); // Quick reset for better UX
     }
   };
 
