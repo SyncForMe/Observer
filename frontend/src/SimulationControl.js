@@ -1411,7 +1411,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   const displayProgressiveMessage = (messageData, conversationId) => {
     console.log(`📨 Displaying progressive message from ${messageData.agent_name}: ${messageData.message.substring(0, 50)}...`);
     
-    // ✨ STOP ANIMATIONS IMMEDIATELY: Once first message appears, stop loading animations
+    // ✨ STOP ANIMATIONS IMMEDIATELY: Once ANY message appears, stop loading animations
     if (loadingAnimations.active) {
       console.log('🛑 Stopping loading animations - first message appeared!');
       stopLoadingAnimations();
