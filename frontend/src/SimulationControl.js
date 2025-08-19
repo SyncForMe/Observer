@@ -994,53 +994,42 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       // Handle post-operation actions
       if (endpoint === '/simulation/start') {
-        console.log('🔄 Starting - with immediate first conversation generation');
+        console.log('🔄 Starting - with manual conversation control for proper alternation');
         
-        // ✨ IMMEDIATE CONVERSATION: Backend triggers immediate generation, show loading animations
-        if (response.data && response.data.immediate_generation) {
-          console.log('🎬 Starting loading animations for immediate conversation generation...');
+        // ✨ MANUAL CONVERSATION CONTROL: Frontend manages generation for proper agent alternation
+        if (response.data && response.data.manual_control) {
+          console.log('🎬 Starting loading animations for manual conversation generation...');
           
           // Start interactive loading animations immediately
-          startInteractiveLoadingAnimations(3); // Expect 3 messages from agents
+          startInteractiveLoadingAnimations(3);
           
-          // Start aggressive polling for immediate conversation (faster polling)
-          const pollForImmediateConversation = async () => {
-            let pollCount = 0;
-            const maxPolls = 60; // Poll for 2 minutes to catch immediate conversation
+          // Trigger immediate first conversation generation
+          setTimeout(() => {
+            console.log('🎯 Triggering first conversation manually...');
+            generateNewConversation(false);
+          }, 500); // Small delay to ensure simulation state is ready
+          
+          // Set up scheduled follow-up generations for faster pacing
+          const scheduleFollowUpConversations = () => {
+            let generationCount = 0;
+            const maxGenerations = 10; // Limit to prevent endless generation
             
-            const poll = async () => {
-              try {
-                await fetchConversationsOnly();
-                pollCount++;
+            const generateNext = () => {
+              if (generationCount < maxGenerations && isRunning) {
+                generationCount++;
+                console.log(`🔄 Scheduled conversation generation ${generationCount}/${maxGenerations}`);
+                generateNewConversation(true); // Mark as auto generation
                 
-                // Also poll for streaming messages
-                const streamResponse = await axios.get(`${API}/messages/stream`, {
-                  headers: { Authorization: `Bearer ${token}` }
-                });
-                
-                if (streamResponse.data && streamResponse.data.count > 0) {
-                  console.log(`📨 Found ${streamResponse.data.count} streaming messages`);
-                }
-                
-                if (pollCount < maxPolls) {
-                  setTimeout(poll, 1000); // Poll every 1 second for immediate response
-                } else {
-                  console.log('🔄 Immediate conversation polling completed');
-                  stopLoadingAnimations(); // Stop animations if nothing found
-                }
-              } catch (error) {
-                console.error('❌ Error during immediate conversation polling:', error);
-                if (pollCount < maxPolls) {
-                  setTimeout(poll, 1500);
-                }
+                // Schedule next generation
+                setTimeout(generateNext, 25000); // 25 second intervals for good pacing
               }
             };
             
-            // Start polling immediately
-            poll();
+            // Start follow-up generations after initial one completes
+            setTimeout(generateNext, 30000); // Wait 30s after first generation
           };
           
-          pollForImmediateConversation();
+          scheduleFollowUpConversations();
         }
         
         fetchSimulationState();
