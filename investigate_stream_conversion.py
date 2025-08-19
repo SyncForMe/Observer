@@ -60,10 +60,13 @@ def check_message_stream(session):
                 # Group by conversation_id
                 conversations = {}
                 for msg in messages:
-                    conv_id = msg.get('conversation_id', 'unknown')
-                    if conv_id not in conversations:
-                        conversations[conv_id] = []
-                    conversations[conv_id].append(msg)
+                    if isinstance(msg, dict):
+                        conv_id = msg.get('conversation_id', 'unknown')
+                        if conv_id not in conversations:
+                            conversations[conv_id] = []
+                        conversations[conv_id].append(msg)
+                    else:
+                        print(f"  Warning: Non-dict message: {type(msg)} - {msg}")
                 
                 print(f"\n📊 STREAM CONVERSATIONS:")
                 for conv_id, msgs in conversations.items():
