@@ -1418,24 +1418,12 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
     
     // Create conversation structure for this message
-    const progressiveConversation = {
-      id: conversationId,
-      type: 'progressive',
-      scenario: messageData.scenario,
-      scenario_name: messageData.scenario_name,
-      messages: [
-        {
-          agent_id: messageData.agent_id,
-          agent_name: messageData.agent_name,
-          message: messageData.message,
-          mood: messageData.mood,
-          timestamp: messageData.timestamp
-        }
-      ],
-      message_index: messageData.message_index,
-      total_expected: messageData.total_expected,
-      status: 'progressive',
-      created_at: messageData.timestamp
+    const newMessage = {
+      agent_id: messageData.agent_id,
+      agent_name: messageData.agent_name,
+      message: messageData.message,
+      mood: messageData.mood,
+      timestamp: messageData.timestamp
     };
     
     // Update global conversation state progressively
@@ -1447,14 +1435,29 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     );
     
     if (existingIndex >= 0) {
-      // Add message to existing progressive conversation
-      const existingConv = currentConversations[existingIndex];
-      existingConv.messages.push(progressiveConversation.messages[0]);
+      // ✨ ADD MESSAGE TO EXISTING CONVERSATION (not replace)
+      const existingConv = { ...currentConversations[existingIndex] };
+      existingConv.messages = [...existingConv.messages, newMessage];
       existingConv.message_index = messageData.message_index;
       currentConversations[existingIndex] = existingConv;
+      
+      console.log(`📝 Added message to existing conversation (${existingConv.messages.length} messages total)`);
     } else {
-      // Create new progressive conversation
+      // Create new progressive conversation with first message
+      const progressiveConversation = {
+        id: conversationId,
+        type: 'progressive',
+        scenario: messageData.scenario,
+        scenario_name: messageData.scenario_name,
+        messages: [newMessage],
+        message_index: messageData.message_index,
+        total_expected: messageData.total_expected,
+        status: 'progressive',
+        created_at: messageData.timestamp
+      };
+      
       currentConversations.push(progressiveConversation);
+      console.log(`🆕 Created new progressive conversation with first message`);
     }
     
     // Update simulation data
