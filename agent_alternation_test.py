@@ -67,7 +67,7 @@ class AgentAlternationTester:
             
             response = self.session.post(f"{API_BASE}/auth/login", 
                                        json=login_data, 
-                                       timeout=10)
+                                       timeout=30)
             
             if response.status_code == 200:
                 data = response.json()
