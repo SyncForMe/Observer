@@ -955,9 +955,11 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       console.log('⚡ Immediate UI feedback applied - user sees button change instantly');
     }, 100); // 100ms delay for smooth transition
     
+    // Declare endpoint variable outside try block for error handling
+    let endpoint, targetState;
+    
     try {
       // Determine the correct endpoint
-      let endpoint, targetState;
       if (isRunning) {
         endpoint = '/simulation/pause';
         targetState = 'pause';
