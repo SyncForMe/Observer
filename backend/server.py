@@ -3220,7 +3220,7 @@ async def process_agents_sequentially_v2(agents, scenario, scenario_name, conver
                 "total_expected": len(selected_agents),
                 "scenario": scenario,
                 "scenario_name": scenario_name,
-                "status": "available"  # Immediately available for frontend
+                "status": "streaming"  # Change from "available" to "streaming" for frontend compatibility
             }
             
             # Save to streaming collection immediately
