@@ -98,7 +98,7 @@ class AgentAlternationTester:
         print("=" * 60)
         
         try:
-            response = self.session.get(f"{API_BASE}/agents", timeout=10)
+            response = self.session.get(f"{API_BASE}/agents", timeout=30)
             
             if response.status_code == 200:
                 agents = response.json()
