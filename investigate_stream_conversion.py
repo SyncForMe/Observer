@@ -53,7 +53,8 @@ def check_message_stream(session):
         response = session.get(f"{API_BASE}/messages/stream", timeout=10)
         
         if response.status_code == 200:
-            messages = response.json()
+            data = response.json()
+            messages = data.get('messages', [])
             print(f"Stream contains {len(messages)} messages")
             
             if messages:
