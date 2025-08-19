@@ -1399,12 +1399,19 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
   // ✨ DISPLAY PROGRESSIVE MESSAGE: Show individual messages as they arrive
   const displayProgressiveMessage = (messageData, conversationId) => {
     console.log(`📨 Displaying progressive message from ${messageData.agent_name}: ${messageData.message.substring(0, 50)}...`);
+    console.log(`🎭 Animation status before stopping: active=${loadingAnimations.active}, currentStep=${loadingAnimations.currentStep}`);
     
-    // ✨ STOP ANIMATIONS IMMEDIATELY: Once ANY message appears, stop loading animations
-    if (loadingAnimations.active) {
-      console.log('🛑 Stopping loading animations - first message appeared!');
-      stopLoadingAnimations();
-    }
+    // ✨ FORCE STOP ALL ANIMATIONS: Immediately hide all loading animations when any message appears
+    console.log('🛑 FORCE STOPPING all loading animations - message appeared!');
+    setLoadingAnimations({
+      active: false,
+      currentStep: 0,
+      expectedMessages: 0,
+      receivedMessages: 0,
+      agentStatuses: {}
+    });
+    
+    console.log('🎭 Animation forcibly stopped - should be hidden now');
     
     // Create conversation structure for this message
     const newMessage = {
