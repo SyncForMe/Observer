@@ -2603,8 +2603,8 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 h-[600px] flex flex-col">
               <h3 className="text-lg font-bold text-white mb-4">💬 Live Conversations</h3>
               <div className="flex-1 overflow-y-auto" data-conversation-container="true">
-                {/* ✨ INTERACTIVE LOADING ANIMATIONS */}
-                {loadingAnimations.active && (
+                {/* ✨ INTERACTIVE LOADING ANIMATIONS - NUCLEAR SAFETY: Never show if conversations exist */}
+                {loadingAnimations.active && (!conversations || conversations.length === 0) && (
                   <div className="space-y-4 mb-6">
                     {/* Main Loading Step */}
                     {loadingAnimations.currentStep >= 0 && loadingAnimations.currentStep < loadingSteps.length && (
