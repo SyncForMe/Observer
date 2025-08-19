@@ -133,7 +133,8 @@ def check_conversations_vs_stream(session):
         # Get stream messages
         response = session.get(f"{API_BASE}/messages/stream", timeout=10)
         if response.status_code == 200:
-            stream_messages = response.json()
+            data = response.json()
+            stream_messages = data.get('messages', [])
             print(f"Stream collection: {len(stream_messages)} messages")
             
             if stream_messages:
