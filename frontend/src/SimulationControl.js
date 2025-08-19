@@ -1464,12 +1464,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     
     console.log(`✅ Progressive message added to conversation ${conversationId} (${messageData.message_index}/${messageData.total_expected})`);
     
-    // ✨ STOP ANIMATIONS: If this is the last message
-    if (messageData.message_index >= messageData.total_expected) {
-      setTimeout(() => {
-        stopLoadingAnimations();
-      }, 1000); // Brief delay to show the completion
-    }
+    // Note: Animation stopping moved to top of function for immediate response
   };
 
   const toggleFastForward = async () => {
