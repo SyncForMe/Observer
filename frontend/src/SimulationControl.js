@@ -1270,7 +1270,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     });
   };
 
-  // ✨ PROGRESSIVE MESSAGE STREAMING: Generate conversation with real-time message display
+  // ✨ NEW V2 PROGRESSIVE CONVERSATION GENERATION SYSTEM
   const generateNewConversation = async (isAuto = false) => {
     // Prevent overlapping conversation generations
     if (conversationLoading) {
@@ -1278,62 +1278,65 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       return;
     }
     
-    // Prevent multiple auto-generations
-    if (isAuto && conversationBuildingRef.current) {
-      console.log('🚫 Auto - Skipping generation, messages are still being built');
-      return;
-    }
-    
     setConversationLoading(true);
     
     try {
       const logPrefix = isAuto ? '⏰ Auto' : '💬 Manual';
-      console.log(`${logPrefix} - Starting PROGRESSIVE conversation generation...`);
+      console.log(`${logPrefix} - Starting NEW V2 conversation generation...`);
       
-      // Start conversation generation (this returns immediately while backend processes)
-      const generateResponse = await axios.post(`${API}/conversation/generate`, {}, {
+      // ✨ CRITICAL: Use new V2 endpoint for sequential generation
+      const generateResponse = await axios.post(`${API}/conversation/generate-v2`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log(`${logPrefix} - Conversation generation started:`, generateResponse.data);
+      console.log(`${logPrefix} - V2 conversation generation started:`, generateResponse.data);
       
-      if (generateResponse.data && generateResponse.data.type === 'streaming') {
-        const conversationId = generateResponse.data.id;
-        console.log(`🎯 Starting progressive message polling for conversation: ${conversationId}`);
+      if (generateResponse.data && generateResponse.data.type === 'sequential_streaming_v2') {
+        const conversationId = generateResponse.data.conversation_id;
+        console.log(`🎯 Starting V2 progressive message polling for conversation: ${conversationId}`);
         
-        // ✨ START INTERACTIVE LOADING ANIMATION SYSTEM
-        startInteractiveLoadingAnimations(generateResponse.data.message_count || 3);
+        // Start interactive loading animations
+        startInteractiveLoadingAnimations(generateResponse.data.agents_processed || 3);
         
-        // Start progressive message polling
-        await pollForProgressiveMessages(conversationId, logPrefix);
+        // Start V2 progressive message polling with faster intervals
+        await pollForProgressiveMessagesV2(conversationId, logPrefix);
       } else {
-        // Fallback to old method if streaming not available
-        console.log(`${logPrefix} - Using fallback method for non-streaming response`);
+        // Fallback to old method if V2 not available
+        console.log(`${logPrefix} - Using fallback method for non-V2 response`);
         if (generateResponse.data && generateResponse.data.messages && generateResponse.data.messages.length > 0) {
           displayConversation(generateResponse.data);
         }
       }
       
+    } catch (error) {
+      console.error('Error generating conversation:', error);
+      
+      // Stop loading animations on error
+      setLoadingAnimations({
+        active: false,
+        currentStep: 0,
+        expectedMessages: 0,
+        receivedMessages: 0,
+        agentStatuses: {}
+      });
+      
+    } finally {
       // Reset loading state
       setConversationLoading(false);
       
       // Refresh simulation state
       setTimeout(() => fetchSimulationState(), 1000);
-      
-    } catch (error) {
-      console.error('Error generating conversation:', error);
-      setConversationLoading(false);
     }
   };
   
-  // ✨ PROGRESSIVE MESSAGE POLLING: Poll for new messages as they're generated
-  const pollForProgressiveMessages = async (conversationId, logPrefix = '💬') => {
+  // ✨ V2 PROGRESSIVE MESSAGE POLLING: Optimized for fast sequential delivery
+  const pollForProgressiveMessagesV2 = async (conversationId, logPrefix = '💬') => {
     let lastTimestamp = null;
     let receivedMessages = [];
     let pollCount = 0;
-    const maxPolls = 60; // Poll for up to 2 minutes (60 * 2 seconds)
+    const maxPolls = 30; // Reduced from 60 - expect faster delivery with V2
     
-    console.log(`${logPrefix} - Starting progressive message polling...`);
+    console.log(`${logPrefix} - Starting V2 progressive message polling...`);
     
     const pollForMessages = async () => {
       try {
@@ -1345,7 +1348,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           params.append('since', lastTimestamp);
         }
         
-        // Fetch new streaming messages
+        // Fetch new streaming messages - faster polling for V2
         const response = await axios.get(`${API}/messages/stream?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -1353,14 +1356,14 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
         const newMessages = response.data.messages || [];
         
         if (newMessages.length > 0) {
-          console.log(`${logPrefix} - 📨 Received ${newMessages.length} new messages (Poll ${pollCount})`);
+          console.log(`${logPrefix} - 📨 V2 Received ${newMessages.length} new messages (Poll ${pollCount})`);
           
           // Add new messages to our collection
           receivedMessages.push(...newMessages);
           
           // Display each new message individually
           for (const message of newMessages) {
-            displayProgressiveMessage(message, conversationId);
+            displayProgressiveMessageV2(message, conversationId);
             
             // Update last timestamp
             if (message.timestamp) {
@@ -1371,51 +1374,26 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
           // Check if we have all expected messages
           const lastMessage = newMessages[newMessages.length - 1];
           if (lastMessage.message_index >= lastMessage.total_expected) {
-            console.log(`${logPrefix} - ✅ All ${lastMessage.total_expected} messages received! Completing stream...`);
-            
-            // Complete the message stream on backend
-            try {
-              await axios.post(`${API}/messages/stream/complete`, null, {
-                params: { conversation_id: conversationId },
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              console.log(`${logPrefix} - 🎯 Message stream completed successfully`);
-            } catch (completeError) {
-              console.error(`${logPrefix} - ⚠️ Error completing message stream:`, completeError);
-            }
-            
+            console.log(`${logPrefix} - ✅ V2 All ${lastMessage.total_expected} messages received! Stream complete.`);
             return; // Stop polling
           }
         } else {
-          console.log(`${logPrefix} - ⏳ No new messages (Poll ${pollCount}/${maxPolls})`);
+          console.log(`${logPrefix} - ⏳ V2 No new messages (Poll ${pollCount}/${maxPolls})`);
         }
         
         // Continue polling if we haven't exceeded max polls
         if (pollCount < maxPolls) {
-          setTimeout(pollForMessages, 2000); // Poll every 2 seconds
+          setTimeout(pollForMessages, 1000); // Faster polling for V2 system - every 1 second
         } else {
-          console.log(`${logPrefix} - ⏰ Polling timeout after ${maxPolls} attempts`);
-          
-          // If we have some messages, complete what we have
-          if (receivedMessages.length > 0) {
-            try {
-              await axios.post(`${API}/messages/stream/complete`, null, {
-                params: { conversation_id: conversationId },
-                headers: { Authorization: `Bearer ${token}` }
-              });
-              console.log(`${logPrefix} - 🎯 Partial message stream completed with ${receivedMessages.length} messages`);
-            } catch (completeError) {
-              console.error(`${logPrefix} - ⚠️ Error completing partial stream:`, completeError);
-            }
-          }
+          console.log(`${logPrefix} - ⏰ V2 Polling timeout after ${maxPolls} attempts`);
         }
         
       } catch (error) {
-        console.error(`${logPrefix} - ❌ Error during progressive polling:`, error);
+        console.error(`${logPrefix} - ❌ V2 Error during progressive polling:`, error);
         
         // Continue polling even if there's an error (network hiccup)
         if (pollCount < maxPolls) {
-          setTimeout(pollForMessages, 3000); // Slower retry on error
+          setTimeout(pollForMessages, 2000); // Slower retry on error
         }
       }
     };
@@ -1424,13 +1402,11 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     pollForMessages();
   };
   
-  // ✨ DISPLAY PROGRESSIVE MESSAGE: Show individual messages as they arrive
-  const displayProgressiveMessage = (messageData, conversationId) => {
-    console.log(`📨 Displaying progressive message from ${messageData.agent_name}: ${messageData.message.substring(0, 50)}...`);
-    console.log(`🎭 Animation status before stopping: active=${loadingAnimations.active}, currentStep=${loadingAnimations.currentStep}`);
+  // ✨ V2 DISPLAY PROGRESSIVE MESSAGE: Optimized for sequential alternating agents
+  const displayProgressiveMessageV2 = (messageData, conversationId) => {
+    console.log(`📨 V2 Displaying message from ${messageData.agent_name}: ${messageData.message.substring(0, 50)}...`);
     
     // ✨ FORCE STOP ALL ANIMATIONS: Immediately hide all loading animations when any message appears
-    console.log('🛑 FORCE STOPPING all loading animations - message appeared!');
     setLoadingAnimations({
       active: false,
       currentStep: 0,
@@ -1438,8 +1414,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       receivedMessages: 0,
       agentStatuses: {}
     });
-    
-    console.log('🎭 Animation forcibly stopped - should be hidden now');
+    console.log('🛑 V2 Animation forcibly stopped - message appeared');
     
     // Create conversation structure for this message
     const newMessage = {
@@ -1455,7 +1430,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     
     // Find existing progressive conversation or create new one
     const existingIndex = currentConversations.findIndex(conv => 
-      conv.id === conversationId && conv.type === 'progressive'
+      conv.id === conversationId && (conv.type === 'progressive' || conv.type === 'sequential_streaming_v2')
     );
     
     if (existingIndex >= 0) {
@@ -1465,23 +1440,24 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       existingConv.message_index = messageData.message_index;
       currentConversations[existingIndex] = existingConv;
       
-      console.log(`📝 Added message to existing conversation (${existingConv.messages.length} messages total)`);
+      console.log(`📝 V2 Added message to existing conversation (${existingConv.messages.length} messages total)`);
     } else {
       // Create new progressive conversation with first message
       const progressiveConversation = {
         id: conversationId,
-        type: 'progressive',
+        type: 'sequential_streaming_v2',
         scenario: messageData.scenario,
         scenario_name: messageData.scenario_name,
         messages: [newMessage],
         message_index: messageData.message_index,
         total_expected: messageData.total_expected,
         status: 'progressive',
-        created_at: messageData.timestamp
+        created_at: messageData.timestamp,
+        time_period: 'Live Session' // Mark as live session
       };
       
       currentConversations.push(progressiveConversation);
-      console.log(`🆕 Created new progressive conversation with first message`);
+      console.log(`🆕 V2 Created new progressive conversation with first message`);
     }
     
     // Update simulation data
@@ -1489,9 +1465,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       conversations: currentConversations
     });
     
-    console.log(`✅ Progressive message added to conversation ${conversationId} (${messageData.message_index}/${messageData.total_expected})`);
-    
-    // Note: Animation stopping moved to top of function for immediate response
+    console.log(`✅ V2 Progressive message added (${messageData.message_index}/${messageData.total_expected}) - Agent alternation preserved`);
   };
 
   const toggleFastForward = async () => {
