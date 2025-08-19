@@ -1962,7 +1962,7 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
-  // Fetch conversations only (for immediate refresh after observer messages)
+  // Fetch conversations only - with aggressive animation stopping
   const fetchConversationsOnly = async () => {
     // Prevent concurrent conversation updates that cause message jumping
     if (conversationUpdateRef.current) {
@@ -1985,11 +1985,26 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
       
       // Update via global context - with validation to prevent corrupted data
       const conversationsData = conversationsResponse.data || [];
-      console.log('🔄 fetchConversationsOnly: Updating ACTIVE conversations only', conversationsData.length);
       
-      updateSimulationData({
-        conversations: conversationsData
-      });
+      if (conversationsData && conversationsData.length > 0) {
+        console.log(`📊 Fetched ${conversationsData.length} conversations - STOPPING ANIMATIONS AGGRESSIVELY!`);
+        
+        // ✨ AGGRESSIVE ANIMATION STOP: Stop animations whenever conversations are fetched
+        setLoadingAnimations({
+          active: false,
+          currentStep: 0,
+          expectedMessages: 0,
+          receivedMessages: 0,
+          agentStatuses: {}
+        });
+        
+        console.log('🛑 FORCED animation stop due to conversation fetch');
+        
+        // Update conversations
+        updateSimulationData({
+          conversations: conversationsData
+        });
+      }
       
       // Restore scroll position after DOM update
       // Use multiple attempts with increasing delays for maximum reliability
