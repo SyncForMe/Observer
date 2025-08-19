@@ -1176,24 +1176,6 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     }
   };
 
-  // ✨ SAFETY ANIMATION STOPPER: Continuously check and stop animations if messages are visible
-  useEffect(() => {
-    const animationSafetyCheck = setInterval(() => {
-      if (loadingAnimations.active && conversations && conversations.length > 0) {
-        console.log('🚨 SAFETY STOP: Found conversations while animations active - force stopping!');
-        setLoadingAnimations({
-          active: false,
-          currentStep: 0,
-          expectedMessages: 0,
-          receivedMessages: 0,
-          agentStatuses: {}
-        });
-      }
-    }, 1000); // Check every second
-
-    return () => clearInterval(animationSafetyCheck);
-  }, [loadingAnimations.active, conversations]);
-
   // Helper function to get archetype colors
   const getArchetypeColor = (archetype) => {
     const colors = {
@@ -1218,6 +1200,24 @@ const SimulationControl = ({ setActiveTab, activeTab, refreshTrigger }) => {
     receivedMessages: 0,
     agentStatuses: {}
   });
+
+  // ✨ SAFETY ANIMATION STOPPER: Continuously check and stop animations if messages are visible
+  useEffect(() => {
+    const animationSafetyCheck = setInterval(() => {
+      if (loadingAnimations.active && conversations && conversations.length > 0) {
+        console.log('🚨 SAFETY STOP: Found conversations while animations active - force stopping!');
+        setLoadingAnimations({
+          active: false,
+          currentStep: 0,
+          expectedMessages: 0,
+          receivedMessages: 0,
+          agentStatuses: {}
+        });
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(animationSafetyCheck);
+  }, [loadingAnimations.active, conversations]);
 
   const loadingSteps = [
     { icon: '🚪', text: 'Agents are entering the room...', duration: 2500 },
