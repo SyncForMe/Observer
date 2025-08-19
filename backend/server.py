@@ -3102,6 +3102,80 @@ async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(sec
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
+# Helper functions for new conversation system
+async def get_recent_conversation_context(user_id: str, limit: int = 5):
+    """Get recent conversation context for agent memory"""
+    try:
+        conversations = await db.conversations.find({"user_id": user_id}).sort("created_at", -1).limit(limit).to_list(limit)
+        context_messages = []
+        
+        for conv in reversed(conversations):  # Reverse to get chronological order
+            for msg in conv.get('messages', []):
+                context_messages.append({
+                    'agent_name': msg.get('agent_name'),
+                    'content': msg.get('message'),
+                    'timestamp': conv.get('created_at')
+                })
+        
+        return context_messages
+    except Exception as e:
+        print(f"Error getting conversation context: {e}")
+        return []
+
+async def get_recent_documents(user_id: str, limit: int = 5):
+    """Get recent documents for context"""
+    try:
+        documents = await db.documents.find({"metadata.user_id": user_id}).sort("metadata.updated_at", -1).limit(limit).to_list(limit)
+        return documents
+    except Exception as e:
+        print(f"Error getting recent documents: {e}")
+        return []
+
+# Add generate_response_optimized method to LLMManager
+async def generate_response_optimized_standalone(context: str, max_words: int = 60):
+    """Standalone optimized response generation"""
+    try:
+        llm_manager = LLMManager()
+        if not await llm_manager.can_make_request():
+            return "I'm analyzing this scenario and will provide my perspective based on my expertise."
+        
+        chat = LlmChat(
+            api_key=llm_manager.api_key,
+            session_id=f"optimized_{int(datetime.utcnow().timestamp())}",
+            system_message=f"Provide a concise, expert response in {max_words} words or less. Be direct and actionable."
+        ).with_model("gemini", "gemini-2.5-flash")
+        
+        user_message = UserMessage(text=context)
+        response = await asyncio.wait_for(chat.send_message(user_message), timeout=5.0)
+        await llm_manager.increment_usage()
+        
+        if response:
+            if hasattr(response, 'content'):
+                return response.content.strip()
+            elif hasattr(response, 'text'):
+                return response.text.strip()
+            else:
+                return str(response).strip()
+        
+        return "I'm analyzing this scenario and will contribute my expertise to help solve this challenge."
+        
+    except Exception as e:
+        print(f"Error in optimized response generation: {e}")
+        return "I'm analyzing this scenario and will contribute my expertise to help solve this challenge."
+
+# Add the method to LLMManager class
+def add_generate_response_optimized_to_llm_manager():
+    """Add the generate_response_optimized method to LLMManager"""
+    async def generate_response_optimized(self, context: str, max_words: int = 60):
+        """Generate optimized response with word limit"""
+        return await generate_response_optimized_standalone(context, max_words)
+    
+    # Add method to LLMManager class
+    LLMManager.generate_response_optimized = generate_response_optimized
+
+# Initialize the method addition
+add_generate_response_optimized_to_llm_manager()
+
 # API Routes
 
 # Authentication Endpoints
