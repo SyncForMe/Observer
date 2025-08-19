@@ -139,9 +139,12 @@ def check_conversations_vs_stream(session):
                 # Get agent sequence from stream
                 stream_agent_sequence = []
                 for msg in stream_messages:
-                    agent_name = msg.get('agent_name', 'Unknown')
-                    if agent_name != 'Observer (You)':
-                        stream_agent_sequence.append(agent_name)
+                    if isinstance(msg, dict):
+                        agent_name = msg.get('agent_name', 'Unknown')
+                        if agent_name != 'Observer (You)':
+                            stream_agent_sequence.append(agent_name)
+                    else:
+                        print(f"  Warning: Non-dict stream message: {type(msg)} - {msg}")
                 
                 print(f"Stream agent sequence: {' → '.join(stream_agent_sequence)}")
                 
