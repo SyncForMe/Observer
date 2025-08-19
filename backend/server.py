@@ -5481,13 +5481,8 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None, cur
     time_limit_msg = f" with {time_limit_display} time limit" if time_limit_display else " with no time limit"
     print(f"✅ Simulation started for user {current_user.id}{time_limit_msg}")
     
-    # ✨ IMMEDIATE FIRST CONVERSATION: Generate first conversation immediately for <10s response
-    print("🚀 Triggering IMMEDIATE first conversation generation for <10 second response...")
-    asyncio.create_task(generate_immediate_first_conversation(current_user.id))
-    
-    # ✨ AUTO-CONVERSATION SYSTEM: Start ongoing automatic conversation loop after first one
-    print("🔄 Starting ongoing auto-conversation system...")
-    asyncio.create_task(auto_conversation_loop(current_user.id, delay_first=True))
+    # ✨ DISABLE AUTO-CONVERSATION: Let frontend manually control generation for proper alternation
+    print("🎯 Simulation state ready - frontend will manually trigger conversation generation for proper agent alternation")
     
     return {
         "message": f"Simulation started{time_limit_msg}", 
@@ -5495,7 +5490,7 @@ async def start_simulation(request: Optional[SimulationStartRequest] = None, cur
         "success": True,
         "time_limit_active": time_limit_hours is not None,
         "time_limit_display": time_limit_display,
-        "immediate_generation": True  # Signal to frontend that generation starts immediately
+        "manual_control": True  # Signal that frontend should manually trigger generations
     }
 
 async def generate_immediate_first_conversation(user_id: str):
