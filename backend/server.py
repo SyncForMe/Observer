@@ -3102,7 +3102,221 @@ async def get_admin_user(credentials: HTTPAuthorizationCredentials = Depends(sec
         raise HTTPException(status_code=403, detail="Admin access required")
     return user
 
-# Helper functions for new conversation system
+@api_router.post("/conversation/generate-v2")
+async def generate_conversation_v2(current_user: User = Depends(get_current_user)):
+    """
+    NEW V2 CONVERSATION GENERATION SYSTEM
+    - Sequential agent processing for guaranteed alternation
+    - Immediate progressive streaming 
+    - Optimized for <10s first message delivery
+    - Strict round-robin agent rotation
+    """
+    try:
+        print(f"🚀 V2 SYSTEM: Starting conversation generation for user {current_user.id}")
+        
+        # Get active agents for this user
+        agents = await db.agents.find({"user_id": current_user.id}).to_list(100)
+        if len(agents) < 2:
+            raise HTTPException(status_code=400, detail="Need at least 2 agents for conversation")
+        
+        # Get scenario
+        simulation_state = await db.simulation_state.find_one({"user_id": current_user.id})
+        if not simulation_state or not simulation_state.get("scenario"):
+            raise HTTPException(status_code=400, detail="No scenario set")
+        
+        scenario = simulation_state["scenario"]
+        scenario_name = simulation_state.get("scenario_name", "Custom Scenario")
+        
+        print(f"📊 V2 SYSTEM: Using {len(agents)} agents for scenario: {scenario_name}")
+        
+        # Create conversation session
+        conversation_id = f"conv_v2_{int(datetime.utcnow().timestamp())}_{current_user.id}"
+        
+        # Start sequential agent processing
+        result = await process_agents_sequentially_v2(
+            agents=agents,
+            scenario=scenario,
+            scenario_name=scenario_name,
+            conversation_id=conversation_id,
+            user_id=current_user.id
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ V2 SYSTEM: Error in conversation generation: {e}")
+        raise HTTPException(status_code=500, detail=f"Conversation generation failed: {str(e)}")
+
+async def process_agents_sequentially_v2(agents, scenario, scenario_name, conversation_id, user_id):
+    """
+    V2 SYSTEM: Process agents one by one in strict rotation
+    Each agent generates immediately and saves to database for progressive streaming
+    """
+    print(f"🔄 V2 SYSTEM: Sequential processing of {len(agents)} agents")
+    
+    # Limit to 3 agents max for optimal performance
+    selected_agents = agents[:3]
+    messages_generated = 0
+    total_start_time = time.time()
+    
+    # Get conversation context
+    conversation_history = await get_recent_conversation_context(user_id, limit=5)
+    existing_documents = await get_recent_documents(user_id)
+    
+    for i, agent_data in enumerate(selected_agents):
+        try:
+            agent_start_time = time.time()
+            print(f"🤖 V2 SYSTEM: Processing Agent {i+1}/{len(selected_agents)}: {agent_data['name']}")
+            
+            # Create agent object
+            agent = Agent(
+                id=agent_data.get("id", str(uuid.uuid4())),
+                name=agent_data["name"],
+                archetype=agent_data["archetype"],
+                goal=agent_data["goal"],
+                expertise=agent_data.get("expertise", ""),
+                background=agent_data.get("background", ""),
+                personality=agent_data.get("personality", {}),
+                avatar_url=agent_data.get("avatar_url", "")
+            )
+            
+            # Generate message for this specific agent
+            message_text = await generate_single_agent_message_v2(
+                agent=agent,
+                scenario=scenario,
+                agents=selected_agents,
+                conversation_history=conversation_history,
+                existing_documents=existing_documents,
+                user_id=user_id,
+                agent_position=i + 1,
+                total_agents=len(selected_agents)
+            )
+            
+            # Create message object
+            message = {
+                "id": str(uuid.uuid4()),
+                "agent_id": agent.id,
+                "agent_name": agent.name,
+                "message": message_text,
+                "mood": determine_agent_mood_v2(agent, message_text),
+                "timestamp": datetime.utcnow(),
+                "agent_position": i + 1,
+                "total_agents": len(selected_agents)
+            }
+            
+            # IMMEDIATE DATABASE STORAGE for progressive streaming
+            stream_message = {
+                "id": message["id"],
+                "conversation_id": conversation_id,
+                "user_id": user_id,
+                "agent_id": agent.id,
+                "agent_name": agent.name,
+                "message": message_text,
+                "mood": message["mood"],
+                "timestamp": datetime.utcnow(),
+                "message_index": i + 1,
+                "total_expected": len(selected_agents),
+                "scenario": scenario,
+                "scenario_name": scenario_name,
+                "status": "available"  # Immediately available for frontend
+            }
+            
+            # Save to streaming collection immediately
+            await db.message_stream.insert_one(stream_message)
+            
+            agent_time = time.time() - agent_start_time
+            messages_generated += 1
+            
+            print(f"✅ V2 SYSTEM: Agent {agent.name} completed in {agent_time:.2f}s - Message {i+1} available for streaming!")
+            
+            # If this is the first message, log timing for first message delivery
+            if i == 0:
+                first_message_time = time.time() - total_start_time
+                print(f"🎯 V2 SYSTEM: FIRST MESSAGE READY in {first_message_time:.2f}s (Target: <10s)")
+            
+        except Exception as e:
+            print(f"❌ V2 SYSTEM: Error processing agent {agent_data.get('name', 'Unknown')}: {e}")
+            continue
+    
+    total_time = time.time() - total_start_time
+    print(f"🏁 V2 SYSTEM: Sequential processing completed in {total_time:.2f}s - {messages_generated} messages generated")
+    
+    # Return session info for frontend
+    return {
+        "conversation_id": conversation_id,
+        "type": "sequential_streaming_v2",
+        "messages_generated": messages_generated,
+        "total_time": total_time,
+        "scenario": scenario,
+        "scenario_name": scenario_name,
+        "status": "completed",
+        "agents_processed": len(selected_agents)
+    }
+
+async def generate_single_agent_message_v2(agent, scenario, agents, conversation_history, existing_documents, user_id, agent_position, total_agents):
+    """
+    V2 SYSTEM: Generate message for single agent with optimized context
+    Designed for speed and quality
+    """
+    try:
+        # Build focused context for this agent
+        context = f"""You are {agent.name}, a {agent.archetype}.
+
+SCENARIO: {scenario}
+
+Your expertise: {agent.expertise}
+Your goal: {agent.goal}
+
+CONVERSATION CONTEXT:
+You are Agent {agent_position} of {total_agents} in this conversation round.
+"""
+
+        # Add recent conversation history if available
+        if conversation_history:
+            context += "\nRECENT CONVERSATION HISTORY:\n"
+            for msg in conversation_history[-3:]:  # Last 3 messages for context
+                context += f"- {msg.get('agent_name', 'Agent')}: {msg.get('content', '')[:100]}...\n"
+
+        context += f"""
+INSTRUCTIONS:
+- Provide your expert perspective on the scenario
+- Be concise: 45-60 words maximum
+- Focus on actionable insights
+- Build on the conversation naturally
+- Stay true to your expertise and personality
+
+Respond as {agent.name}:"""
+
+        # Generate response using optimized method
+        response = await generate_response_optimized_standalone(context, max_words=60)
+        
+        # Clean and validate response
+        cleaned_response = response.strip()
+        if not cleaned_response:
+            # Fallback response based on agent expertise
+            cleaned_response = f"As a {agent.archetype}, I believe we should focus on {agent.expertise.split(',')[0] if agent.expertise else 'the core objectives'} to address this scenario effectively."
+        
+        return cleaned_response
+        
+    except Exception as e:
+        print(f"❌ V2 SYSTEM: Error generating message for {agent.name}: {e}")
+        # Return fallback response
+        return f"I'm analyzing this scenario from my {agent.archetype} perspective. Let me contribute my expertise to help solve this challenge."
+
+def determine_agent_mood_v2(agent, message_text):
+    """V2 SYSTEM: Fast mood determination based on message content"""
+    message_lower = message_text.lower()
+    
+    if any(word in message_lower for word in ['concerned', 'worried', 'problem', 'issue', 'risk']):
+        return 'concerned'
+    elif any(word in message_lower for word in ['excited', 'great', 'excellent', 'amazing', 'fantastic']):
+        return 'excited'
+    elif any(word in message_lower for word in ['think', 'analyze', 'consider', 'examine']):
+        return 'thoughtful'
+    else:
+        return 'neutral'
 async def get_recent_conversation_context(user_id: str, limit: int = 5):
     """Get recent conversation context for agent memory"""
     try:
